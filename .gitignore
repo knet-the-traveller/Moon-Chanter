@@ -3,6 +3,7 @@ NASA-app-Hackathon.code-workspace
 local-docs/*
 docs/superpowers/*
 .superpowers/*
+GEMINI.md
 
 # Worktrees
 .worktrees/
