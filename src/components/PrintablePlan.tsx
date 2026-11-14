@@ -37,7 +37,7 @@ export const PrintablePlan: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-stone-600 mt-1">
-            NASA Space Apps Challenge 2024 · Team Moon Chanter · Decision-Support System
+            2026 NASA Space Apps Challenge · Team Moon Chanter · Decision-Support System
           </p>
         </div>
         <div className="text-right text-xs text-stone-500">

@@ -1,7 +1,7 @@
 # 🌾 FieldShift: Adapting Farms with NASA Data
 
-> **NASA Space Apps Challenge 2024**  
-> **Challenge:** [Field Shift: Adapting Farms with NASA Data](https://www.spaceappschallenge.org/)  
+> **NASA Space Apps Challenge 2026**  
+> **Challenge:** [Field Shift: Adapting Farms with NASA Data](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)  
 > **Team:** Moon Chanter  
 > **Application:** FieldShift  
 > **Pilot Region:** Philippines (Central Luzon, Cagayan Valley, Western Visayas)  
@@ -13,6 +13,9 @@
 **FieldShift** is an explainable, mobile-first decision-support platform designed for smallholder farmers and agricultural extension workers in the Philippines. It combines **NASA Earth observation data** (NASA POWER, MODIS/VIIRS via NASA GIBS), **global soil telemetry** (ISRIC SoilGrids), and **localized agronomic knowledge** to generate, rank, and stress-test 3-season crop rotation strategies under changing climatic scenarios.
 
 By alternating crops that replenish soil nitrogen, stratify root depths, and conserve water envelopes, FieldShift transforms space-based observations into actionable resilience on the ground.
+
+> [!NOTE]
+> FieldShift is designed as a supportive decision-exploration co-pilot—it helps identify agro-climatic patterns and rotation possibilities, but does not replace farmer judgment or local agricultural extension expertise.
 
 ---
 
@@ -84,8 +87,8 @@ By alternating crops that replenish soil nitrogen, stratify root depths, and con
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/moon-chanter/fieldshift.git
-cd fieldshift
+git clone https://github.com/knet-the-traveller/Moon-Chanter.git
+cd Moon-Chanter
 
 # Install dependencies
 npm install
@@ -129,7 +132,7 @@ npm run preview
 ---
 
 ## 👥 Team Moon Chanter
-- **NASA Space Apps Challenge 2024**
+- **2026 NASA Space Apps Challenge**
 - Dedicated to building practical, accessible space-data applications for climate adaptation and smallholder farmers.
 
 ---

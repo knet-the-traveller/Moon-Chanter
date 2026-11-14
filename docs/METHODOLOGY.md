@@ -1,6 +1,6 @@
 # FieldShift: Agronomic Methodology & Scoring Formulation
 
-> **NASA Space Apps Challenge 2024:** "Field Shift: Adapting Farms with NASA Data"  
+> **2026 NASA Space Apps Challenge:** "Field Shift: Adapting Farms with NASA Data"  
 > **Team:** Moon Chanter  
 > **Module Path:** `/src/engine`  
 

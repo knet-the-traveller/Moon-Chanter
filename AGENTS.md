@@ -1,4 +1,4 @@
-# Rules for AI Agents: NASA Space Apps Hackathon (FieldShift)
+# Rules for AI Agents: 2026 NASA Space Apps Challenge (FieldShift)
 
 These rules apply to every AI agent (Antigravity, Gemini, Kiro, Claude Code, Cursor, or any other assistant) and subagent working in this repository (`NASA-app-Hackathon` / FieldShift). They ensure development consistency, code safety, architectural integrity, and strict agronomic/scientific accuracy.
 
@@ -28,6 +28,10 @@ These rules apply to every AI agent (Antigravity, Gemini, Kiro, Claude Code, Cur
 7. **Immutable Gold Standard Datasets (`public/sample-data/`, `src/data/`)**:
    - Pre-bundled offline fallback datasets in `public/sample-data/` and pilot agricultural presets in `src/data/pilotLocations.ts` (*Science City of Muñoz, Ilagan Isabela, Pototan Iloilo, Malaybalay Bukidnon*) are immutable references.
    - Crop database attributes in `src/data/crops.json` must be strictly validated; never mutate crop profiles without verified agronomic reference data.
+
+8. **Non-Prescriptive Decision-Support Mandate**:
+   - The recommendation engine and rotation outputs are supportive, non-prescriptive decision-exploration tools for smallholder farmers and agricultural technicians.
+   - Never output rigid, prescriptive "do not plant" commands; all recommendations must present glass-box evidence, satellite uncertainty disclosures, and prompt local technician review.
 
 ---
 
