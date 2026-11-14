@@ -6,10 +6,8 @@ import type {
   OrganicMatterLevel,
   PhosphorusFixationRisk
 } from '../types';
-import { LocalCacheService } from './cache';
+import { LocalCacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import { getNearestSampleSlug } from './nasaPower';
-
-const SOIL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const SoilTextureSchema = z.enum([
   'clay',
@@ -216,7 +214,7 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
         : 'SoilGrids bdod layer missing at coordinate; bulkDensityGcm3 estimated from texture class (needs local penetrometer/core verification).'
     };
 
-    await LocalCacheService.set(cacheKey, soilResult, SOIL_CACHE_TTL_MS);
+    await LocalCacheService.set(cacheKey, soilResult, TELEMETRY_CACHE_TTL_MS);
     return soilResult;
   } catch (err) {
     console.warn('SoilGrids live query failed. Falling back to local pilot profile.', err);

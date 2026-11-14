@@ -27,7 +27,18 @@
     "layerGibsNdvi": "NASA Luntiang Halaman (NDVI)",
     "selectedCoords": "Mga Coordinate",
     "elevation": "Taas mula sa Dagat",
-    "confirmLocation": "Kumpirmahin at Suriin ang Sakahan"
+    "confirmLocation": "Kumpirmahin at Suriin ang Sakahan",
+    "customField": "Punto ng Sakahan",
+    "customProvince": "Sariling Lokasyon",
+    "customRegion": "Sonang Agrikultural sa Pilipinas",
+    "gpsField": "Aking Sakahan mula sa GPS",
+    "gpsUnsupported": "Walang GPS sa browser na ito. Pumili ng pilotong lugar o maglagay ng mga coordinate.",
+    "gpsFailure": "Hindi matukoy ng GPS ang lokasyon. Pumili ng pilotong lugar o maglagay ng mga coordinate.",
+    "latitude": "Latitud",
+    "longitude": "Longhitud",
+    "coordinateEntry": "Ilagay ang mga coordinate ng sakahan",
+    "applyCoordinates": "Gamitin ang mga coordinate",
+    "overlay": "Patong na Larawan ng Satelayt"
   },
   "conditions": {
     "climateTitle": "Klima at Ulan Ayon sa NASA",
@@ -97,5 +108,33 @@
     "dateGenerated": "Petsa ng Pagkagawa",
     "locationSummary": "Lokasyon ng Sakahan",
     "notice": "Ang gabay na ito ay nilikha gamit ang datos ng NASA Earth Observation at agronomiya. Makipag-ugnayan sa inyong Municipal Agriculturist para sa lokal na payo."
+  },
+  "land": {
+    "title": "Buod ng lupa at anyong-lupa",
+    "loading": "Kinukuha ang halimbawang datos ng lupa ng munisipalidad…",
+    "invalidCoordinates": "Maglagay ng wastong latitud (−90 hanggang 90) at longhitud (−180 hanggang 180).",
+    "unavailable": "Hindi makuha ang halimbawang datos ng lupa. Subukan muli kapag maaabot ang mga lokal na sample file.",
+    "telemetryUnavailable": "Hindi makuha ang datos ng klima o lupa para sa lokasyong ito. Maaaring subukan muli.",
+    "retry": "Subukang muli ang datos ng sakahan",
+    "syntheticNotice": "Gawang halimbawang datos ng munisipalidad · Kailangang beripikahin sa lugar",
+    "sampleNotice": "Halimbawang datos ng munisipalidad · Kailangang beripikahin sa lugar",
+    "proxy": "{hub} · Halimbawang munisipalidad na {distance} km mula sa piniling punto",
+    "limitations": "Ipasuri ang mga halimbawang tagapagpahiwatig sa lokal na teknisyeng pang-agrikultura. Maaaring iba ang aktuwal na sakahan sa profile ng munisipalidad.",
+    "elevation": "Taas mula sa dagat",
+    "slope": "Dalisdis",
+    "flood": "Paunang pagsusuri ng mababang lupa",
+    "flagged": "Kailangang suriin ang panganib ng baha sa lugar",
+    "unflagged": "Labas sa paunang pamantayang ito",
+    "bareMonths": "Mga buwang maaaring walang pananim",
+    "noneDetected": "Walang buwang natukoy",
+    "erosion": "Halimbawang taunang pagguho ng lupa",
+    "erosionUnit": "t/ha/taon",
+    "monthlyNdvi": "Buwanang NDVI · Enero–Disyembre",
+    "ndviTrend": "Taunang pagbabago ng NDVI",
+    "trendUnit": "NDVI/taon",
+    "insufficientTrendData": "Kulang ang taunang obserbasyon",
+    "unknownResolution": "Walang tiyak na resolusyon",
+    "unknownPeriod": "Walang tiyak na panahon ng obserbasyon",
+    "unknownElevation": "Walang datos ng taas"
   }
 }

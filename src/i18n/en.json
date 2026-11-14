@@ -27,7 +27,18 @@
     "layerGibsNdvi": "NASA Satellite Greenness (NDVI)",
     "selectedCoords": "Coordinates",
     "elevation": "Elevation",
-    "confirmLocation": "Confirm & Analyze Field"
+    "confirmLocation": "Confirm & Analyze Field",
+    "customField": "Field Point",
+    "customProvince": "Custom Location",
+    "customRegion": "Philippines Agro-Zone",
+    "gpsField": "My GPS Field",
+    "gpsUnsupported": "GPS is unavailable in this browser. Select a preset or enter coordinates.",
+    "gpsFailure": "GPS could not determine your location. Select a preset or enter coordinates.",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "coordinateEntry": "Enter field coordinates",
+    "applyCoordinates": "Use these coordinates",
+    "overlay": "Satellite Overlay"
   },
   "conditions": {
     "climateTitle": "NASA Climate & Moisture Context",
@@ -97,5 +108,33 @@
     "dateGenerated": "Generated Date",
     "locationSummary": "Farm Location",
     "notice": "This advisory is generated using NASA Earth Observation telemetry and agronomic rotation principles. Validate with local municipal agriculturist."
+  },
+  "land": {
+    "title": "Land and terrain summary",
+    "loading": "Loading the municipal land profile…",
+    "invalidCoordinates": "Enter valid latitude (−90 to 90) and longitude (−180 to 180).",
+    "unavailable": "Municipal land profiles are unavailable. Retry when local sample files can be reached.",
+    "telemetryUnavailable": "Climate or soil data could not be loaded for this location. You can retry.",
+    "retry": "Retry field data",
+    "syntheticNotice": "Synthetic municipal examples · Needs local verification",
+    "sampleNotice": "Municipal sample data · Needs local verification",
+    "proxy": "{hub} · Municipal proxy {distance} km from the selected point",
+    "limitations": "These illustrative indicators require review with a local agricultural technician. Field conditions can differ from the municipal profile.",
+    "elevation": "Elevation",
+    "slope": "Slope",
+    "flood": "Preliminary lowland screen",
+    "flagged": "Flagged for local flood review",
+    "unflagged": "Outside this preliminary screen",
+    "bareMonths": "Possible bare-field months",
+    "noneDetected": "No months flagged",
+    "erosion": "Illustrative annual erosion",
+    "erosionUnit": "t/ha/year",
+    "monthlyNdvi": "Monthly NDVI · January–December",
+    "ndviTrend": "Annual NDVI trend",
+    "trendUnit": "NDVI/year",
+    "insufficientTrendData": "Insufficient annual observations",
+    "unknownResolution": "Resolution unavailable",
+    "unknownPeriod": "Observation period unavailable",
+    "unknownElevation": "Elevation unavailable"
   }
 }

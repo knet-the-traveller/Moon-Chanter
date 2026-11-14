@@ -24,8 +24,6 @@ export const App: React.FC = () => {
     currentStep,
     setCurrentStep,
     selectedLocation,
-    fetchTelemetry,
-    climateData,
     recommendedPlans,
     comparedPlanIds,
     setComparisonModalOpen,
@@ -34,8 +32,9 @@ export const App: React.FC = () => {
 
   // Initial load: Fetch telemetry for default pilot region on first render
   useEffect(() => {
-    if (!climateData) {
-      fetchTelemetry(selectedLocation.lat, selectedLocation.lon);
+    const { climateData, landSummary, isLoadingTelemetry, isLoadingLand, selectedLocation, fetchTelemetry } = useAppStore.getState();
+    if ((!climateData || !landSummary) && !isLoadingTelemetry && !isLoadingLand) {
+      void fetchTelemetry(selectedLocation.lat, selectedLocation.lon);
     }
   }, []);
 
