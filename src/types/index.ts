@@ -31,10 +31,10 @@ export type PhosphorusFixationRisk = 'low' | 'moderate' | 'high';
 export interface SoilData {
   provenance?: Partial<Record<SoilMetric, MetricProvenance>>;
   source: string;
-  texture: SoilTexture;
-  drainage: DrainageClass;
+  texture: SoilTexture | null;
+  drainage: DrainageClass | null;
   organicMatter: OrganicMatterLevel;
-  ph: number;
+  ph: number | null;
   isEstimate: boolean;
   rawClayPercent?: number;
   rawSandPercent?: number;

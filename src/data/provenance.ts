@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getTranslation } from '../i18n';
 import type { ClimateData, SoilData, LandSummary, Language, MetricProvenance, ClimateMetric, SoilMetric } from '../types';
 import type { LocalReviewDescriptor } from '../types';
+import { hasRequiredSoilInputs } from '../engine/soilInputs';
 
 export const MetricProvenanceSchema = z.object({
   source: z.string(), variable: z.string(), spatialResolution: z.string().nullable(), dateRange: z.string().nullable(),
@@ -29,7 +30,15 @@ export function climateProvenance(data: ClimateData): Record<ClimateMetric, Metr
   }])) as Record<ClimateMetric, MetricProvenance>;
 }
 export function soilProvenance(data: SoilData): Record<SoilMetric, MetricProvenance> {
-  return Object.fromEntries(SOIL_METRICS.map(key => [key, data.provenance?.[key] ?? unknownProvenance(data.source, key, data.isEstimate)])) as Record<SoilMetric, MetricProvenance>;
+  return Object.fromEntries(SOIL_METRICS.map(key => {
+    const metadata = data.provenance?.[key];
+    if (data[key] === null || data[key] === undefined || (key === 'organicMatter' && data.organicMatter === 'unknown')) {
+      return [key, { ...unknownProvenance(metadata?.source ?? data.source, metadata?.variable ?? key),
+        isSample: metadata?.isSample ?? data.isEstimate, cached: metadata?.cached,
+        sampleLocation: metadata?.sampleLocation }];
+    }
+    return [key, metadata ?? unknownProvenance(data.source, key, data.isEstimate)];
+  })) as Record<SoilMetric, MetricProvenance>;
 }
 export function cachedProvenance<T extends string>(metadata: Record<T, MetricProvenance>): Record<T, MetricProvenance> {
   return Object.fromEntries(Object.entries<MetricProvenance>(metadata).map(([key, value]) => [key, {
@@ -74,7 +83,10 @@ export function buildSoilProvenance(data: SoilData, live: boolean, sampleLocatio
   const units: Partial<Record<SoilMetric,string>> = {ph:'pH',rawClayPercent:'%',rawSandPercent:'%',rawSocDgPerKg:'dg/kg',bulkDensityGcm3:'g/cm³',slopePct:'%'};
   const derived: SoilMetric[] = ['texture','drainage','organicMatter','phosphorusFixationRisk'];
   return Object.fromEntries(SOIL_METRICS.map(key => {
-    if (data[key] === undefined) return [key, unknownProvenance(live ? 'ISRIC SoilGrids v2.0' : 'FieldShift municipal soil reference', vars[key], !live)];
+    if (data[key] === undefined || data[key] === null || (key === 'organicMatter' && data.organicMatter === 'unknown')) {
+      return [key, { ...unknownProvenance(live ? 'ISRIC SoilGrids v2.0' : 'FieldShift municipal soil reference', vars[key]),
+        isSample: !live, sampleLocation }];
+    }
     const synthetic = key === 'slopePct' || (key === 'bulkDensityGcm3' && (!live || !measuredBulkDensity));
     return [key, { source: synthetic ? 'FieldShift illustrative soil estimate' : live ? 'ISRIC SoilGrids v2.0' : 'FieldShift municipal soil reference', variable: vars[key], unit: units[key] ?? 'class',
       spatialResolution: live && !synthetic ? '250 m' : null, dateRange: null,
@@ -109,6 +121,14 @@ export function formatLocalReview(language: Language, descriptor: LocalReviewDes
 }
 
 export interface PlanDataContext { climate: ClimateData | null; soil: SoilData | null; land: LandSummary | null }
+export function hasProvisionalEvidence(context: PlanDataContext): boolean {
+  if (!context.climate || !hasRequiredSoilInputs(context.soil) || !context.land) return true;
+  return context.climate.isSampleData || context.soil.isEstimate || context.land.isSample
+    || context.land.needsReview || !!context.soil.needsReview
+    || contextProvenance(context).some(({ metadata }) => metadata.isSample || metadata.isSynthetic
+      || metadata.needsReview || !metadata.tier || metadata.tier === 'unavailable'
+      || !metadata.spatialResolution || !metadata.dateRange);
+}
 export function contextProvenance(context: PlanDataContext): Array<{ key: string; metadata: MetricProvenance }> {
   return [
     ...Object.entries(context.climate ? climateProvenance(context.climate) : { climate: unknownProvenance('NASA POWER', 'climate') })

@@ -2,6 +2,7 @@ import type { CandidateSequence } from './candidateGenerator';
 import type { ClimateData, PlanReason, PlanRisk, SoilData } from '../types';
 import type { RotationPlan, LocalReviewDescriptor, MetricProvenance } from '../types';
 import type { PlanDataContext } from '../data/provenance';
+import { assertRequiredSoilInputs } from './soilInputs';
 
 // Presentation descriptors only: explicit context, no clock, network, store, or score changes.
 export function generateLocalReviewChecklist(
@@ -42,6 +43,7 @@ export function generatePlanExplanations(
   climate: ClimateData,
   soil: SoilData
 ): { reasons: PlanReason[]; risks: PlanRisk[] } {
+  assertRequiredSoilInputs(soil);
   const { s1Crop, s2Crop, s3Crop } = seq;
   const crops = [s1Crop, s2Crop, s3Crop];
   const activeCrops = crops.filter((c) => c.family !== 'fallow');

@@ -30,7 +30,7 @@ describe('seven-day telemetry cache wiring', () => {
 
   it('passes seven days from the soil caller', async () => {
     const set = vi.spyOn(CacheService, 'set');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ properties: { layers: [] } }) }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ properties: { layers: [{ name: 'soc', depths: [{ label: '0-5cm', values: { mean: 100 } }, { label: '5-15cm', values: { mean: 100 } }] }] } }) }));
     await fetchSoilGridsData(15.714, 120.906);
     expect(set).toHaveBeenCalledWith(expect.stringContaining('soilgrids_'), expect.any(Object), TELEMETRY_CACHE_TTL_MS);
   });

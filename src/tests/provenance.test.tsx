@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { buildClimateProvenance, buildSoilProvenance, cachedProvenance, climateProvenance, formatProvenance } from '../data/provenance';
-import { applyFarmerSoilOverride, fetchSoilGridsData } from '../services/soilGrids';
+import { applyFarmerSoilOverride, fetchSoilGridsData, soilCacheKey } from '../services/soilGrids';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
 import { CacheService } from '../services/cache';
 import { ClimateCard } from '../components/ClimateCard';
@@ -57,7 +57,7 @@ describe('metric provenance', () => {
   it('keeps new provenance in parsed soil cache payloads', async () => {
     const base = { ...soil(), bulkDensityGcm3:1.38, isEstimate:false,
       provenance: buildSoilProvenance({...fixture.soil,isEstimate:false},true) };
-    await CacheService.set('soilgrids_15.714_120.906',base);
+    await CacheService.set(soilCacheKey(15.714,120.906),{schemaVersion:2,profile:base});
     const result = await fetchSoilGridsData(15.714,120.906);
     expect(result.provenance?.ph?.tier).toBe('cached-live');
     expect(result.provenance?.ph?.dateRange).toBeNull();
@@ -74,7 +74,7 @@ describe('metric provenance', () => {
     useAppStore.getState().resetSoilOverride();
     expect(useAppStore.getState().soilData?.provenance?.ph?.cached).toBe(true);
   });
-  it('uses the consumed fixture location and marks missing source properties as substitutes', async () => {
+  it('uses the consumed fixture location and rejects empty source responses', async () => {
     vi.stubGlobal('fetch',vi.fn().mockImplementation(async (url: string) => url.includes('/sample-data/')
       ? {ok:true,json:async()=>({location:{name:'Named fixture reference',lat:15,lon:121},soil:fixture.soil})}
       : {ok:false,status:503}));
@@ -83,9 +83,10 @@ describe('metric provenance', () => {
     await CacheService.clear();
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({properties:{layers:[]}})}));
     const missing = await fetchSoilGridsData(15.714,120.906);
-    expect(missing.provenance?.ph?.isSynthetic).toBe(true);
-    expect(missing.provenance?.organicMatter?.methodKey).toBe('provenance.methods.missingDefault');
-    expect(missing.provenance?.slopePct?.tier).toBe('unavailable');
+    expect(missing.isEstimate).toBe(true);
+    expect(missing.source).toContain('FieldShift municipal soil example');
+    expect(missing.provenance?.ph?.tier).toBe('sample');
+    expect(missing.provenance?.ph?.isSample).toBe(true);
   });
   it('retains climate cache sample identity and flags malformed cache metadata for reload', async () => {
     await CacheService.set('nasa_power_climatology_15.714_120.906',climate());

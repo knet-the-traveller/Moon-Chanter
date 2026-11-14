@@ -13,7 +13,7 @@ import type {
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import cropsData from '../data/crops.json';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
-import { fetchSoilGridsData, applyFarmerSoilOverride } from '../services/soilGrids';
+import { fetchSoilGridsData, applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
 import { fetchLandSummary } from '../services/landSummary';
 import { CoordinatesSchema } from '../types/landFixture';
@@ -277,7 +277,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setSoilOverride: (override) => {
-    set({ soilOverride: { ...(get().soilOverride || {}), ...override } });
+    const validated = parseFarmerSoilOverride(override);
+    if (!validated) return;
+    set({ soilOverride: { ...(get().soilOverride || {}), ...validated } });
     get().computeRecommendations();
   },
 
@@ -314,6 +316,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { climateData, soilData, soilOverride, priorities, recentCropId, excludedCropIds } = get();
 
     if (!climateData || !soilData) {
+      set({ recommendedPlans: [], advisoryIssuedAt: null, comparedPlanIds: [] });
       return;
     }
 
@@ -329,7 +332,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       maxResults: 6
     });
 
-    set({ recommendedPlans: plans, advisoryIssuedAt: Date.now() });
+    set({ recommendedPlans: plans, advisoryIssuedAt: plans.length ? Date.now() : null,
+      comparedPlanIds: get().comparedPlanIds.filter(id => plans.some(plan => plan.id === id)) });
   },
 
   setActiveScenario: (scenario) => set({ activeScenario: scenario }),

@@ -1,4 +1,4 @@
-import { contextProvenance, formatProvenance, formatLocalReview } from '../data/provenance';
+import { contextProvenance, formatProvenance, formatLocalReview, hasProvisionalEvidence } from '../data/provenance';
 import { generateLocalReviewChecklist } from '../engine/explainer';
 import type { PlanDataContext } from '../data/provenance';
 import type { Language } from '../types';
@@ -21,16 +21,21 @@ import {
 } from 'lucide-react';
 
 export const PlanDataEvidence: React.FC<{ context: PlanDataContext; language: Language; forPrint?: boolean }> = ({ context, language, forPrint }) => (
-  <details open={forPrint || undefined} className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words print:break-inside-auto">
-    <summary className="cursor-pointer font-bold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
-      {getTranslation(language, 'provenance.title')}
-    </summary>
-    <ul className="mt-2 space-y-2">
-      {contextProvenance(context).map(({ key, metadata }) => <li key={key} className="print:break-inside-avoid">{formatProvenance(language, metadata)}</li>)}
-    </ul>
-    {context.land && !context.land.ndvi.trendAvailable && <p className="mt-2 font-semibold">{getTranslation(language, 'land.insufficientTrendData')}</p>}
-    <p className="mt-2 font-semibold">{getTranslation(language, 'provenance.derived')}</p>
-  </details>
+  <>
+    {hasProvisionalEvidence(context) && <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950 print:break-inside-avoid">
+      {getTranslation(language, 'dataQuality.provisionalDetail')}
+    </p>}
+    <details open={forPrint || undefined} className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words print:break-inside-auto">
+      <summary className="cursor-pointer font-bold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
+        {getTranslation(language, 'provenance.title')}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {contextProvenance(context).map(({ key, metadata }) => <li key={key} className="print:break-inside-avoid">{formatProvenance(language, metadata)}</li>)}
+      </ul>
+      {context.land && !context.land.ndvi.trendAvailable && <p className="mt-2 font-semibold">{getTranslation(language, 'land.insufficientTrendData')}</p>}
+      <p className="mt-2 font-semibold">{getTranslation(language, 'provenance.derived')}</p>
+    </details>
+  </>
 );
 
 interface RotationCardProps {
@@ -68,6 +73,11 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
 
   // Robustness badge style
   const getRobustnessBadge = () => {
+    if (hasProvisionalEvidence(context)) return {
+      label: getTranslation(language, 'dataQuality.provisional'),
+      class: 'bg-amber-100 text-amber-950 border-amber-300',
+      icon: AlertTriangle
+    };
     switch (plan.robustness) {
       case 'robust':
         return {

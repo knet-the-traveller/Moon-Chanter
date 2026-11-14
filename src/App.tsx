@@ -12,6 +12,8 @@ import { RotationCard } from './components/RotationCard';
 import { ComparisonModal } from './components/ComparisonModal';
 import { MethodologyModal } from './components/MethodologyModal';
 import { PrintablePlan } from './components/PrintablePlan';
+import { hasRequiredSoilInputs } from './engine/soilInputs';
+import { applyFarmerSoilOverride } from './services/soilGrids';
 import {
   ArrowRight,
   ArrowLeft,
@@ -27,8 +29,13 @@ export const App: React.FC = () => {
     recommendedPlans,
     comparedPlanIds,
     setComparisonModalOpen,
-    language
+    language, soilData, soilOverride, climateData, isLoadingTelemetry, advisoryIssuedAt
   } = useAppStore();
+
+  const emptyResultsKey = isLoadingTelemetry ? 'dataQuality.loading'
+    : !soilData || !climateData ? 'dataQuality.missingTelemetry'
+    : !hasRequiredSoilInputs(applyFarmerSoilOverride(soilData, soilOverride)) ? 'dataQuality.missingSoil'
+    : 'results.noPlans';
 
   // Initial load: Fetch telemetry for default pilot region on first render
   useEffect(() => {
@@ -150,7 +157,9 @@ export const App: React.FC = () => {
 
                   <button
                     onClick={() => window.print()}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-stone-950 flex items-center gap-1.5 transition-colors shadow-sm"
+                    disabled={recommendedPlans.length === 0 || advisoryIssuedAt === null}
+                    title={recommendedPlans.length === 0 ? getTranslation(language, 'dataQuality.noPrintablePlan') : undefined}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-stone-950 flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Printer className="w-3.5 h-3.5 text-stone-950" />
                     <span>Print Plan Sheet</span>
@@ -183,7 +192,7 @@ export const App: React.FC = () => {
               {recommendedPlans.length === 0 ? (
                 <div className="bg-white rounded-2xl p-10 text-center border border-stone-200">
                   <p className="text-sm text-stone-600">
-                    {getTranslation(language, 'results.noPlans')}
+                    {getTranslation(language, emptyResultsKey)}
                   </p>
                 </div>
               ) : (

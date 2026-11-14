@@ -3,6 +3,7 @@ import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { applyFarmerSoilOverride } from '../services/soilGrids';
 import { getTranslation } from '../i18n';
+import { hasProvisionalEvidence } from '../data/provenance';
 import { MapPin, Database } from 'lucide-react';
 
 export const PrintablePlan: React.FC = () => {
@@ -75,8 +76,8 @@ export const PrintablePlan: React.FC = () => {
           <div className="space-y-0.5 text-stone-700">
             <div>Annual Rainfall: <strong>{climateData.meanAnnualPrecipitation} mm/yr</strong> (NASA POWER)</div>
             <div>Mean Temp: <strong>{climateData.meanAnnualTemp}°C</strong> (Peak Dry: {climateData.seasonalStats.dryHot.maxTemp}°C)</div>
-            <div>Soil Type: <strong className="capitalize">{effectiveSoil.texture?.replace('_', ' ')}</strong> ({effectiveSoil.drainage} drainage, pH {effectiveSoil.ph})</div>
-            <div>Soil Organic Matter: <strong className="capitalize">{effectiveSoil.organicMatter}</strong></div>
+            <div>Soil Type: <strong className="capitalize">{effectiveSoil.texture?.replace('_', ' ') ?? getTranslation(language, 'provenance.unavailableValue')}</strong> ({effectiveSoil.drainage ?? getTranslation(language, 'provenance.unavailableValue')} drainage, pH {effectiveSoil.ph ?? getTranslation(language, 'provenance.unavailableValue')})</div>
+            <div>Soil Organic Matter: <strong className="capitalize">{effectiveSoil.organicMatter && effectiveSoil.organicMatter !== 'unknown' ? effectiveSoil.organicMatter : getTranslation(language, 'provenance.unavailableValue')}</strong></div>
           </div>
         </div>
       </div>
@@ -88,7 +89,8 @@ export const PrintablePlan: React.FC = () => {
             Recommended 3-Season Rotation Plan (Rank #1)
           </h2>
           <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded">
-            Fit Score: {topPlan.scores.overall}/100 ({topPlan.robustness.toUpperCase()})
+            Fit Score: {topPlan.scores.overall}/100 ({hasProvisionalEvidence(context)
+              ? getTranslation(language, 'dataQuality.provisional') : topPlan.robustness.toUpperCase()})
           </span>
         </div>
 

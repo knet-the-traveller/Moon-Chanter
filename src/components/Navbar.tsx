@@ -4,7 +4,8 @@ import { getTranslation } from '../i18n';
 import { Sprout, Globe, Printer, BookOpen, Share2 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { language, setLanguage, setMethodologyModalOpen } = useAppStore();
+  const { language, setLanguage, setMethodologyModalOpen, recommendedPlans, advisoryIssuedAt } = useAppStore();
+  const canPrint = recommendedPlans.length > 0 && advisoryIssuedAt !== null;
 
   const handlePrint = () => {
     window.print();
@@ -69,8 +70,9 @@ export const Navbar: React.FC = () => {
           {/* Print button */}
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 hover:bg-amber-500 text-stone-950 font-semibold transition-colors shadow-sm"
-            title={getTranslation(language, 'nav.printPlan')}
+            disabled={!canPrint}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 hover:bg-amber-500 text-stone-950 font-semibold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title={getTranslation(language, canPrint ? 'nav.printPlan' : 'dataQuality.noPrintablePlan')}
           >
             <Printer className="w-4 h-4 text-stone-950" />
             <span className="hidden sm:inline">{getTranslation(language, 'nav.printPlan')}</span>

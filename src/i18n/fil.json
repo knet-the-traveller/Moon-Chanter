@@ -66,7 +66,7 @@
     "ph": "Asido o Alat ng Lupa (pH)",
     "organicMatter": "Organikong Sustansya (SOC)",
     "overridePrompt": "Iba ba ang lupa sa iyong sakahan? Piliin upang baguhin:",
-    "overrideReset": "Ibalik sa Datos ng SoilGrids"
+    "overrideReset": "Ibalik ang datos ng pinagmulan"
   },
   "priorities": {
     "title": "Kasaysayan ng Sakahan at mga Hangarin",
@@ -161,7 +161,7 @@
     "derived": "Kailangang suriin sa lokal na lugar ang mga klasipikasyon at tantiya.",
     "chart": "Buwanang ulan at pinakamataas na temperatura · nasa itaas ang panahon ng datos",
     "unavailableValue": "Walang datos",
-    "baseFractions": "Clay / sand ng batayang profile",
+    "baseFractions": "Clay / buhangin",
     "soilAutomated": "Modelo ng lupa / sangguniang profile",
     "phReview": "Tiyakin sa lokal na lugar ang kahulugan ng pH para sa pananim",
     "landPrint": "Sanggunian ng lupain at halaman",
@@ -203,5 +203,18 @@
     "canalTurnouts": "Suriin ang mga labasan ng kanal, iskedyul ng patubig at paagusan kasama ang lokal na tanggapan ng patubig o agrikultura.",
     "compaction": "Suriin ang posibleng siksik na ilalim ng lupang naararo at tiyakin ang sukat ng lupa bago magpasya sa mga gawain.",
     "buyerPrices": "Para sa mga pananim sa plano ({crops}), suriin ang presyo ng mamimili, merkado, paggawa at gastos sa input. Hindi hula sa presyo o ani ang income score."
+  },
+  "dataQuality": {
+    "provisional": "Pansamantalang plano",
+    "provisionalDetail": "Pansamantalang paghahambing: may kulang na datos, halimbawang halaga, o impormasyong kailangan pang tiyakin sa bukid. Paghahambing lamang ng ibinigay na datos ang fit score; hindi ito porsiyento ng katiyakan o pagtataya.",
+    "missingSoil": "Hindi available ang kailangang datos ng lupa. Nakahinto ang pagraranggo hanggang may uri ng lupa, drainage, pH at antas ng organikong materyal. Ipasuri sa lokal na teknikong pang-agrikultura ang kondisyon ng bukid at anumang sariling input.",
+    "scenarioInterpretation": "Ang limang scenario ay mga paghahambing batay sa mga tuntunin, hindi pagtataya o siyentipikong sertipikasyon. Ang katatagan ng resulta ay para lamang sa ibinigay na datos. Pansamantala ang mga plano kung may kulang na datos, halimbawang halaga, o impormasyong kailangan pang tiyakin sa bukid.",
+    "fieldPh": "pH ng lupa sa bukid",
+    "applyPh": "Gamitin ang pH",
+    "invalidPh": "Maglagay ng pH na higit sa 0 at hindi lalampas sa 14.",
+    "phHint": "Ilagay ang resulta ng pagsusuri sa bukid o laboratoryo. Mamarkahan itong input ng magsasaka at kailangan pa ring tiyakin sa lokal na tekniko. I-reset ang mga input upang bumalik sa datos ng pinagmulan.",
+    "loading": "Kinukuha ang datos ng bukid. Lalabas ang mga mungkahi matapos suriin ang mga available na input.",
+    "missingTelemetry": "Hindi available ang datos ng klima o lupa. Bumalik sa Lokasyon ng Bukid at piliin muli ang lokasyon upang subukang muli.",
+    "noPrintablePlan": "Wala pang payong maaaring i-print."
   }
 }

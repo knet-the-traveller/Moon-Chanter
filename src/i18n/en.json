@@ -66,7 +66,7 @@
     "ph": "Soil Reaction (pH)",
     "organicMatter": "Organic Carbon (SOC)",
     "overridePrompt": "Does your field soil differ? Click to override:",
-    "overrideReset": "Reset to SoilGrids"
+    "overrideReset": "Reset to source profile"
   },
   "priorities": {
     "title": "Field History & Farmer Priorities",
@@ -161,7 +161,7 @@
     "derived": "Derived classifications and estimates require local review.",
     "chart": "Monthly rainfall and maximum temperature · source period shown above",
     "unavailableValue": "Unavailable",
-    "baseFractions": "Base-profile clay / sand",
+    "baseFractions": "Clay / sand",
     "soilAutomated": "Soil model / reference profile",
     "phReview": "Verify pH interpretation for the crop locally",
     "landPrint": "Land and vegetation reference",
@@ -203,5 +203,18 @@
     "canalTurnouts": "Check canal turnouts, irrigation schedules and drainage access with the local irrigation or agriculture office.",
     "compaction": "Inspect possible plow-pan compaction and confirm soil measurements before deciding on field operations.",
     "buyerPrices": "For the crops in this plan ({crops}), check local buyer prices, market access, labor and input costs. Income scores are not price or yield forecasts."
+  },
+  "dataQuality": {
+    "provisional": "Provisional plan",
+    "provisionalDetail": "Provisional comparison: some evidence is missing, illustrative or awaiting local verification. Fit scores compare the supplied inputs; they are not confidence percentages or forecasts.",
+    "missingSoil": "Required soil inputs are unavailable. Ranking is paused until texture, drainage, pH and the organic-matter class are available. Check the field conditions and any overrides with a local agricultural technician.",
+    "scenarioInterpretation": "The five scenarios are rule-based sensitivity comparisons, not forecasts or scientific certification. Scenario stability describes the supplied inputs only. Plans remain provisional when evidence is missing, illustrative or awaiting local verification.",
+    "fieldPh": "Field soil pH",
+    "applyPh": "Apply pH",
+    "invalidPh": "Enter a pH greater than 0 and no more than 14.",
+    "phHint": "Enter a field or laboratory reading. It will be labeled farmer-reported and still needs local verification. Reset overrides to return to the source profile.",
+    "loading": "Loading field data. Recommendations will appear after the available inputs have been checked.",
+    "missingTelemetry": "Climate or soil data is unavailable. Return to Locate Farm and select the location again to retry.",
+    "noPrintablePlan": "No advisory is available to print yet."
   }
 }
