@@ -27,4 +27,13 @@ describe('Local GEMINI.md Rule Audit', () => {
     expect(content).toContain('Stay on this branch');
     expect(content).toContain('Spin up a fresh branch');
   });
+
+  it.runIf(hasLocalGemini)('GEMINI.md defines superpowers plan format and execution choice mandate', () => {
+    expect(fs.existsSync(geminiPath)).toBe(true);
+    const content = fs.readFileSync(geminiPath, 'utf-8');
+    expect(content).toContain('Superpowers Plan Format & Execution Choice Mandate');
+    expect(content).toContain('For agentic workers:');
+    expect(content).toContain('Native');
+    expect(content).toContain('Subagent-driven');
+  });
 });
