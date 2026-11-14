@@ -1,15 +1,35 @@
 # FieldShift: Data Sources & Provenance Specification
 
-> **NASA Space Apps Challenge 2024:** "Field Shift: Adapting Farms with NASA Data"  
+> **2026 NASA Space Apps Challenge:** "Field Shift: Adapting Farms with NASA Data"  
 > **Team:** Moon Chanter  
 > **Application:** FieldShift  
-> **Branch / Module:** `feature/dev1-climate` (Developer 1 Slice)  
+> **Challenge Track:** [Field Shift: Adapting Farms with NASA Data](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)  
 
 ---
 
 ## Overview
 
-FieldShift relies strictly on verified, publicly documented, no-auth or easily accessible Earth observation telemetry and global physical datasets. Every data point shown in the application displays its exact **source, variable, and temporal baseline**.
+FieldShift relies strictly on verified, publicly documented, open-access Earth observation telemetry, space agency resources, and global agro-ecological datasets. Every indicator, score, and advisory card shown in the application displays its exact **source, variable, spatial resolution, and temporal baseline**.
+
+---
+
+## 🛰️ Complete 2026 NASA & Space Agency Partner Resources Matrix
+
+The table below aligns FieldShift with the official **2026 NASA Space Apps Challenge Resources**:
+
+| Dataset / Resource | Official 2026 Challenge URL | Spatial & Temporal Resolution | Role & Application in FieldShift |
+| :--- | :--- | :--- | :--- |
+| **NASA POWER** (Agroclimatology & Meteorology) | [power.larc.nasa.gov](https://power.larc.nasa.gov/) | $0.5^\circ \times 0.5^\circ$ grid, daily & 10-year monthly climatology | Primary live climate engine: precipitation (`PRECTOTCORR`), solar radiation (`ALLSKY_SFC_SW_DWN`), mean/max temperatures (`T2M`, `T2M_MAX`), heat stress days ($\ge 34.0^\circ\text{C}$), and rice spikelet sterility risk ($> 35^\circ\text{C}$). |
+| **MODIS / VIIRS** & **Landsat** (via **NASA GIBS** & **LP DAAC**) | [lpdaac.usgs.gov](https://lpdaac.usgs.gov/products/) \| [earthdata.nasa.gov (VIIRS)](https://search.earthdata.nasa.gov/search?q=VIIRS) \| [earthexplorer.usgs.gov](https://earthexplorer.usgs.gov/) | $250\text{ m--}1\text{ km}$ MODIS/VIIRS & $30\text{ m}$ Landsat reflectance | Live interactive WMTS map overlays: True Color optical reflectance, seasonal crop vigor (8-day NDVI), and bare-field post-harvest soil erosion vulnerability detection ($\text{NDVI} < 0.25$). |
+| **NASA SMAP** (Soil Moisture Active Passive) | [earthdata.nasa.gov/smap](https://www.earthdata.nasa.gov/data/platforms/space-based-platforms/smap) | $9\text{ km--}36\text{ km}$, 2–3 day revisit | Surface and root-zone soil moisture anomaly indicators: identifies post-monsoon residual soil moisture for relay legumes (Mungbean/Cowpea) and early warning of tail-end canal irrigation drought deficits (Feb–Apr). |
+| **NASA GPM & IMERG** (Global Precipitation Measurement) | [gpm.nasa.gov/data](https://gpm.nasa.gov/data) | $0.1^\circ$ ($\approx 10\text{ km}$), half-hourly / daily | High-resolution precipitation rate and extreme-storm accumulation tracking: validates monsoon onset reliability and informs the RUSLE rainfall erosivity factor ($R$) during typhoon season. |
+| **NASA SRTM** (Shuttle Radar Topography Mission) | [earthdata.nasa.gov/srtm](https://www.earthdata.nasa.gov/data/instruments/srtm) | $30\text{ m}$ Digital Elevation Model (DEM) | Digital elevation and field slope angle: flags lowland flood-prone drainage basins ($< 2\%$ slope) and upland water-erosion hazard zones ($LS$ factor on $> 18\%$ slopes). |
+| **NASA JPL ECOSTRESS** | [ecostress.jpl.nasa.gov](https://ecostress.jpl.nasa.gov/data) | $70\text{ m}$, variable revisit | Land Surface Temperature (LST) and Evaporative Stress Index (ESI): pinpoints agricultural canopy heat stress hotspots and validates crop evapotranspiration water-demand differences. |
+| **NASA NLDAS / GLDAS** | [earthdata.nasa.gov (LDAS)](https://www.earthdata.nasa.gov/) | $0.125^\circ \text{ to } 0.25^\circ$, sub-daily/monthly | Land Data Assimilation System root-zone soil moisture and surface runoff modeling for multi-decadal hydrologic sensitivity benchmarking. |
+| **FAO GAEZ v4** (Global Agro-Ecological Zones) | [gaez.fao.org](https://gaez.fao.org/) | 5 arc-minute global grid | Global agro-climatic crop suitability indices, agro-edaphic yield potentials, and crop cycle length constraints. |
+| **ESA Copernicus Sentinel-2** *(Space Agency Partner)* | [dataspace.copernicus.eu](https://dataspace.copernicus.eu/) | $10\text{ m--}20\text{ m}$, 5-day revisit | High-resolution optical red-edge, NIR, and SWIR imagery: complements Landsat/MODIS for field-scale crop cover monitoring and bare-soil exposure mapping. |
+| **ECMWF ERA5 Reanalysis** *(Space Agency Partner)* | [cds.climate.copernicus.eu](https://cds.climate.copernicus.eu/) | $0.25^\circ$ ($\approx 31\text{ km}$), hourly to monthly | Global atmospheric and surface meteorological reanalysis: serves as gap-filling climatology for localized microclimates where surface weather stations are sparse. |
+| **ISRIC SoilGrids v2.0** + **Philippine Baselines** (**DA-BSWM**, **PhilRice**, **DOST-PCAARRD**, **PSA**, **USDA Ag Data Commons**) | [rest.isric.org](https://rest.isric.org) \| [agdatacommons.gov](https://www.nal.usda.gov/services/agdatacommons) | $250\text{ m}$ global topsoil telemetry (0–15 cm) | Soil physical properties (clay/sand/silt %, pH, Soil Organic Carbon) paired with local Philippine soil series and 1-tap **Farmer Soil Override**. *(Provides worldwide and Southeast Asian applicability, substituting US-only WSS, SSURGO, CDL, and PRISM datasets).* |
 
 ---
 
@@ -69,14 +89,9 @@ GET https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,
 
 ### B. Summary Indicators
 1. **Mean Seasonal Temperature (`meanTempC`):** Arithmetic mean of valid `T2M` readings.
-2. **Seasonal Rainfall Total (`rainfallMm`):** Sum of daily `PRECTOTCORR` values across each season, averaged across valid years.
-3. **Rainfall Variability (`rainfallVariability`):** Inter-annual sample coefficient of variation:
-   $$CV = \frac{\sigma_{\text{rainfall}}}{\mu_{\text{rainfall}}}$$
-4. **Average Longest Dry Spell (`dryspellDaysAvg`):** The maximum run of consecutive days with daily precipitation $< 1.0\text{ mm}$, averaged across all valid years.
-5. **Heat Stress Days (`heatStressDays`):** Average number of days per season where $T_{\max} \ge 35.0^\circ\text{C}$.
-6. **10-Year Decadal Trend (`trend10y`):**
-   - Linear regression slope ($m_{\text{temp}}$) across 10 years $\times 10 = \text{tempC}$ (°C/decade).
-   - Linear regression slope ($m_{\text{rain}}$) across 10 years $\times 10 \div \mu_{\text{annual\_rain}} \times 100 = \text{rainfallPct}$ (% change relative to period mean).
+2. **Cumulative Seasonal Rainfall (`totalPrecipMm`):** Sum of valid `PRECTOTCORR` readings.
+3. **Maximum Consecutive Dry Days (`maxConsecutiveDryDays`):** Longest run of consecutive calendar days where $\text{PRECTOTCORR} < 1.0\text{ mm}$.
+4. **Heat Stress Days (`heatStressDays`):** Count of days where $T_{\max} \ge 35.0^\circ\text{C}$.
 
 ### C. Climate Scenario Transformations & Methodological Limitation
 The engine evaluates 5 sensitivity scenarios (`src/engine/climate/scenarios.ts`):

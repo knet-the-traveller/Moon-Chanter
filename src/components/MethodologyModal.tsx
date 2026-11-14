@@ -21,7 +21,7 @@ export const MethodologyModal: React.FC = () => {
                 Methodology & Data Provenance
               </h3>
               <p className="text-xs text-stone-500">
-                NASA Space Apps Challenge 2024 · Team Moon Chanter
+                2026 NASA Space Apps Challenge · Team Moon Chanter
               </p>
             </div>
           </div>

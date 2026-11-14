@@ -1,5 +1,12 @@
 # Local Kirby
 NASA-app-Hackathon.code-workspace
+local-docs/*
+docs/superpowers/*
+.superpowers/*
+
+# Worktrees
+.worktrees/
+worktrees/
 
 # Node
 node_modules/
