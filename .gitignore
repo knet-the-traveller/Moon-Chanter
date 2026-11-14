@@ -1,0 +1,13 @@
+# Local Kirby
+NASA-app-Hackathon.code-workspace
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
