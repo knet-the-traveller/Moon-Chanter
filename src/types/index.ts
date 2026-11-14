@@ -1,3 +1,5 @@
+export type { LandSummary, LandMetric, MetricProvenance } from './contracts';
+
 export type Language = 'en' | 'fil';
 
 export interface PilotLocation {

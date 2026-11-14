@@ -1,5 +1,5 @@
 import type { SoilData, SoilTexture, DrainageClass, OrganicMatterLevel } from '../types';
-import { LocalCacheService } from './cache';
+import { LocalCacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import { getNearestSampleSlug } from './nasaPower';
 
 export async function fetchSoilGridsData(lat: number, lon: number): Promise<SoilData> {
@@ -90,7 +90,7 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
       rawSocDgPerKg: socVal
     };
 
-    LocalCacheService.set(cacheKey, soilResult);
+    LocalCacheService.set(cacheKey, soilResult, TELEMETRY_CACHE_TTL_MS);
     return soilResult;
   } catch (err) {
     clearTimeout(timeoutId);

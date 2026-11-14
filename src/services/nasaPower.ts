@@ -1,5 +1,5 @@
 import { PILOT_CONFIG } from '../config/pilot';
-import { CacheService } from './cache';
+import { CacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import type { ClimateData, MonthlyClimatePoint } from '../types';
 
 export interface DailySeries {
@@ -323,7 +323,7 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
       trendDeltaPercent: -2.8
     };
 
-    await CacheService.set(cacheKey, climateResult);
+    await CacheService.set(cacheKey, climateResult, TELEMETRY_CACHE_TTL_MS);
     return climateResult;
   } catch (err) {
     console.warn('[nasaPower] fetchNasaPowerClimate fallback triggered:', err);

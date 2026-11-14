@@ -9,7 +9,8 @@ interface CacheRecord<T> {
   data: T;
 }
 
-const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+export const TELEMETRY_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 30; // Legacy default; telemetry callers pass an explicit TTL.
 const DB_NAME = 'FieldShiftCacheDB';
 const STORE_NAME = 'climateCache';
 const DB_VERSION = 1;

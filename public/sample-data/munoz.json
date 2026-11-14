@@ -55,5 +55,48 @@
     "rawClayPercent": 36.5,
     "rawSandPercent": 28.2,
     "rawSocDgPerKg": 142
+  },
+  "land": {
+    "slopePct": 1.8,
+    "ndviMonthly": [
+      0.6,
+      0.5,
+      0.2,
+      0.15,
+      0.2,
+      0.4,
+      0.6,
+      0.7,
+      0.7,
+      0.65,
+      0.6,
+      0.55
+    ],
+    "annualNdvi": [],
+    "rusle": {
+      "R": 1000,
+      "K": 0.03,
+      "LS": 0.4,
+      "P": 1,
+      "units": {
+        "R": "MJ mm ha-1 h-1 yr-1",
+        "K": "t ha h ha-1 MJ-1 mm-1",
+        "LS": "dimensionless",
+        "P": "dimensionless"
+      }
+    },
+    "landCover": "cropland",
+    "meta": {
+      "source": "Illustrative municipal land scenario",
+      "variable": "terrain, NDVI, RUSLE factors",
+      "spatialResolution": null,
+      "dateRange": null,
+      "isSample": true,
+      "isSynthetic": true,
+      "needsReview": true,
+      "note": "Synthetic demonstration slope, NDVI and RUSLE factors. Existing preset elevation is unverified. Verify elevation/slope with SRTM or a local survey, NDVI with quality-controlled MODIS/VIIRS observations, and erosion factors with DA-BSWM or local technicians. No field measurements or satellite retrieval are claimed.",
+      "retrievedOn": null,
+      "createdOn": "2026-11-14"
+    }
   }
 }
