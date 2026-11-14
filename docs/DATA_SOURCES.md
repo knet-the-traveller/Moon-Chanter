@@ -3,6 +3,7 @@
 > **NASA Space Apps Challenge 2024:** "Field Shift: Adapting Farms with NASA Data"  
 > **Team:** Moon Chanter  
 > **Application:** FieldShift  
+> **Branch / Module:** `feature/dev1-climate` (Developer 1 Slice)  
 
 ---
 
@@ -12,99 +13,108 @@ FieldShift relies strictly on verified, publicly documented, no-auth or easily a
 
 ---
 
-## 1. Primary Live Climate Source: NASA POWER API
+## 1. Primary Live Climate Source: NASA POWER Daily Point API
 
 - **Organization:** NASA Langley Research Center (LaRC)
 - **Service Name:** Prediction of Worldwide Energy Resources (POWER) API
-- **Endpoint Format:** `https://power.larc.nasa.gov/api/temporal/climatology/point` & `https://power.larc.nasa.gov/api/temporal/daily/point`
+- **Endpoint Format:** `https://power.larc.nasa.gov/api/temporal/daily/point`
 - **Community:** Agroclimatology (`AG`)
 - **Spatial Resolution:** 0.5° × 0.5° latitude/longitude grid (~55 km at the equator)
-- **Temporal Baseline:** Multi-decadal climatology (1984–2023 long-term baseline; 2013–2023 10-year rolling climatology)
+- **Temporal Baseline:** 10 most recent complete calendar years (2014-01-01 to 2023-12-31, 3,652 daily records)
 - **License / Access:** Public Domain (No API key required)
+
+### Query Parameters
+
+```http
+GET https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,PRECTOTCORR,RH2M,ALLSKY_SFC_SW_DWN&community=AG&longitude=120.9060&latitude=15.7140&start=20140101&end=20231231&format=JSON
+```
 
 ### Variables Queried
 
 | Parameter | Full Name | Units | Application in FieldShift |
 |---|---|---|---|
 | `T2M` | Temperature at 2 Meters | °C | Mean annual and seasonal temperature baseline |
-| `T2M_MAX` | Maximum Temperature at 2 Meters | °C | Heat stress threshold detection ($T_{\max} > 34.0^\circ\text{C}$) |
-| `T2M_MIN` | Minimum Temperature at 2 Meters | °C | Diurnal temperature range & cool-dry season limits |
-| `PRECTOTCORR` | Corrected Total Precipitation | mm/day $\to$ mm/month | Monthly & seasonal rainfall envelopes, dry spell detection |
+| `T2M_MAX` | Maximum Temperature at 2 Meters | °C | Heat stress threshold detection ($T_{\max} \ge 35.0^\circ\text{C}$) |
+| `PRECTOTCORR` | Corrected Total Precipitation | mm/day | Daily, seasonal, and annual rainfall sums; dry-spell runs |
 | `ALLSKY_SFC_SW_DWN` | All Sky Surface Shortwave Downward Irradiance | $\text{MJ}/\text{m}^2/\text{day}$ | Solar radiation & crop photosynthetic potential |
-| `RH2M` | Relative Humidity at 2 Meters | % | Disease susceptibility (fungal / bacterial pressure) |
+| `RH2M` | Relative Humidity at 2 Meters | % | Atmospheric moisture & foliar disease pressure |
 
-### Derived Agro-Climatic Indicators
-1. **Seasonal Rainfall Totals:**
-   - Wet Season (Habagat, Jun–Nov)
-   - Cool Dry Season (Amihan, Dec–Feb)
-   - Hot Dry Season (Mar–May)
-2. **Heat Stress Days Per Year:** Count of months where $T_{\max} \ge 34.5^\circ\text{C}$ multiplied by critical flowering days.
-3. **Dry Spell Vulnerability:** Ratio of Hot Dry rainfall to baseline crop evapotranspiration demand ($< 200\text{ mm}$ triggers high risk).
-4. **Decadal Trend:** 10-year precipitation trajectory percentage delta ($\Delta\%$).
+### Missing-Value Fill Code Handling
+- NASA POWER encodes missing values using `-999` or `-999.00`.
+- In `src/services/nasaPower.ts`, any value $\le -900$, `null`, `undefined`, or `NaN` is explicitly sanitized to `null`.
+- Missing days are never treated as zeros ($0\text{ mm}$ or $0^\circ\text{C}$). If any seasonal cycle has $>20\%$ missing days (`PILOT_CONFIG.thresholds.maxMissingDayFraction`), it is excluded from the multi-year seasonal average.
+
+### Resilience & Fallback Hierarchy
+1. **Tier 1 — Live API (`tier: 'live'`, `isSample: false`):**
+   - 15-second timeout with `AbortController`.
+   - Up to 2 retries with exponential backoff (`1000ms`, `2000ms`).
+   - No retry on 4xx client errors (400, 404).
+   - Successful responses are saved in the persistent cache with a 30-day TTL.
+2. **Tier 2 — Cache (`tier: 'cache'`, `isSample: false`):**
+   - Dual-layer storage: IndexedDB (preferred) and `localStorage` with in-memory synchronization (`src/services/cache.ts`).
+   - Safe `try/catch` wrapper guaranteed to never throw into callers.
+3. **Tier 3 — Bundled Sample (`tier: 'sample'`, `isSample: true`):**
+   - Bundled raw NASA POWER payload at `public/sample-data/nasa-power-pilot.json` (3,652 verified records for Muñoz, Nueva Ecija).
+   - Generated using `scripts/fetch-sample-power.ts`.
+   - The UI and contract mark `isSample: true` only when this fallback tier is actively serving the data.
 
 ---
 
-## 2. Satellite Earth Observation Imagery: NASA GIBS
+## 2. Derived Climate Summary & Methodology
+
+### A. Seasonal Boundaries
+- **Wet Season:** June 1 to November 30 (Months 6–11).
+- **Dry Season:** December 1 to May 31 (Months 12, 1–5).
+  - *Year Boundary Handling:* December of year $Y$ is grouped together with January through May of year $Y+1$ into a single cross-year dry season cycle (e.g. `2014-2015-dry`).
+
+### B. Summary Indicators
+1. **Mean Seasonal Temperature (`meanTempC`):** Arithmetic mean of valid `T2M` readings.
+2. **Seasonal Rainfall Total (`rainfallMm`):** Sum of daily `PRECTOTCORR` values across each season, averaged across valid years.
+3. **Rainfall Variability (`rainfallVariability`):** Inter-annual sample coefficient of variation:
+   $$CV = \frac{\sigma_{\text{rainfall}}}{\mu_{\text{rainfall}}}$$
+4. **Average Longest Dry Spell (`dryspellDaysAvg`):** The maximum run of consecutive days with daily precipitation $< 1.0\text{ mm}$, averaged across all valid years.
+5. **Heat Stress Days (`heatStressDays`):** Average number of days per season where $T_{\max} \ge 35.0^\circ\text{C}$.
+6. **10-Year Decadal Trend (`trend10y`):**
+   - Linear regression slope ($m_{\text{temp}}$) across 10 years $\times 10 = \text{tempC}$ (°C/decade).
+   - Linear regression slope ($m_{\text{rain}}$) across 10 years $\times 10 \div \mu_{\text{annual\_rain}} \times 100 = \text{rainfallPct}$ (% change relative to period mean).
+
+### C. Climate Scenario Transformations & Methodological Limitation
+The engine evaluates 5 sensitivity scenarios (`src/engine/climate/scenarios.ts`):
+- `baseline`: Unmodified NASA POWER series.
+- `hotter`: $+1.5^\circ\text{C}$ added to `T2M` and `T2M_MAX`.
+- `drier`: Daily `PRECTOTCORR` multiplied by $0.85$ (15% reduction).
+- `wetter`: Daily `PRECTOTCORR` multiplied by $1.15$ (15% increase).
+- `hotter_drier`: Compound shock ($+1.5^\circ\text{C}$ and $0.85\times$ rainfall).
+
+> **Important Limitation Notice:**
+> Scaling daily rainfall by a constant factor alters seasonal totals and threshold crossings, but preserves rainfall occurrence frequency and the underlying dry-spell sequence lengths. Consequently, dry-spell durations under scenarios are sensitivity approximations, not dynamical weather forecasts. These are what-if sensitivity tests, not forecasts.
+
+---
+
+## 3. Satellite Earth Observation Imagery: NASA GIBS
 
 - **Organization:** NASA Earth Observing System Data and Information System (EOSDIS)
 - **Service Name:** Global Imagery Browse Services (GIBS)
 - **Protocol:** WMTS / XYZ EPSG:3857 Tile Matrix
 - **License / Access:** Public Domain / Open Data
 
-### Tile Layers Implemented
-
+### Tile Layers
 1. **MODIS Terra Corrected Reflectance (True Color):**
-   - Tile URL: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`
-   - Purpose: Real optical satellite imagery showing terrain, water bodies, and vegetation canopy.
+   - Optical true-color satellite reflectance showing terrain and field canopy.
 2. **MODIS Terra NDVI (8-Day Composite):**
-   - Tile URL: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png`
-   - Purpose: Normalized Difference Vegetation Index indicating crop health and greenness (dark green = vigorous canopy; yellow/brown = bare/fallow soil).
+   - Normalized Difference Vegetation Index indicating vegetative vigor and greenness.
 
 ---
 
-## 3. Supplementary Soil Physical Properties: ISRIC SoilGrids 2.0
+## 4. Supplementary Soil Physical Properties: ISRIC SoilGrids 2.0
 
-- **Organization:** International Soil Reference and Information Centre (ISRIC) - World Soil Information
+- **Organization:** International Soil Reference and Information Centre (ISRIC)
 - **Endpoint:** `https://rest.isric.org/soilgrids/v2.0/properties/query`
-- **Spatial Resolution:** 250-meter global machine learning model
-- **Depths Sampled:** 0–5 cm and 5–15 cm (topsoil root zone mean)
-- **License:** CC BY 4.0
-
-### Properties Retrieved
-
-| Property | Description | Original Unit | FieldShift Conversion |
-|---|---|---|---|
-| `clay` | Clay content (< 2 µm) | g/kg | Converted to % ($\div 10$) |
-| `sand` | Sand content (> 50 µm) | g/kg | Converted to % ($\div 10$) |
-| `silt` | Silt content (2–50 µm) | g/kg | Converted to % ($\div 10$) |
-| `phh2o` | Soil pH in $H_2O$ | $\text{pH} \times 10$ | Converted to standard pH scale ($\div 10$) |
-| `soc` | Soil Organic Carbon | dg/kg | Low ($<1\%$), Medium ($1–2.5\%$), High ($>2.5\%$) |
-
-*Note: In accordance with smallholder reality, farmers can override any automated soil classification with a single click.*
+- **Resolution:** 250m global model
+- **Properties:** Clay, sand, silt %, pH ($H_2O$), and Soil Organic Carbon (SOC) at 0–15 cm root depth.
 
 ---
 
-## 4. Local Agronomic Knowledge Base: `crops.json`
+## 5. Local Agronomic Knowledge Base: `crops.json`
 
-FieldShift curates 12 representative crops cultivated across the Philippine archipelago:
-- **Lowland Rice (*Palay*)**, **Corn / Maize (*Mais*)**, **Mungbean (*Munggo*)**, **Peanut (*Mani*)**, **Sweet Potato (*Kamote*)**, **Eggplant (*Talong*)**, **Cassava (*Kamoteng Kahoy*)**, **Cowpea (*Paayap*)**, **Soybean (*Soya*)**, **Tomato (*Kamatis*)**, **Bitter Gourd (*Ampalaya*)**, and **Sunn Hemp (*Cover Legume*)**.
-
-### Citations & Authorities
-- Philippine Rice Research Institute (PhilRice) PalayCheck System
-- Department of Agriculture - Bureau of Plant Industry (DA-BPI) Production Guides
-- Department of Agriculture - Bureau of Agricultural Research (DA-BAR)
-- DOST - PCAARRD Commodity Technical Bulletins
-- Food and Agriculture Organization (FAO) Crop Water Information Database
-- International Potato Center (CIP) & AVRDC Tropical Legumes Compendium
-
----
-
-## 5. Offline Resiliency & Caching Architecture
-
-1. **Persistent Cache (`src/services/cache.ts`):** All API responses are stored in `localStorage` with a 7-day TTL.
-2. **6.5s Fetch Timeout:** Built-in `AbortController` handles slow 2G/3G connectivity typical in rural farm settings.
-3. **Bundled Fallback Datasets (`/public/sample-data/`):**
-   - `munoz.json`: Science City of Muñoz, Nueva Ecija (Central Luzon)
-   - `ilagan.json`: Ilagan City, Isabela (Cagayan Valley)
-   - `pototan.json`: Pototan, Iloilo (Western Visayas)
-4. **Visual Data Provenance:** When fallback data is used, an amber `"Using verified local sample data"` badge is prominently displayed.
+Curates 12 representative crops cultivated across the Philippine archipelago with citations from PhilRice, DA-BPI, PCARRD, and FAO.

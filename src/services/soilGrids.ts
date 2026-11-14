@@ -4,7 +4,7 @@ import { getNearestSampleSlug } from './nasaPower';
 
 export async function fetchSoilGridsData(lat: number, lon: number): Promise<SoilData> {
   const cacheKey = `soilgrids_${lat.toFixed(3)}_${lon.toFixed(3)}`;
-  const cached = LocalCacheService.get<SoilData>(cacheKey);
+  const cached = await LocalCacheService.get<SoilData>(cacheKey);
   if (cached) {
     return cached;
   }
