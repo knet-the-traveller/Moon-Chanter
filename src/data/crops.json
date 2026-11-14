@@ -79,10 +79,10 @@
       "minPh": 5.8,
       "maxPh": 7.2
     },
-    "breakDiseaseFamilies": ["grass", "solanaceae"],
-    "notes": "Ideal post-rice catch crop. Fixes 30-60 kg N/ha into the soil, breaks stem-borer cycles, and matures in just 60-65 days with minimal residual moisture.",
+    "breakDiseaseFamilies": ["grass", "solanaceae", "amaryllidaceae"],
+    "notes": "Ideal post-rice relay/catch crop (Pag-asa cultivar). Rhizobium inoculation fixes 35-80 kg N/ha into the soil, consumes only ~300-350 mm water vs. >1,000 mm for lowland rice, breaks stem-borer cycles, and matures in 60-65 days.",
     "sources": [
-      "DA-PhilRice & BPI (Bureau of Plant Industry) Mungbean Production Guide",
+      "DA-PhilRice & BPI (Bureau of Plant Industry) Pag-asa Mungbean Production Guide",
       "AVRDC (World Vegetable Center) Legume Handbook"
     ]
   },
@@ -346,6 +346,63 @@
     "sources": [
       "FAO Cover Crop & Organic Matter Bulletin",
       "PhilRice Sustainable Soil Management Series"
+    ]
+  },
+  {
+    "id": "onion",
+    "name": { "en": "Bulb Onion (Red Creole)", "local": "Sibuyas" },
+    "family": "amaryllidaceae",
+    "nitrogenFixing": false,
+    "rootDepth": "shallow",
+    "waterDemand": "medium",
+    "droughtTolerance": "low",
+    "floodTolerance": "low",
+    "heatTolerance": "medium",
+    "seasonLengthDays": 100,
+    "plantingWindows": ["dry_cool"],
+    "residueBenefit": "low",
+    "laborIntensity": "high",
+    "inputCost": "high",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam", "clay"],
+      "drainage": ["well", "moderate"],
+      "minPh": 6.0,
+      "maxPh": 7.0
+    },
+    "breakDiseaseFamilies": ["grass", "legume", "solanaceae"],
+    "notes": "High-value cool-dry commercial crop for Nueva Ecija and Ilocos rice basins (Red Creole). Must alternate with non-Allium crops to prevent soil-borne Purple Blotch and Fusarium basal rot.",
+    "sources": [
+      "DA-BPI & PhilRice High-Value Commercial Crops (Onion) Guide",
+      "CLSU Nueva Ecija Allium Production Compendium"
+    ]
+  },
+  {
+    "id": "fallow",
+    "name": { "en": "Bare Fallow / Stubble", "local": "Bakanteng Lupa" },
+    "family": "fallow",
+    "nitrogenFixing": false,
+    "rootDepth": "shallow",
+    "waterDemand": "low",
+    "droughtTolerance": "high",
+    "floodTolerance": "medium",
+    "heatTolerance": "high",
+    "seasonLengthDays": 75,
+    "plantingWindows": [],
+    "residueBenefit": "low",
+    "laborIntensity": "low",
+    "inputCost": "low",
+    "marketTier": "low",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam", "clay"],
+      "drainage": ["well", "moderate", "poor"],
+      "minPh": 4.0,
+      "maxPh": 8.5
+    },
+    "breakDiseaseFamilies": [],
+    "notes": "Baseline dry-season bare or stubble rest period used in conventional monoculture benchmarks; leaves upland slopes exposed to high RUSLE erosion (C -> 1.0) when unmulched.",
+    "sources": [
+      "PhilRice & BSWM Conventional Cropping System Benchmark"
     ]
   }
 ]
