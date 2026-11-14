@@ -1,3 +1,8 @@
+import { contextProvenance, formatProvenance, formatLocalReview, hasProvisionalEvidence } from '../data/provenance';
+import { generateLocalReviewChecklist } from '../engine/explainer';
+import type { PlanDataContext } from '../data/provenance';
+import type { Language } from '../types';
+import { applyFarmerSoilOverride } from '../services/soilGrids';
 import React, { useState } from 'react';
 import type { RotationPlan } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -15,16 +20,52 @@ import {
   Sparkles
 } from 'lucide-react';
 
+export const PlanDataEvidence: React.FC<{ context: PlanDataContext; language: Language; forPrint?: boolean }> = ({ context, language, forPrint }) => (
+  <>
+    {hasProvisionalEvidence(context) && <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950 print:break-inside-avoid">
+      {getTranslation(language, 'dataQuality.provisionalDetail')}
+    </p>}
+    <details open={forPrint || undefined} className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words print:break-inside-auto">
+      <summary className="cursor-pointer font-bold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
+        {getTranslation(language, 'provenance.title')}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {contextProvenance(context).map(({ key, metadata }) => <li key={key} className="print:break-inside-avoid">{formatProvenance(language, metadata)}</li>)}
+      </ul>
+      {context.land && !context.land.ndvi.trendAvailable && <p className="mt-2 font-semibold">{getTranslation(language, 'land.insufficientTrendData')}</p>}
+      <p className="mt-2 font-semibold">{getTranslation(language, 'provenance.derived')}</p>
+    </details>
+  </>
+);
+
 interface RotationCardProps {
   plan: RotationPlan;
   rank: number;
 }
 
+export const LocalReviewChecklist: React.FC<{ plan: RotationPlan; context: PlanDataContext; language: Language; forPrint?: boolean }> = ({ plan, context, language, forPrint }) => {
+  const Heading = forPrint ? 'h3' : 'h4';
+  return (
+    <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-stone-900 print:break-inside-auto">
+      <Heading className="font-bold text-amber-950">{getTranslation(language, 'localReview.title')}</Heading>
+      <ul className="mt-2 list-disc space-y-2 pl-5 leading-relaxed">
+        {generateLocalReviewChecklist(plan, context).map(item => {
+          const descriptor = item.id === 'buyerPrices' ? { ...item, params: { ...item.params,
+            crops: [...new Set(plan.seasons.filter(season => season.crop.family !== 'fallow')
+              .map(season => language === 'fil' ? season.crop.name.local : season.crop.name.en))].join(', ') } } : item;
+          return <li key={item.id} className="print:break-inside-avoid">{formatLocalReview(language, descriptor)}</li>;
+        })}
+      </ul>
+    </section>
+  );
+};
+
 export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
-  const { language, activeScenario, comparedPlanIds, togglePlanComparison } = useAppStore();
+  const { language, activeScenario, comparedPlanIds, togglePlanComparison, climateData, soilData, soilOverride, landSummary } = useAppStore();
   const [isWhyExpanded, setIsWhyExpanded] = useState(false);
   const [isRisksExpanded, setIsRisksExpanded] = useState(false);
 
+  const context: PlanDataContext = { climate: climateData, soil: soilData ? applyFarmerSoilOverride(soilData, soilOverride) : null, land: landSummary };
   const isComparing = comparedPlanIds.includes(plan.id);
   const currentScenarioScore = plan.scenarioScores[activeScenario];
   const baselineScore = plan.scenarioScores.baseline;
@@ -32,6 +73,11 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
 
   // Robustness badge style
   const getRobustnessBadge = () => {
+    if (hasProvisionalEvidence(context)) return {
+      label: getTranslation(language, 'dataQuality.provisional'),
+      class: 'bg-amber-100 text-amber-950 border-amber-300',
+      icon: AlertTriangle
+    };
     switch (plan.robustness) {
       case 'robust':
         return {
@@ -270,6 +316,8 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
           </div>
         </div>
 
+        <PlanDataEvidence context={context} language={language} />
+        <LocalReviewChecklist plan={plan} context={context} language={language} />
         {/* Expandable Reasons & Risks Accordions */}
         <div className="mt-4 pt-3 border-t border-stone-100 flex flex-col gap-2">
           {/* Why this plan button */}
@@ -295,7 +343,7 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
                     {language === 'fil' ? reason.textFil : reason.textEn}
                   </p>
                   <p className="text-[11px] text-emerald-700/90 mt-1 italic">
-                    ↳ Evidence: {reason.dataEvidence}
+                    ↳ Evidence: {reason.dataEvidence}<br />{getTranslation(language, 'provenance.evidence')}: {getTranslation(language, 'provenance.title')}
                   </p>
                 </div>
               ))}

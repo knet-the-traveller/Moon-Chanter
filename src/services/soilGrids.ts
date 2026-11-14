@@ -1,3 +1,4 @@
+import { buildSoilProvenance, cachedProvenance, soilProvenance, ProvenanceRecordSchema } from '../data/provenance';
 import { z } from 'zod';
 import type {
   SoilData,
@@ -8,6 +9,7 @@ import type {
 } from '../types';
 import { LocalCacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import { getNearestSampleSlug } from './nasaPower';
+import { CoordinatesSchema } from '../types/landFixture';
 
 const SoilTextureSchema = z.enum([
   'clay',
@@ -23,50 +25,54 @@ const PhosphorusFixationRiskSchema = z.enum(['low', 'moderate', 'high']);
 
 const SoilDataSchema = z.object({
   source: z.string(),
-  texture: SoilTextureSchema,
-  drainage: DrainageClassSchema,
+  provenance: ProvenanceRecordSchema.optional(),
+  texture: SoilTextureSchema.nullable(),
+  drainage: DrainageClassSchema.nullable(),
   organicMatter: OrganicMatterLevelSchema,
-  ph: z.number(),
+  ph: z.number().gt(0).max(14).nullable(),
   isEstimate: z.boolean(),
-  rawClayPercent: z.number().optional(),
-  rawSandPercent: z.number().optional(),
-  rawSocDgPerKg: z.number().optional(),
-  bulkDensityGcm3: z.number().optional(),
+  rawClayPercent: z.number().min(0).max(100).optional(),
+  rawSandPercent: z.number().min(0).max(100).optional(),
+  rawSocDgPerKg: z.number().min(0).max(10000).optional(),
+  bulkDensityGcm3: z.number().positive().optional(),
   phosphorusFixationRisk: PhosphorusFixationRiskSchema.optional(),
-  slopePct: z.number().optional(),
+  slopePct: z.number().nonnegative().optional(),
   needsReview: z.boolean().optional(),
   reviewNote: z.string().optional()
 });
 
 const SoilGridsApiPayloadSchema = z.object({
-  properties: z.object({
-    layers: z.array(
-      z.object({
-        name: z.string(),
-        depths: z
-          .array(
-            z.object({
-              values: z
-                .object({
-                  mean: z.number().nullable().optional()
-                })
-                .optional()
-            })
-          )
-          .optional()
-      })
-    )
-  })
+  properties: z.object({ layers: z.array(z.unknown()) })
+});
+const LayerNameSchema = z.object({ name: z.string() });
+const SoilLayerSchema = z.object({
+  depths: z.array(z.object({
+    label: z.string(),
+    values: z.object({ mean: z.number().nullable().optional() }).optional()
+  }))
 });
 
+const SoilOverrideSchema = SoilDataSchema.pick({
+  texture: true, drainage: true, organicMatter: true, ph: true,
+  rawClayPercent: true, rawSandPercent: true, rawSocDgPerKg: true,
+  bulkDensityGcm3: true, phosphorusFixationRisk: true, slopePct: true
+}).partial();
+
+export function parseFarmerSoilOverride(input: unknown): Partial<SoilData> | null {
+  const parsed = SoilOverrideSchema.safeParse(input);
+  if (!parsed.success) return null;
+  const fields = Object.entries(parsed.data).filter(([, value]) => value !== undefined);
+  return fields.length ? Object.fromEntries(fields) : null;
+}
+
 const FallbackFixtureSchema = z.object({
-  location: z.object({ name: z.string() }),
-  soil: SoilDataSchema
+  location: z.object({ name: z.string(), lat: z.number().min(-90).max(90).optional(), lon: z.number().min(-180).max(180).optional() }),
+  soil: SoilDataSchema.extend({ texture: SoilTextureSchema, drainage: DrainageClassSchema, ph: z.number().gt(0).max(14) })
 });
 
 /**
- * Derive phosphorus fixation risk from soil pH.
- * Acid Ultisols (pH < 5.5) bind available P below the 16 ppm Bray No. 2 threshold.
+ * Legacy pH-only risk screen, retained for compatibility.
+ * This is not a phosphorus measurement; the classification needs local validation.
  */
 export function derivePhosphorusFixationRisk(ph: number): PhosphorusFixationRisk {
   if (ph < 5.5) return 'high';
@@ -75,8 +81,8 @@ export function derivePhosphorusFixationRisk(ph: number): PhosphorusFixationRisk
 }
 
 /**
- * Estimate fallback bulk density (g/cm3) from texture when SoilGrids `bdod` is absent.
- * Values > 1.4 g/cm3 reflect lowland plow-pan compaction in heavy clay paddies.
+ * Legacy illustrative estimate retained for existing callers.
+ * API ingestion does not use it; these values do not establish field compaction.
  */
 export function estimateBulkDensityFromTexture(texture: SoilTexture): number {
   if (texture === 'clay') return 1.44;
@@ -89,35 +95,52 @@ export function estimateBulkDensityFromTexture(texture: SoilTexture): number {
  */
 export function applyFarmerSoilOverride(
   baseSoil: SoilData,
-  override: Partial<SoilData> | null
+  input: Partial<SoilData> | null
 ): SoilData {
-  if (!override || Object.keys(override).length === 0) {
+  const override = parseFarmerSoilOverride(input);
+  if (!override) {
     return baseSoil;
   }
 
-  const mergedPh = override.ph ?? baseSoil.ph;
-  const phosphorusFixationRisk =
-    override.phosphorusFixationRisk ??
-    (override.ph !== undefined
-      ? derivePhosphorusFixationRisk(mergedPh)
-      : baseSoil.phosphorusFixationRisk ?? derivePhosphorusFixationRisk(mergedPh));
+  const mergedPh = override.ph !== undefined ? override.ph : baseSoil.ph;
+  const phosphorusFixationRisk = override.phosphorusFixationRisk
+    ?? (override.ph !== undefined
+      ? (mergedPh === null ? undefined : derivePhosphorusFixationRisk(mergedPh))
+      : baseSoil.phosphorusFixationRisk ?? (mergedPh === null ? undefined : derivePhosphorusFixationRisk(mergedPh)));
 
-  return {
-    ...baseSoil,
-    ...override,
-    ph: mergedPh,
-    phosphorusFixationRisk
-  };
+  const provenance = soilProvenance(baseSoil);
+  for (const key of Object.keys(provenance) as Array<keyof typeof provenance>) {
+    if (override[key] !== undefined || (key === 'phosphorusFixationRisk' && override.ph !== undefined)) {
+      const derivedFromOverridePh = key === 'phosphorusFixationRisk' && override.phosphorusFixationRisk === undefined && override.ph !== undefined;
+      provenance[key] = { ...provenance[key], source: 'Farmer-reported field input', tier: 'farmer',
+        variable: derivedFromOverridePh ? 'pH → phosphorusFixationRisk' : key,
+        cached: false, retrievedAt: null, productVersion: null, citation: undefined,
+        isSample: false, isSynthetic: false, spatialResolution: null, dateRange: null, depth: null,
+        sampleLocation: undefined, needsReview: true,
+        methodKey: derivedFromOverridePh ? 'provenance.methods.phosphorusFixationRisk' : 'provenance.methods.override',
+        method: derivedFromOverridePh ? 'Existing pH-based classification applied to farmer input.' : 'Farmer override; not a laboratory-verified observation.',
+        note: 'Confirm field input and any derived classification with a local agricultural technician.' };
+    }
+  }
+  const result = { ...baseSoil, ...override, ph: mergedPh, phosphorusFixationRisk, provenance };
+  return { ...result, provenance: soilProvenance(result) };
 }
 
+// A new namespace ignores every legacy cached profile containing numeric substitutes.
+function hasSourceReadings(profile: SoilData): boolean {
+  return profile.ph !== null || [profile.rawClayPercent, profile.rawSandPercent,
+    profile.rawSocDgPerKg, profile.bulkDensityGcm3].some(value => value !== undefined);
+}
+const SoilCacheSchema = z.object({ schemaVersion: z.literal(2), profile: SoilDataSchema })
+  .refine(({ profile }) => hasSourceReadings(profile), 'Cached profile has no usable source readings');
+export const soilCacheKey = (lat: number, lon: number) => `soilgrids_v2_${lat.toFixed(4)}_${lon.toFixed(4)}`;
+
 export async function fetchSoilGridsData(lat: number, lon: number): Promise<SoilData> {
-  const cacheKey = `soilgrids_${lat.toFixed(3)}_${lon.toFixed(3)}`;
-  const cachedRaw = await LocalCacheService.get<unknown>(cacheKey);
-  if (cachedRaw) {
-    const parsedCache = SoilDataSchema.safeParse(cachedRaw);
-    if (parsedCache.success && parsedCache.data.bulkDensityGcm3 !== undefined) {
-      return parsedCache.data;
-    }
+  CoordinatesSchema.parse({ lat, lon });
+  const cacheKey = soilCacheKey(lat, lon);
+  const cached = SoilCacheSchema.safeParse(await LocalCacheService.get<unknown>(cacheKey));
+  if (cached.success) {
+    return { ...cached.data.profile, provenance: cachedProvenance(soilProvenance(cached.data.profile)) };
   }
 
   const controller = new AbortController();
@@ -125,100 +148,80 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
 
   try {
     const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon.toFixed(4)}&lat=${lat.toFixed(4)}&property=clay&property=sand&property=silt&property=phh2o&property=soc&property=bdod&depth=0-5cm&depth=5-15cm&value=mean`;
-
     const response = await fetch(url, { signal: controller.signal });
-
-    if (!response.ok) {
-      throw new Error(`ISRIC SoilGrids HTTP ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`ISRIC SoilGrids HTTP ${response.status}`);
     const rawJson: unknown = await response.json();
-    const parsedPayload = SoilGridsApiPayloadSchema.safeParse(rawJson);
-    if (!parsedPayload.success) {
-      throw new Error('Invalid SoilGrids payload');
-    }
+    const parsedPayload = SoilGridsApiPayloadSchema.parse(rawJson);
+    const layers = parsedPayload.properties.layers;
 
-    const layers = parsedPayload.data.properties.layers;
-
-    const getLayerMean = (name: string): number => {
-      const layer = layers.find((l) => l.name === name);
-      if (!layer || !layer.depths || layer.depths.length === 0) return 0;
-      const values = layer.depths
-        .map((d) => d.values?.mean)
-        .filter((v): v is number => v !== undefined && v !== null);
-      if (values.length === 0) return 0;
-      return values.reduce((a, b) => a + b, 0) / values.length;
+    // Missing, nodata and out-of-domain values stay absent. Zero is valid for
+    // fractions and SOC; pH and bulk density must be positive. Units: ISRIC FAQ.
+    const getLayerMean = (name: string, max?: number, positive = false): number | undefined => {
+      const matches = layers.filter(layer => {
+        const identity = LayerNameSchema.safeParse(layer);
+        return identity.success && identity.data.name === name;
+      });
+      if (matches.length !== 1) return undefined;
+      const parsed = SoilLayerSchema.safeParse(matches[0]);
+      if (!parsed.success) return undefined;
+      const depths = parsed.data.depths;
+      const selectedDepths = ['0-5cm', '5-15cm'].map(label => depths.filter(depth => depth.label === label));
+      if (selectedDepths.some(matches => matches.length !== 1)) return undefined;
+      const values = selectedDepths.map(([depth]) => depth.values?.mean);
+      if (!values.every((value): value is number => value !== undefined && value !== null
+        && Number.isFinite(value) && (positive ? value > 0 : value >= 0) && (max === undefined || value <= max))) return undefined;
+      // Preserve the existing unweighted method; do not silently drop missing depths.
+      const mean = values.reduce((sum, value) => sum + value / values.length, 0);
+      return Number.isFinite(mean) ? mean : undefined;
     };
-
-    const clayVal = getLayerMean('clay'); // g/kg
-    const sandVal = getLayerMean('sand'); // g/kg
-    const siltVal = getLayerMean('silt'); // g/kg
-    const phVal = getLayerMean('phh2o'); // pH * 10
-    const socVal = getLayerMean('soc'); // dg/kg
-    const bdodVal = getLayerMean('bdod'); // cg/cm3
-
-    const clayPct = Number((clayVal / 10).toFixed(1));
-    const sandPct = Number((sandVal / 10).toFixed(1));
-    const siltPct = Number((siltVal / 10).toFixed(1));
-    const ph = phVal > 0 ? Number((phVal / 10).toFixed(1)) : 6.2;
-
-    // Classify texture
-    let texture: SoilTexture = 'loam';
-    let drainage: DrainageClass = 'moderate';
-
-    if (clayPct >= 38) {
-      texture = 'clay';
-      drainage = 'poor';
-    } else if (clayPct >= 26) {
-      texture = 'clay_loam';
-      drainage = 'moderate';
-    } else if (sandPct >= 55) {
-      texture = 'sandy_loam';
-      drainage = 'well';
-    } else if (siltPct >= 50) {
-      texture = 'silt_loam';
-      drainage = 'moderate';
-    } else {
-      texture = 'loam';
-      drainage = 'well';
+    const clayVal = getLayerMean('clay', 1000);
+    const sandVal = getLayerMean('sand', 1000);
+    const siltVal = getLayerMean('silt', 1000);
+    const phVal = getLayerMean('phh2o', 140, true);
+    const socVal = getLayerMean('soc', 10000);
+    const bdodVal = getLayerMean('bdod', undefined, true);
+    const clayPct = clayVal === undefined ? undefined : Number((clayVal / 10).toFixed(1));
+    const sandPct = sandVal === undefined ? undefined : Number((sandVal / 10).toFixed(1));
+    const siltPct = siltVal === undefined ? undefined : Number((siltVal / 10).toFixed(1));
+    const convertedPh = phVal === undefined ? 0 : Number((phVal / 10).toFixed(1));
+    const ph = convertedPh > 0 ? convertedPh : null;
+    let texture: SoilTexture | null = null;
+    let drainage: DrainageClass | null = null;
+    if (clayPct !== undefined && sandPct !== undefined && siltPct !== undefined && clayPct + sandPct + siltPct > 0) {
+      if (clayPct >= 38) { texture = 'clay'; drainage = 'poor'; }
+      else if (clayPct >= 26) { texture = 'clay_loam'; drainage = 'moderate'; }
+      else if (sandPct >= 55) { texture = 'sandy_loam'; drainage = 'well'; }
+      else if (siltPct >= 50) { texture = 'silt_loam'; drainage = 'moderate'; }
+      else { texture = 'loam'; drainage = 'well'; }
     }
-
-    // Classify organic matter (SOC): 100 dg/kg = 1.0% SOC
-    let organicMatter: OrganicMatterLevel = 'medium';
-    if (socVal >= 180) {
-      organicMatter = 'high';
-    } else if (socVal < 100) {
-      organicMatter = 'low';
-    }
-
-    const hasMeasuredBdod = bdodVal > 0;
-    const bulkDensityGcm3 =
-      hasMeasuredBdod ? Number((bdodVal / 100).toFixed(2)) : estimateBulkDensityFromTexture(texture);
-    const phosphorusFixationRisk = derivePhosphorusFixationRisk(ph);
-
+    const organicMatter: OrganicMatterLevel = socVal === undefined ? 'unknown'
+      : socVal >= 180 ? 'high' : socVal < 100 ? 'low' : 'medium';
+    const convertedDensity = bdodVal === undefined ? 0 : Number((bdodVal / 100).toFixed(2));
+    const bulkDensityGcm3 = convertedDensity > 0 ? convertedDensity : undefined;
     const soilResult: SoilData = {
-      source: 'ISRIC SoilGrids v2.0 (Live Global Telemetry at 250m Resolution)',
-      texture,
-      drainage,
-      organicMatter,
-      ph,
-      isEstimate: false,
-      rawClayPercent: clayPct,
-      rawSandPercent: sandPct,
-      rawSocDgPerKg: socVal,
+      source: 'ISRIC SoilGrids v2.0 model prediction',
+      texture, drainage, organicMatter, ph, isEstimate: false,
+      rawClayPercent: clayPct, rawSandPercent: sandPct, rawSocDgPerKg: socVal,
       bulkDensityGcm3,
-      phosphorusFixationRisk,
-      needsReview: !hasMeasuredBdod,
-      reviewNote: hasMeasuredBdod
-        ? undefined
-        : 'SoilGrids bdod layer missing at coordinate; bulkDensityGcm3 estimated from texture class (needs local penetrometer/core verification).'
+      phosphorusFixationRisk: ph === null ? undefined : derivePhosphorusFixationRisk(ph),
+      needsReview: true,
+      reviewNote: 'Model predictions and local classifications require field verification. Missing source properties remain unavailable; no numeric substitutes are used.'
     };
-
-    await LocalCacheService.set(cacheKey, soilResult, TELEMETRY_CACHE_TTL_MS);
-    return soilResult;
+    if (!hasSourceReadings(soilResult)) throw new Error('SoilGrids response contains no usable requested properties');
+    soilResult.provenance = buildSoilProvenance(soilResult, true);
+    const retrievedAt = new Date().toISOString();
+    for (const metadata of Object.values(soilResult.provenance)) metadata.retrievedAt = retrievedAt;
+    const profile = SoilDataSchema.parse(soilResult);
+    await LocalCacheService.set(cacheKey, { schemaVersion: 2, profile }, TELEMETRY_CACHE_TTL_MS);
+    return profile;
   } catch (err) {
-    console.warn('SoilGrids live query failed. Falling back to local pilot profile.', err);
-    return await getFallbackSoil(lat, lon);
+    console.warn('SoilGrids query unavailable. Using a labeled municipal example.', err);
+    const fallback = await getFallbackSoil(lat, lon);
+    const name = isBukidnonCoordinates(lat, lon) ? 'Malaybalay, Bukidnon'
+      : getNearestSampleSlug(lat, lon) === 'ilagan' ? 'City of Ilagan'
+      : getNearestSampleSlug(lat, lon) === 'pototan' ? 'Pototan' : 'Science City of Muñoz';
+    fallback.provenance ??= buildSoilProvenance(fallback, false, { name }, false);
+    return fallback;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -234,7 +237,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
   // Check Malaybalay Bukidnon upland highland Ultisol benchmark first
   if (isBukidnonCoordinates(lat, lon)) {
     return {
-      source: 'ISRIC SoilGrids & DA-BSWM Regional Benchmark (Malaybalay, Bukidnon Upland Ultisol)',
+      source: 'FieldShift municipal soil example (Malaybalay, Bukidnon)',
       texture: 'clay_loam',
       drainage: 'well',
       organicMatter: 'medium',
@@ -275,8 +278,10 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
   };
   const extras = pilotBenchmarkExtras[sampleName];
 
+  const fixtureController = new AbortController();
+  const fixtureTimeout = setTimeout(() => fixtureController.abort(), 5000);
   try {
-    const res = await fetch(`/sample-data/${sampleName}.json`);
+    const res = await fetch(`/sample-data/${sampleName}.json`, { signal: fixtureController.signal });
     if (res.ok) {
       const rawData: unknown = await res.json();
       const parsed = FallbackFixtureSchema.safeParse(rawData);
@@ -284,10 +289,10 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
         const baseSoil = parsed.data.soil;
         const usedExtras =
           baseSoil.bulkDensityGcm3 === undefined || baseSoil.slopePct === undefined;
-        return {
+        const result: SoilData = {
           ...baseSoil,
           isEstimate: true,
-          source: `ISRIC SoilGrids Benchmark Profile (${parsed.data.location.name})`,
+          source: `FieldShift municipal soil example (${parsed.data.location.name})`,
           bulkDensityGcm3: baseSoil.bulkDensityGcm3 ?? extras.bulkDensityGcm3,
           phosphorusFixationRisk:
             baseSoil.phosphorusFixationRisk ?? derivePhosphorusFixationRisk(baseSoil.ph),
@@ -295,15 +300,19 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
           needsReview: baseSoil.needsReview ?? usedExtras,
           reviewNote: baseSoil.reviewNote ?? (usedExtras ? extras.note : undefined)
         };
+        result.provenance = buildSoilProvenance(result, false, parsed.data.location, false);
+        return result;
       }
     }
   } catch {
     // fallback to embedded regional benchmark
+  } finally {
+    clearTimeout(fixtureTimeout);
   }
 
   if (sampleName === 'ilagan') {
     return {
-      source: 'ISRIC SoilGrids Regional Benchmark (City of Ilagan, Isabela)',
+      source: 'FieldShift municipal soil example (City of Ilagan, Isabela)',
       texture: 'loam',
       drainage: 'well',
       organicMatter: 'medium',
@@ -322,7 +331,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
 
   if (sampleName === 'pototan') {
     return {
-      source: 'ISRIC SoilGrids Regional Benchmark (Pototan, Iloilo)',
+      source: 'FieldShift municipal soil example (Pototan, Iloilo)',
       texture: 'clay_loam',
       drainage: 'moderate',
       organicMatter: 'medium',
@@ -340,7 +349,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
   }
 
   return {
-    source: 'ISRIC SoilGrids Regional Benchmark (Muñoz Maligaya Clay Loam)',
+    source: 'FieldShift municipal soil example (Science City of Muñoz)',
     texture: 'clay_loam',
     drainage: 'moderate',
     organicMatter: 'medium',

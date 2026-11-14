@@ -1,4 +1,5 @@
 import type { Crop, SeasonWindow, SoilData } from '../types';
+import { hasRequiredSoilInputs } from './soilInputs';
 
 export interface CandidateGenerationParams {
   allCrops: Crop[];
@@ -17,7 +18,7 @@ export interface CandidateSequence {
 }
 
 function isUplandSoil(soil: SoilData): boolean {
-  return (soil.slopePct !== undefined && soil.slopePct > 15) || (soil.ph < 5.5 && soil.drainage !== 'poor');
+  return (soil.slopePct !== undefined && soil.slopePct > 15) || (soil.ph !== null && soil.ph < 5.5 && soil.drainage !== 'poor');
 }
 
 function buildBaselineCandidate(allCrops: Crop[], soil: SoilData): CandidateSequence | null {
@@ -113,6 +114,7 @@ function buildCanonicalAdaptiveCandidates(allowedCrops: Crop[], soil: SoilData):
 
 export function generateCandidateRotations(params: CandidateGenerationParams): CandidateSequence[] {
   const { allCrops, soil, recentCropId, excludedCropIds = [], maxCandidates = 30 } = params;
+  if (!hasRequiredSoilInputs(soil)) return [];
 
   // Filter crops that are not excluded by the farmer
   const allowedCrops = allCrops.filter((crop) => !excludedCropIds.includes(crop.id));

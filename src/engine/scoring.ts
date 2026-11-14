@@ -1,5 +1,6 @@
 import type { CandidateSequence } from './candidateGenerator';
 import type { ClimateData, FarmerPriorities, PlanScoreBreakdown, SoilData } from '../types';
+import { assertRequiredSoilInputs } from './soilInputs';
 
 export function calculateSequenceScores(
   seq: CandidateSequence,
@@ -7,6 +8,7 @@ export function calculateSequenceScores(
   soil: SoilData,
   priorities: FarmerPriorities
 ): PlanScoreBreakdown {
+  assertRequiredSoilInputs(soil);
   const { s1Crop, s2Crop, s3Crop } = seq;
   const crops = [s1Crop, s2Crop, s3Crop];
   const activeCrops = crops.filter((c) => c.family !== 'fallow');

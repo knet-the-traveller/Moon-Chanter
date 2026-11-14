@@ -31,12 +31,12 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
     const mockPayload = {
       properties: {
         layers: [
-          { name: 'clay', depths: [{ values: { mean: 420 } }] },
-          { name: 'sand', depths: [{ values: { mean: 220 } }] },
-          { name: 'silt', depths: [{ values: { mean: 360 } }] },
-          { name: 'phh2o', depths: [{ values: { mean: 53 } }] },
-          { name: 'soc', depths: [{ values: { mean: 120 } }] },
-          { name: 'bdod', depths: [{ values: { mean: 146 } }] } // 146 cg/cm3 = 1.46 g/cm3
+          { name: 'clay', depths: [{ label: '0-5cm', values: { mean: 420 } }, { label: '5-15cm', values: { mean: 420 } }] },
+          { name: 'sand', depths: [{ label: '0-5cm', values: { mean: 220 } }, { label: '5-15cm', values: { mean: 220 } }] },
+          { name: 'silt', depths: [{ label: '0-5cm', values: { mean: 360 } }, { label: '5-15cm', values: { mean: 360 } }] },
+          { name: 'phh2o', depths: [{ label: '0-5cm', values: { mean: 53 } }, { label: '5-15cm', values: { mean: 53 } }] },
+          { name: 'soc', depths: [{ label: '0-5cm', values: { mean: 120 } }, { label: '5-15cm', values: { mean: 120 } }] },
+          { name: 'bdod', depths: [{ label: '0-5cm', values: { mean: 146 } }, { label: '5-15cm', values: { mean: 146 } }] } // 146 cg/cm3 = 1.46 g/cm3
         ]
       }
     };
@@ -75,15 +75,15 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
     expect(bukidnonProfile.needsReview).toBe(true);
   });
 
-  it('estimates bulkDensityGcm3 from texture and marks needsReview when live SoilGrids bdod is absent', async () => {
+  it('keeps bulk density unavailable when live SoilGrids bdod is absent', async () => {
     const payloadWithoutBdod = {
       properties: {
         layers: [
-          { name: 'clay', depths: [{ values: { mean: 410 } }] },
-          { name: 'sand', depths: [{ values: { mean: 230 } }] },
-          { name: 'silt', depths: [{ values: { mean: 360 } }] },
-          { name: 'phh2o', depths: [{ values: { mean: 63 } }] },
-          { name: 'soc', depths: [{ values: { mean: 140 } }] }
+          { name: 'clay', depths: [{ label: '0-5cm', values: { mean: 410 } }, { label: '5-15cm', values: { mean: 410 } }] },
+          { name: 'sand', depths: [{ label: '0-5cm', values: { mean: 230 } }, { label: '5-15cm', values: { mean: 230 } }] },
+          { name: 'silt', depths: [{ label: '0-5cm', values: { mean: 360 } }, { label: '5-15cm', values: { mean: 360 } }] },
+          { name: 'phh2o', depths: [{ label: '0-5cm', values: { mean: 63 } }, { label: '5-15cm', values: { mean: 63 } }] },
+          { name: 'soc', depths: [{ label: '0-5cm', values: { mean: 140 } }, { label: '5-15cm', values: { mean: 140 } }] }
         ]
       }
     };
@@ -96,9 +96,9 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
 
     const profile = await fetchSoilGridsData(15.801, 120.951);
     expect(profile.texture).toBe('clay');
-    expect(profile.bulkDensityGcm3).toBe(1.44);
+    expect(profile.bulkDensityGcm3).toBeUndefined();
     expect(profile.needsReview).toBe(true);
-    expect(profile.reviewNote).toMatch(/bdod/i);
+    expect(profile.provenance?.bulkDensityGcm3?.tier).toBe('unavailable');
   });
 
   it('preserves 1-tap Farmer Soil Override while recalculating phosphorusFixationRisk and handling null overrides', () => {

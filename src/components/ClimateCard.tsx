@@ -1,3 +1,4 @@
+import { climateProvenance, formatProvenance } from '../data/provenance';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
@@ -41,6 +42,8 @@ export const ClimateCard: React.FC = () => {
     return null;
   }
 
+  const metadata = climateProvenance(climateData);
+  const source = (key: keyof typeof metadata) => formatProvenance(language, metadata[key]);
   const chartData = climateData.monthly.map((m) => ({
     name: m.month,
     rainfall: m.rainfall,
@@ -82,7 +85,7 @@ export const ClimateCard: React.FC = () => {
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300">
               <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
-              {getTranslation(language, 'conditions.liveBadge')}
+              {getTranslation(language, `provenance.${metadata.precipitation.tier ?? 'unavailable'}`)}
             </span>
           )}
         </div>
@@ -100,7 +103,7 @@ export const ClimateCard: React.FC = () => {
             {climateData.meanAnnualPrecipitation.toLocaleString()} <span className="text-xs font-normal">mm/yr</span>
           </div>
           <div className="text-[11px] text-blue-700 mt-0.5">
-            NASA POWER PRECTOTCORR
+            {source('precipitation')}
           </div>
         </div>
 
@@ -114,7 +117,7 @@ export const ClimateCard: React.FC = () => {
             {climateData.meanAnnualTemp}°C
           </div>
           <div className="text-[11px] text-orange-700 mt-0.5">
-            Annual Mean (T2M)
+            {source('temperature')}
           </div>
         </div>
 
@@ -151,6 +154,7 @@ export const ClimateCard: React.FC = () => {
         </div>
       </div>
 
+      <p className="text-xs text-stone-700 mb-3">{source('heatStressDays')}<br />{source('rainfallTrend')}<br />{source('risk')}</p>
       {/* Seasonal Breakdown Pills */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5 p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 text-xs">
         <div>
@@ -173,11 +177,12 @@ export const ClimateCard: React.FC = () => {
         </div>
       </div>
 
+      <p className="text-xs text-stone-700 mb-3">{source('precipitation')}<br />{source('maximumTemperature')}</p>
       {/* Monthly Chart (Recharts) */}
       <div className="mt-2">
         <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center justify-between">
-          <span>Monthly Rainfall (Bars, mm) & Daily Max Temperature (Line, °C)</span>
-          <span className="text-[10px] text-stone-400 font-normal">NASA POWER 10-Year Climatology</span>
+          <span>{getTranslation(language, 'provenance.chart')}</span>
+          <span className="text-[10px] text-stone-400 font-normal">{climateData.dateRange}</span>
         </div>
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -210,7 +215,7 @@ export const ClimateCard: React.FC = () => {
           <span>Variables: <strong>{climateData.variableList.join(', ')}</strong></span>
         </div>
         <div className="text-[10px] text-stone-400 italic">
-          Data resolution: 0.5° × 0.5° spatial grid
+          {getTranslation(language, 'provenance.derived')}
         </div>
       </div>
     </div>

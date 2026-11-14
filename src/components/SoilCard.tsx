@@ -1,8 +1,43 @@
+import { soilProvenance, formatProvenance } from '../data/provenance';
+import { applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
+import { hasRequiredSoilInputs } from '../engine/soilInputs';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
-import type { SoilTexture, DrainageClass, OrganicMatterLevel } from '../types';
+import type { SoilTexture, DrainageClass, OrganicMatterLevel, Language } from '../types';
 import { Layers, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
+
+const SoilPhInput: React.FC<{ ph: number | null; language: Language; onApply: (ph: number) => void }> = ({ ph, language, onApply }) => {
+  const id = React.useId();
+  return (
+    <form className="mt-4 space-y-2" onSubmit={event => {
+      event.preventDefault();
+      const input = event.currentTarget.elements.namedItem('fieldPh');
+      if (!(input instanceof HTMLInputElement)) return;
+      const validated = parseFarmerSoilOverride({ ph: input.valueAsNumber });
+      if (!validated || typeof validated.ph !== 'number') {
+        input.setCustomValidity(getTranslation(language, 'dataQuality.invalidPh'));
+        input.reportValidity();
+        return;
+      }
+      input.setCustomValidity('');
+      onApply(validated.ph);
+    }}>
+      <label htmlFor={id} className="block text-xs font-semibold text-stone-800">{getTranslation(language, 'dataQuality.fieldPh')}</label>
+      <div className="flex flex-wrap gap-2">
+        <input id={id} name="fieldPh" type="number" min="0" max="14" step="any" required
+          placeholder={ph === null ? undefined : String(ph)} aria-describedby={`${id}-help`}
+          onInvalid={event => event.currentTarget.setCustomValidity(getTranslation(language, 'dataQuality.invalidPh'))}
+          onChange={event => event.currentTarget.setCustomValidity('')}
+          className="min-w-0 w-32 rounded-lg border border-stone-400 bg-white px-3 py-2 text-base text-stone-950 focus-visible:outline-2 focus-visible:outline-emerald-800" />
+        <button type="submit" className="rounded-lg bg-emerald-800 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-emerald-800">
+          {getTranslation(language, 'dataQuality.applyPh')}
+        </button>
+      </div>
+      <p id={`${id}-help`} className="text-xs text-stone-700">{getTranslation(language, 'dataQuality.phHint')}</p>
+    </form>
+  );
+};
 
 export const SoilCard: React.FC = () => {
   const {
@@ -11,7 +46,8 @@ export const SoilCard: React.FC = () => {
     setSoilOverride,
     resetSoilOverride,
     language,
-    isLoadingTelemetry
+    isLoadingTelemetry,
+    selectedLocation
   } = useAppStore();
 
   if (isLoadingTelemetry) {
@@ -26,9 +62,13 @@ export const SoilCard: React.FC = () => {
 
   if (!soilData) return null;
 
-  const effectiveTexture = soilOverride?.texture || soilData.texture;
-  const effectiveDrainage = soilOverride?.drainage || soilData.drainage;
-  const effectiveOrganicMatter = soilOverride?.organicMatter || soilData.organicMatter;
+  const effectiveSoil = applyFarmerSoilOverride(soilData, soilOverride);
+  const metadata = soilProvenance(effectiveSoil);
+  const source = (key: keyof typeof metadata) => formatProvenance(language, metadata[key]);
+  const unknown = getTranslation(language, 'provenance.unavailableValue');
+  const effectiveTexture = effectiveSoil.texture;
+  const effectiveDrainage = effectiveSoil.drainage;
+  const effectiveOrganicMatter = effectiveSoil.organicMatter;
   const isOverridden = !!soilOverride && Object.keys(soilOverride).length > 0;
 
   const texturePresets: { id: SoilTexture; nameEn: string; nameFil: string; defaultDrainage: DrainageClass }[] = [
@@ -65,7 +105,7 @@ export const SoilCard: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-              Farmer Overridden
+              {getTranslation(language, 'provenance.farmer')}
             </span>
             <button
               onClick={resetSoilOverride}
@@ -77,10 +117,14 @@ export const SoilCard: React.FC = () => {
           </div>
         ) : (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-300">
-            ISRIC Automated Profile
+            {getTranslation(language, 'provenance.soilAutomated')}
           </span>
         )}
       </div>
+
+      {!hasRequiredSoilInputs(effectiveSoil) && <p role="status" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
+        {getTranslation(language, 'dataQuality.missingSoil')}
+      </p>}
 
       {/* Soil KPI Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
@@ -90,10 +134,10 @@ export const SoilCard: React.FC = () => {
             {getTranslation(language, 'conditions.soilTexture')}
           </div>
           <div className="text-base font-bold text-stone-900 mt-1 capitalize">
-            {effectiveTexture.replace('_', ' ')}
+            {effectiveTexture?.replace('_', ' ') ?? unknown}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            Clay: ~{soilData.rawClayPercent ?? 32}% · Sand: ~{soilData.rawSandPercent ?? 30}%
+            {getTranslation(language, 'provenance.baseFractions')}: {effectiveSoil.rawClayPercent !== undefined ? `${effectiveSoil.rawClayPercent}%` : unknown} / {effectiveSoil.rawSandPercent !== undefined ? `${effectiveSoil.rawSandPercent}%` : unknown}
           </div>
         </div>
 
@@ -103,10 +147,10 @@ export const SoilCard: React.FC = () => {
             {getTranslation(language, 'conditions.drainage')}
           </div>
           <div className="text-base font-bold text-stone-900 mt-1 capitalize">
-            {effectiveDrainage}
+            {effectiveDrainage ?? unknown}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            Water retention capacity
+            {source('drainage')}
           </div>
         </div>
 
@@ -116,10 +160,10 @@ export const SoilCard: React.FC = () => {
             {getTranslation(language, 'conditions.ph')}
           </div>
           <div className="text-base font-bold text-stone-900 mt-1">
-            {soilData.ph} pH
+            {effectiveSoil.ph === null ? unknown : `${effectiveSoil.ph} pH`}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            {soilData.ph < 5.5 ? 'Acidic' : soilData.ph > 7.3 ? 'Alkaline' : 'Optimal Neutral'}
+            {getTranslation(language, 'provenance.phReview')}
           </div>
         </div>
 
@@ -129,14 +173,17 @@ export const SoilCard: React.FC = () => {
             {getTranslation(language, 'conditions.organicMatter')}
           </div>
           <div className="text-base font-bold text-stone-900 mt-1 capitalize">
-            {effectiveOrganicMatter}
+            {effectiveOrganicMatter === 'unknown' ? unknown : effectiveOrganicMatter}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            SOC: ~{soilData.rawSocDgPerKg ? (soilData.rawSocDgPerKg / 100).toFixed(2) + '%' : '1.4%'}
+            SOC: {effectiveSoil.rawSocDgPerKg !== undefined ? (effectiveSoil.rawSocDgPerKg / 100).toFixed(2) + '%' : unknown}
           </div>
         </div>
       </div>
 
+      <ul className="text-xs text-stone-700 space-y-2 break-words" aria-label={getTranslation(language, 'provenance.title')}>
+        {Object.entries(metadata).map(([key, value]) => <li key={key}>{formatProvenance(language, value)}</li>)}
+      </ul>
       {/* Farmer Override Bar */}
       <div className="mt-4 pt-3 border-t border-stone-100">
         <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
@@ -171,7 +218,7 @@ export const SoilCard: React.FC = () => {
         </div>
 
         {/* OM Override Selection */}
-        <div className="flex items-center gap-2 mt-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
           <span className="font-medium text-stone-500">Organic Matter:</span>
           {omLevels.map((lvl) => {
             const isSelected = effectiveOrganicMatter === lvl.id;
@@ -190,6 +237,8 @@ export const SoilCard: React.FC = () => {
             );
           })}
         </div>
+        <SoilPhInput key={`${selectedLocation.lat}:${selectedLocation.lon}:${effectiveSoil.ph}`}
+          ph={effectiveSoil.ph} language={language} onApply={ph => setSoilOverride({ ph })} />
       </div>
     </div>
   );

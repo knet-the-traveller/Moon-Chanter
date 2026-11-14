@@ -1,11 +1,49 @@
 import type { CandidateSequence } from './candidateGenerator';
 import type { ClimateData, PlanReason, PlanRisk, SoilData } from '../types';
+import type { RotationPlan, LocalReviewDescriptor, MetricProvenance } from '../types';
+import type { PlanDataContext } from '../data/provenance';
+import { assertRequiredSoilInputs } from './soilInputs';
+
+// Presentation descriptors only: explicit context, no clock, network, store, or score changes.
+export function generateLocalReviewChecklist(
+  plan: Pick<RotationPlan, 'seasons'>, context: PlanDataContext
+): LocalReviewDescriptor[] {
+  const metadata = [
+    ...Object.values(context.climate?.provenance ?? {}),
+    ...Object.values(context.soil?.provenance ?? {}),
+    ...Object.values(context.land?.provenance ?? {})
+  ].filter((entry): entry is MetricProvenance => entry !== undefined);
+  const items: LocalReviewDescriptor[] = [];
+  const add = (id: string, params?: LocalReviewDescriptor['params']) => items.push({ id, translationKey: `localReview.${id}`, ...(params ? { params } : {}) });
+  const references = new Set<string>();
+  for (const item of metadata) {
+    if (item.isSample && item.sampleLocation) references.add(item.sampleLocation.name);
+  }
+  if (context.climate?.isSampleData && !Object.values(context.climate.provenance ?? {}).some(item => item?.isSample && item.sampleLocation)) references.add(context.climate.source);
+  if (context.soil?.isEstimate && !Object.values(context.soil.provenance ?? {}).some(item => item?.sampleLocation)) references.add(context.soil.source);
+  if (context.land?.isSample) references.add(context.land.sampleHub.name);
+  if (references.size) add('municipal', { sources: [...references].sort((a,b) => a.localeCompare(b,'en')).join('; ') });
+  if (metadata.some(item => item.isSynthetic)) add('synthetic');
+  if (metadata.some(item => item.tier === 'cached-live' || item.cached)) add('cached');
+  if (metadata.some(item => item.tier === 'farmer')) add('override');
+  if (!context.climate || !context.soil || !context.land || !context.climate.provenance || !context.soil.provenance
+    || metadata.some(item => !item.spatialResolution || !item.dateRange)) add('unavailable');
+  if (!context.land?.ndvi.trendAvailable) add('ndviTrend');
+  if (metadata.some(item => item.needsReview) || context.land?.needsReview || context.soil?.needsReview) add('review');
+  if (plan.seasons.some(season => season.crop.needsReview)) add('cropReview');
+  add('pixelScale');
+  add('canalTurnouts');
+  add('compaction');
+  add('buyerPrices', { crops: plan.seasons.filter(season => season.crop.family !== 'fallow').map(season => season.crop.id).filter((id, index, all) => all.indexOf(id) === index).join(', ') });
+  return items;
+}
 
 export function generatePlanExplanations(
   seq: CandidateSequence,
   climate: ClimateData,
   soil: SoilData
 ): { reasons: PlanReason[]; risks: PlanRisk[] } {
+  assertRequiredSoilInputs(soil);
   const { s1Crop, s2Crop, s3Crop } = seq;
   const crops = [s1Crop, s2Crop, s3Crop];
   const activeCrops = crops.filter((c) => c.family !== 'fallow');

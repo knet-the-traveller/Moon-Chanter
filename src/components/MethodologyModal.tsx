@@ -1,9 +1,10 @@
 import React from 'react';
+import { getTranslation } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { X, BookOpen, Database, ShieldCheck, Cpu } from 'lucide-react';
 
 export const MethodologyModal: React.FC = () => {
-  const { isMethodologyModalOpen, setMethodologyModalOpen } = useAppStore();
+  const { isMethodologyModalOpen, setMethodologyModalOpen, language } = useAppStore();
 
   if (!isMethodologyModalOpen) return null;
 
@@ -103,7 +104,7 @@ export const MethodologyModal: React.FC = () => {
               3. Climate Stress Testing
             </h4>
             <p className="text-xs text-stone-600">
-              Each generated rotation is evaluated under 5 climate scenarios: Baseline, Hotter (+1.5°C), Drier (-15% rainfall), Hotter + Drier Compound Shock, and Excessive Monsoon (+15%). Plans that maintain a score $\ge 68$ across all shocks are certified as <strong>Climate-Robust</strong>.
+              {getTranslation(language, 'dataQuality.scenarioInterpretation')}
             </p>
           </div>
 

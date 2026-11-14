@@ -24,6 +24,38 @@ body {
   z-index: 10;
 }
 
+/* Keep reference text above satellite imagery, without blocking map gestures. */
+.leaflet-satellite-labels-pane {
+  z-index: 450;
+  pointer-events: none;
+}
+
+.field-place-icon {
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+
+.leaflet-tile.field-empty-imagery-tile {
+  visibility: hidden;
+}
+
+.field-place-label {
+  display: block;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 3px 8px;
+  border: 1px solid var(--color-stone-400);
+  border-radius: 6px;
+  background: var(--color-white);
+  color: var(--color-stone-950);
+  font: 700 14px/20px system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-stone-950) 35%, transparent);
+}
+
 /* Printable styles */
 @media print {
   .no-print {

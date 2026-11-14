@@ -48,7 +48,22 @@ export interface MetricProvenance {
   isSynthetic: boolean;
   needsReview: boolean;
   note: string;
+  tier?: 'live' | 'cached-live' | 'sample' | 'synthetic' | 'farmer' | 'unavailable';
+  unit?: string;
+  depth?: string | null;
+  method?: string;
+  methodKey?: string;
+  cached?: boolean;
+  productVersion?: string | null;
+  citation?: string;
+  retrievedAt?: string | null;
+  sampleLocation?: { name: string; lat?: number; lon?: number };
 }
+
+export type ClimateMetric = 'precipitation' | 'temperature' | 'maximumTemperature' | 'minimumTemperature'
+  | 'solarRadiation' | 'humidity' | 'heatStressDays' | 'rainfallTrend' | 'risk';
+export type SoilMetric = 'texture' | 'drainage' | 'organicMatter' | 'ph' | 'rawClayPercent'
+  | 'rawSandPercent' | 'rawSocDgPerKg' | 'bulkDensityGcm3' | 'phosphorusFixationRisk' | 'slopePct';
 
 export interface LandSummary {
   elevationM: number; // Finite elevation in meters.

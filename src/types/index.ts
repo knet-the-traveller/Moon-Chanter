@@ -1,6 +1,13 @@
-export type { LandSummary, LandMetric, MetricProvenance } from './contracts';
+export type { LandSummary, LandMetric, MetricProvenance, ClimateMetric, SoilMetric } from './contracts';
+import type { ClimateMetric, SoilMetric, MetricProvenance } from './contracts';
 
 export type Language = 'en' | 'fil';
+
+export interface LocalReviewDescriptor {
+  id: string;
+  translationKey: string;
+  params?: Record<string, string | number>;
+}
 
 export interface PilotLocation {
   id: string;
@@ -22,11 +29,12 @@ export type OrganicMatterLevel = 'low' | 'medium' | 'high' | 'unknown';
 export type PhosphorusFixationRisk = 'low' | 'moderate' | 'high';
 
 export interface SoilData {
+  provenance?: Partial<Record<SoilMetric, MetricProvenance>>;
   source: string;
-  texture: SoilTexture;
-  drainage: DrainageClass;
+  texture: SoilTexture | null;
+  drainage: DrainageClass | null;
   organicMatter: OrganicMatterLevel;
-  ph: number;
+  ph: number | null;
   isEstimate: boolean;
   rawClayPercent?: number;
   rawSandPercent?: number;
@@ -52,6 +60,7 @@ export interface MonthlyClimatePoint {
 }
 
 export interface ClimateData {
+  provenance?: Partial<Record<ClimateMetric, MetricProvenance>>;
   source: string;
   variableList: string[];
   dateRange: string;

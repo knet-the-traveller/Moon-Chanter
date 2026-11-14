@@ -55,6 +55,17 @@ const defaultPriorities: FarmerPriorities = {
 };
 
 describe('Rotation Engine Candidate Generator', () => {
+  it.each([
+    { texture: null }, { drainage: null }, { ph: null }, { ph: Number.NaN },
+    { organicMatter: 'unknown' as const }
+  ])('withholds candidates and rankings for incomplete soil: %j', missing => {
+    const soil = { ...mockSoil, ...missing };
+    expect(generateCandidateRotations({ allCrops: crops, soil })).toEqual([]);
+    expect(generateRotationRecommendations({ allCrops: crops, climate: mockClimate, soil, priorities: defaultPriorities })).toEqual([]);
+    const seq = generateCandidateRotations({ allCrops: crops, soil: mockSoil })[0];
+    expect(() => calculateSequenceScores(seq, mockClimate, soil, defaultPriorities)).toThrow('Required soil inputs');
+    expect(() => generatePlanExplanations(seq, mockClimate, soil)).toThrow('Required soil inputs');
+  });
   it('generates non-empty candidate sequences from Philippine crops dataset', () => {
     const candidates = generateCandidateRotations({
       allCrops: crops,
