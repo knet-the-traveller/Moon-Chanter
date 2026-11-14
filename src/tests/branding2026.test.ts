@@ -28,4 +28,13 @@ describe('2026 NASA Space Apps Challenge Branding Audit', () => {
     expect(agentsRules).toContain('2026 NASA Space Apps Challenge');
     expect(agentsRules).toContain('non-prescriptive');
   });
+
+  it('AGENTS.md and docs/ai-system/ai-rules.md include the remote synchronization baseline rule', () => {
+    const agents = fs.readFileSync(path.resolve(__dirname, '../../AGENTS.md'), 'utf-8');
+    const docRules = fs.readFileSync(path.resolve(__dirname, '../../docs/ai-system/ai-rules.md'), 'utf-8');
+    expect(agents).toContain('Remote Synchronization Baseline');
+    expect(agents).toContain('git fetch origin');
+    expect(docRules).toContain('Remote Synchronization Baseline');
+    expect(docRules).toContain('git fetch origin');
+  });
 });
