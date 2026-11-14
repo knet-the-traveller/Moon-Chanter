@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { getTranslation } from '../i18n';
 import { X, ShieldCheck, Sprout, Droplets, Coins, Clock } from 'lucide-react';
 
 export const ComparisonModal: React.FC = () => {
@@ -53,8 +54,13 @@ export const ComparisonModal: React.FC = () => {
                     {/* Header */}
                     <div className="flex items-center justify-between pb-3 border-b border-stone-200">
                       <div>
-                        <div className="text-[11px] font-bold text-stone-500 uppercase">
-                          Plan #{idx + 1}
+                        <div className="text-[11px] font-bold text-stone-500 uppercase flex items-center gap-1.5">
+                          <span>Plan #{idx + 1}</span>
+                          {plan.isBaseline && (
+                            <span className="px-1.5 py-0.5 rounded bg-stone-200 text-stone-700 text-[10px]">
+                              {getTranslation(language, 'results.baselineBadge')}
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm font-bold text-stone-900 leading-snug">
                           {language === 'fil' ? plan.name.local : plan.name.en}

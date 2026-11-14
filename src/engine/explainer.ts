@@ -29,7 +29,9 @@ export function generatePlanExplanations(
       textFil: hasMungbean
         ? `Ang Rhizobium-inoculated na ${legumeNamesFil} ay nagbabalik ng 35–80 kg N/ha sa loob lamang ng 60–65 araw gamit ang 300–350 mm na tubig kumpara sa >1,000 mm ng palay.`
         : `Ang pagtatanim ng ${legumeNamesFil} ay nagbabalik ng 35–80 kg N/ha at tipid sa tubig (300–350 mm) kaya bumababa ang gastos sa abono.`,
-      dataEvidence: `Pag-asa legume Rhizobium N-fixation (+35–80 kg N/ha, 60–65d); Soil OM is ${soil.organicMatter.toUpperCase()} (SOC ${soil.rawSocDgPerKg ? (soil.rawSocDgPerKg / 100).toFixed(2) + '%' : 'baseline'}).`
+      dataEvidence: hasMungbean
+        ? `Pag-asa legume Rhizobium N-fixation (+35–80 kg N/ha, 60–65d); Soil OM is ${soil.organicMatter.toUpperCase()} (SOC ${soil.rawSocDgPerKg ? (soil.rawSocDgPerKg / 100).toFixed(2) + '%' : 'baseline'}).`
+        : `${legumeNamesEn} biological Rhizobium N-fixation (+35–80 kg N/ha); Soil OM is ${soil.organicMatter.toUpperCase()} (SOC ${soil.rawSocDgPerKg ? (soil.rawSocDgPerKg / 100).toFixed(2) + '%' : 'baseline'}).`
     });
   }
 
@@ -45,7 +47,7 @@ export function generatePlanExplanations(
       mitigationEn: 'Replace Season 2/3 flooded rice with short-cycle Pag-asa mungbean, bulb onion, or heat-tolerant dry yellow corn, and confirm planting dates with a municipal agriculturist.',
       mitigationFil: 'Palitan ang tag-init na palay ng Pag-asa munggo, sibuyas, o mais upang makaiwas sa >35°C na init at magpakonsulta sa lokal na tekniko.'
     });
-  } else if (!hasDrySeasonRice && dryHotMax > 35.0) {
+  } else if (!seq.isBaseline && !hasDrySeasonRice && dryHotMax > 35.0) {
     reasons.push({
       id: 'reason_heat35_escape',
       ruleId: 'AGRO-RULE-02-HEAT35',
@@ -95,6 +97,16 @@ export function generatePlanExplanations(
         mitigationEn: 'Alternate dry-cool bulb onion with monsoon lowland rice and pre-rice mungbean.',
         mitigationFil: 'Ipagpalit ang sibuyas sa palay at munggo upang maputol ang sakit sa sibuyas.'
       });
+    } else if (prev.id === 'rice' && next.id === 'rice') {
+      hasHostConflict = true;
+      risks.push({
+        id: 'risk_pestbreak_rice',
+        ruleId: 'AGRO-RULE-03-PESTBREAK',
+        textEn: 'Back-to-back Rice → Rice sustains green leafhopper, stem-borer, and blast pathogen carryover between seasons.',
+        textFil: 'Ang sunod-sunod na Palay → Palay ay nagpapatuloy sa pamumugad ng mga peste at sakit sa palayan.',
+        mitigationEn: 'Insert short-cycle Pag-asa mungbean or dry-cool bulb onion between wet-season rice cycles.',
+        mitigationFil: 'Isingit ang Pag-asa munggo o sibuyas sa tag-araw upang maputol ang siklo ng peste sa palayan.'
+      });
     }
   }
 
@@ -112,34 +124,49 @@ export function generatePlanExplanations(
   }
 
   // [AGRO-RULE-04-EROSION-ACID]: Upland Erosion (RUSLE), Acidity/Lime, and Lowland Plow-Pan Verification
-  const isSlopingOrAcidic =
+  const isSlopingUpland =
     (soil.slopePct !== undefined && soil.slopePct > 15) ||
-    soil.ph < 5.5 ||
-    soil.phosphorusFixationRisk === 'high';
+    (soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
+  const isAcidicOrPFixed = soil.ph < 5.5 || soil.phosphorusFixationRisk === 'high';
 
-  if (isSlopingOrAcidic && hasFallow) {
+  if (isSlopingUpland && hasFallow) {
     risks.push({
       id: 'risk_erosion_acid_fallow',
       ruleId: 'AGRO-RULE-04-EROSION-ACID',
-      textEn: `Bare upland fallow leaves acidic/sloping soil (pH ${soil.ph.toFixed(1)}${soil.slopePct !== undefined ? `, ${soil.slopePct}% slope` : ''}) exposed to high RUSLE soil erosion (C → 1.0) and severe P-fixation loss.`,
-      textFil: `Ang bakanteng lupa sa matarik o maasim na lupain (pH ${soil.ph.toFixed(1)}) ay madaling maanod ng ulan (RUSLE C → 1.0).`,
-      mitigationEn: 'Replace bare fallow with continuous mungbean or sweet potato cover and consult a local technician to verify agricultural lime (CaCO3) application rates.',
-      mitigationFil: 'Palitan ng munggo o kamote ang bakanteng lupa at ipasuri sa lokal na tekniko ang kailangang apog (agricultural lime / CaCO3).'
+      textEn: `Bare upland fallow leaves sloping soil (${soil.slopePct !== undefined ? `${soil.slopePct}% slope, ` : ''}pH ${soil.ph.toFixed(1)}) exposed to high RUSLE soil erosion (C → 1.0)${isAcidicOrPFixed ? ' and severe acidic P-fixation loss' : ''}.`,
+      textFil: `Ang bakanteng lupa sa matarik na lupain (pH ${soil.ph.toFixed(1)}) ay madaling maanod ng ulan (RUSLE C → 1.0).`,
+      mitigationEn: isAcidicOrPFixed
+        ? 'Replace bare fallow with continuous mungbean or sweet potato cover and consult a local technician to verify agricultural lime (CaCO3) application rates.'
+        : 'Replace bare fallow with continuous mungbean or sweet potato vegetative canopy cover and verify contour barriers with a local technician.',
+      mitigationFil: isAcidicOrPFixed
+        ? 'Palitan ng munggo o kamote ang bakanteng lupa at ipasuri sa lokal na tekniko ang kailangang apog (agricultural lime / CaCO3).'
+        : 'Palitan ng munggo o kamote ang bakanteng lupa upang maprotektahan laban sa pagguho ng lupa.'
     });
-  } else if (isSlopingOrAcidic && !hasFallow) {
+  } else if (isSlopingUpland && !hasFallow) {
     reasons.push({
       id: 'reason_erosion_armor',
       ruleId: 'AGRO-RULE-04-EROSION-ACID',
       category: 'soil',
-      textEn: `Continuous living canopy cover (${activeCrops.map((c) => c.name.en).join(' → ')}) armors sloping Ultisols against RUSLE storm erosion (C → 1.0 on bare soil).`,
+      textEn: `Continuous living canopy cover (${activeCrops.map((c) => c.name.en).join(' → ')}) armors sloping uplands against RUSLE storm erosion (C → 1.0 on bare soil).`,
       textFil: `Ang tuloy-tuloy na takip na pananim (${activeCrops.map((c) => c.name.local).join(' → ')}) ay pumipigil sa pagguho ng lupa sa dalisdis.`,
-      dataEvidence: `Upland soil pH ${soil.ph.toFixed(1)}${soil.slopePct !== undefined ? `, slope ${soil.slopePct}%` : ''}, P-fixation: ${soil.phosphorusFixationRisk ?? 'moderate'}.`
+      dataEvidence: `Upland soil pH ${soil.ph.toFixed(1)}${soil.slopePct !== undefined ? `, slope ${soil.slopePct}%` : ''}, P-fixation: ${soil.phosphorusFixationRisk ?? 'low'}.`
     });
+  }
+
+  if (isAcidicOrPFixed) {
+    const phTextEn =
+      soil.ph < 5.5
+        ? `Strongly acidic soil (pH ${soil.ph.toFixed(1)} < 5.5) indicates high aluminum/iron phosphorus fixation risk that limits legume nodulation and rooting.`
+        : `Elevated phosphorus fixation risk at pH ${soil.ph.toFixed(1)} can restrict crop nutrient uptake without balanced organic/phosphate management.`;
+    const phTextFil =
+      soil.ph < 5.5
+        ? `Ang mababang pH (${soil.ph.toFixed(1)} < 5.5) ay nagpapahiwatig ng P-fixation na maaaring magpahina sa ugat ng pananim.`
+        : `Ang panganib ng phosphorus fixation (pH ${soil.ph.toFixed(1)}) ay maaaring makabawas sa sustansya ng pananim.`;
     risks.push({
       id: 'risk_acid_lime_verify',
       ruleId: 'AGRO-RULE-04-EROSION-ACID',
-      textEn: `Strongly acidic soil (pH ${soil.ph.toFixed(1)} < 5.5) indicates high aluminum/iron phosphorus fixation risk that limits legume nodulation and corn rooting.`,
-      textFil: `Ang mababang pH (${soil.ph.toFixed(1)} < 5.5) ay nagpapahiwatig ng P-fixation na maaaring magpahina sa ugat ng pananim.`,
+      textEn: phTextEn,
+      textFil: phTextFil,
       mitigationEn: 'Request a municipal soil test with an agricultural technician to verify agricultural lime (CaCO3) and organic/rock phosphate rates before sowing.',
       mitigationFil: 'Magpasuri ng lupa sa lokal na tekniko upang matiyak ang tamang dami ng apog (CaCO3) bago magtanim.'
     });
@@ -152,7 +179,7 @@ export function generatePlanExplanations(
       textEn: `Subsoil bulk density estimate (${soil.bulkDensityGcm3.toFixed(2)} g/cm³ > 1.4 g/cm³) flags likely lowland clay plow-pan compaction that can restrict post-rice root penetration.`,
       textFil: `Ang tantiyang sikip ng lupa (${soil.bulkDensityGcm3.toFixed(2)} g/cm³ > 1.4 g/cm³) ay nagpapahiwatig ng matigas na ilalim (plow-pan) na kailangang tiyakin sa bukid.`,
       mitigationEn: 'Verify compaction depth with a field penetrometer or technician before dry-season sowing; incorporate deep-rooting break crops or minimum-tillage furrows.',
-      mitigationFil: 'Ipasuri sa tekniko ang tigas ng ilalim ng lupa at gumamit ng malalim na ugat na pananim upang lumuwag ang lupa.'
+      mitigationFil: 'Ipasuri sa tekniko ang lalim ng tigas gamit ang penetrometer bago magtanim; gumamit ng malalim na ugat na pananim o mababaw na tudling (minimum-tillage).'
     });
   }
 

@@ -11,11 +11,12 @@ export function calculateSequenceScores(
   const crops = [s1Crop, s2Crop, s3Crop];
   const activeCrops = crops.filter((c) => c.family !== 'fallow');
   const hasFallow = activeCrops.length < crops.length;
-  const isUplandAcidOrSloping =
+  const isSlopingUpland =
     (soil.slopePct !== undefined && soil.slopePct > 15) ||
-    soil.ph < 5.5 ||
-    soil.phosphorusFixationRisk === 'high';
+    (soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
+  const isAcidicOrPFixed = soil.ph < 5.5 || soil.phosphorusFixationRisk === 'high';
   const hasDrySeasonRice = s2Crop.id === 'rice' || s3Crop.id === 'rice';
+  const hasHeatSterility = hasDrySeasonRice && climate.seasonalStats.dryHot.maxTemp > 35.0;
 
   // 1. SOIL HEALTH SCORE (0 - 100)
   let soilScore = 30; // base score
@@ -58,16 +59,29 @@ export function calculateSequenceScores(
     [s1Crop, s2Crop],
     [s2Crop, s3Crop]
   ];
+  let hasSevereHostConflict = false;
   for (const [prev, next] of pairs) {
     if (prev.family === 'fallow' || next.family === 'fallow') continue;
-    if (prev.id === 'corn' && next.id === 'corn') soilScore -= 22; // Fall Armyworm continuity
-    if (prev.family === 'solanaceae' && next.family === 'solanaceae') soilScore -= 28; // Bacterial Wilt
-    if (prev.family === 'amaryllidaceae' && next.family === 'amaryllidaceae') soilScore -= 24; // Purple Blotch
-    if (prev.id === 'rice' && next.id === 'rice') soilScore -= 10; // Rice stem-borer / blast host
+    if (prev.id === 'corn' && next.id === 'corn') {
+      soilScore -= 22; // Fall Armyworm continuity
+      hasSevereHostConflict = true;
+    }
+    if (prev.family === 'solanaceae' && next.family === 'solanaceae') {
+      soilScore -= 28; // Bacterial Wilt
+      hasSevereHostConflict = true;
+    }
+    if (prev.family === 'amaryllidaceae' && next.family === 'amaryllidaceae') {
+      soilScore -= 24; // Purple Blotch
+      hasSevereHostConflict = true;
+    }
+    if (prev.id === 'rice' && next.id === 'rice') {
+      soilScore -= 10; // Rice stem-borer / blast host
+      hasSevereHostConflict = true;
+    }
   }
 
-  // [AGRO-RULE-04-EROSION-ACID] Upland RUSLE canopy cover vs bare fallow
-  if (isUplandAcidOrSloping) {
+  // [AGRO-RULE-04-EROSION-ACID] Upland RUSLE canopy cover vs bare fallow & acid P-fixation stress
+  if (isSlopingUpland) {
     if (hasFallow) {
       soilScore -= 24;
     } else if (
@@ -75,6 +89,8 @@ export function calculateSequenceScores(
     ) {
       soilScore += 14;
     }
+  } else if (isAcidicOrPFixed && hasFallow) {
+    soilScore -= 8;
   }
 
   soilScore = Math.min(100, Math.max(10, soilScore));
@@ -103,7 +119,7 @@ export function calculateSequenceScores(
 
   // Season 3 (Hot Dry - minimal rain & dry spell danger)
   if (s3Crop.family === 'fallow') {
-    if (isUplandAcidOrSloping) waterScore -= 12; // unarmored runoff
+    if (isSlopingUpland) waterScore -= 12; // unarmored slope runoff
   } else {
     if (s3Crop.droughtTolerance === 'high') waterScore += 25;
     else if (s3Crop.droughtTolerance === 'medium') waterScore += 10;
@@ -119,13 +135,20 @@ export function calculateSequenceScores(
   let climateScore = 45;
 
   // [AGRO-RULE-02-HEAT35] Dry-season rice spikelet sterility cliff (> 35°C Apr-May)
-  if (hasDrySeasonRice && climate.seasonalStats.dryHot.maxTemp > 35.0) {
+  if (hasHeatSterility) {
     const excessC = climate.seasonalStats.dryHot.maxTemp - 35.0;
     climateScore -= Math.round(28 + excessC * 10);
   } else if (climate.seasonalStats.dryHot.maxTemp >= 34.0 && s3Crop.family !== 'fallow') {
     if (s3Crop.heatTolerance === 'high') climateScore += 22;
     else if (s3Crop.heatTolerance === 'medium') climateScore += 10;
     else climateScore -= 20;
+  }
+
+  // [AGRO-RULE-03-PESTBREAK] Pest resilience under climate pressure
+  if (hasSevereHostConflict) {
+    climateScore -= 10;
+  } else if (activeFamilyCount === 3) {
+    climateScore += 6;
   }
 
   // Extreme rainfall and typhoon resistance in S1
@@ -144,18 +167,34 @@ export function calculateSequenceScores(
   // 4. ECONOMICS SCORE (0 - 100)
   let econScore = 45;
 
-  // Market value tier
-  const highMarketCount = crops.filter((c) => c.marketTier === 'high').length;
+  // Market value tier across cultivated crops
+  const highMarketCount = activeCrops.filter((c) => c.marketTier === 'high').length;
   econScore += highMarketCount * 14;
 
-  // Input cost burden
-  const highInputCount = crops.filter((c) => c.inputCost === 'high').length;
-  const lowInputCount = crops.filter((c) => c.inputCost === 'low').length;
+  // Input cost burden (exclude fallow from cultivation low-input credit; penalize lost fallow harvest)
+  const highInputCount = activeCrops.filter((c) => c.inputCost === 'high').length;
+  const lowInputCount = activeCrops.filter((c) => c.inputCost === 'low').length;
   econScore -= highInputCount * 8;
   econScore += lowInputCount * 8;
+  if (hasFallow) econScore -= 12;
+
+  // [AGRO-RULE-01-NFIX] Synthetic N-fertilizer savings from biological fixation
+  if (legumeCount > 0) econScore += 8;
+  if (activeCrops.some((c) => c.id === 'mungbean')) econScore += 4;
+
+  // [AGRO-RULE-02-HEAT35] Spikelet sterility revenue loss penalty (7-10% yield loss per 1°C > 35°C)
+  if (hasHeatSterility) {
+    const excessC = climate.seasonalStats.dryHot.maxTemp - 35.0;
+    econScore -= Math.round(14 + excessC * 8);
+  }
+
+  // [AGRO-RULE-03-PESTBREAK] Pest & pathogen outbreak cost penalty
+  if (hasSevereHostConflict) {
+    econScore -= 10;
+  }
 
   // Staple security (presence of rice or corn provides food security)
-  const hasStaple = crops.some((c) => c.id === 'rice' || c.id === 'corn');
+  const hasStaple = activeCrops.some((c) => c.id === 'rice' || c.id === 'corn');
   if (hasStaple) econScore += 10;
 
   econScore = Math.min(100, Math.max(10, econScore));

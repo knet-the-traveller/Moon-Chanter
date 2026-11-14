@@ -15,7 +15,7 @@ import {
   Ban
 } from 'lucide-react';
 
-const crops = cropsData as Crop[];
+const crops = (cropsData as Crop[]).filter((c) => c.family !== 'fallow');
 
 export const PrioritiesSection: React.FC = () => {
   const {

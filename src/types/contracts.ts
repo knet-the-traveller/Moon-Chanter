@@ -3,14 +3,10 @@
  * Note: Share this file with team members implementing UI, Soil, and Rotation Engine modules.
  */
 
-import type { SoilData, PhosphorusFixationRisk } from './index';
+import type { SoilData } from './index';
 
 export type { SoilProfile, PhosphorusFixationRisk } from './index';
-export type SoilContract = SoilData & {
-  bulkDensityGcm3?: number;
-  phosphorusFixationRisk?: PhosphorusFixationRisk;
-  slopePct?: number;
-};
+export type SoilContract = SoilData;
 
 export interface ClimateSummary {
   location: { lat: number; lon: number };

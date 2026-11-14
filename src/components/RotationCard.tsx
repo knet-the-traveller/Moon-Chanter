@@ -83,13 +83,18 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
             <h3 className="font-bold text-stone-900 text-sm sm:text-base leading-tight">
               {language === 'fil' ? plan.name.local : plan.name.en}
             </h3>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${badge.class}`}
               >
                 <BadgeIcon className="w-3 h-3" />
                 <span>{badge.label}</span>
               </span>
+              {plan.isBaseline && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-stone-100 text-stone-700 border-stone-300">
+                  {getTranslation(language, 'results.baselineBadge')}
+                </span>
+              )}
             </div>
           </div>
         </div>

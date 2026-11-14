@@ -35,7 +35,9 @@ const SoilDataSchema = z.object({
   rawSocDgPerKg: z.number().optional(),
   bulkDensityGcm3: z.number().optional(),
   phosphorusFixationRisk: PhosphorusFixationRiskSchema.optional(),
-  slopePct: z.number().optional()
+  slopePct: z.number().optional(),
+  needsReview: z.boolean().optional(),
+  reviewNote: z.string().optional()
 });
 
 const SoilGridsApiPayloadSchema = z.object({
@@ -191,8 +193,9 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
       organicMatter = 'low';
     }
 
+    const hasMeasuredBdod = bdodVal > 0;
     const bulkDensityGcm3 =
-      bdodVal > 0 ? Number((bdodVal / 100).toFixed(2)) : estimateBulkDensityFromTexture(texture);
+      hasMeasuredBdod ? Number((bdodVal / 100).toFixed(2)) : estimateBulkDensityFromTexture(texture);
     const phosphorusFixationRisk = derivePhosphorusFixationRisk(ph);
 
     const soilResult: SoilData = {
@@ -206,7 +209,11 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
       rawSandPercent: sandPct,
       rawSocDgPerKg: socVal,
       bulkDensityGcm3,
-      phosphorusFixationRisk
+      phosphorusFixationRisk,
+      needsReview: !hasMeasuredBdod,
+      reviewNote: hasMeasuredBdod
+        ? undefined
+        : 'SoilGrids bdod layer missing at coordinate; bulkDensityGcm3 estimated from texture class (needs local penetrometer/core verification).'
     };
 
     await LocalCacheService.set(cacheKey, soilResult, SOIL_CACHE_TTL_MS);
@@ -229,7 +236,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
   // Check Malaybalay Bukidnon upland highland Ultisol benchmark first
   if (isBukidnonCoordinates(lat, lon)) {
     return {
-      source: 'ISRIC SoilGrids & DA-BSWM Benchmark Profile (Malaybalay, Bukidnon Upland Ultisol)',
+      source: 'ISRIC SoilGrids & DA-BSWM Regional Benchmark (Malaybalay, Bukidnon Upland Ultisol)',
       texture: 'clay_loam',
       drainage: 'well',
       organicMatter: 'medium',
@@ -240,18 +247,33 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       rawSocDgPerKg: 150,
       bulkDensityGcm3: 1.28,
       phosphorusFixationRisk: 'high',
-      slopePct: 18
+      slopePct: 18,
+      needsReview: true,
+      reviewNote:
+        'Synthetic regional upland Ultisol benchmark (pH 4.7, slopePct 18%, bd 1.28 g/cm3); verify exact parcel pH, Bray-2 P, and slope with local MAO/BSWM field test.'
     };
   }
 
   const sampleName = getNearestSampleSlug(lat, lon);
   const pilotBenchmarkExtras: Record<
     'munoz' | 'ilagan' | 'pototan',
-    { bulkDensityGcm3: number; slopePct: number; phosphorusFixationRisk?: PhosphorusFixationRisk }
+    { bulkDensityGcm3: number; slopePct: number; note: string }
   > = {
-    munoz: { bulkDensityGcm3: 1.44, slopePct: 2 },
-    ilagan: { bulkDensityGcm3: 1.32, slopePct: 8 },
-    pototan: { bulkDensityGcm3: 1.38, slopePct: 3 }
+    munoz: {
+      bulkDensityGcm3: 1.44,
+      slopePct: 2,
+      note: 'Supplemental regional plow-pan bulkDensityGcm3 (1.44 g/cm3) and slopePct (2%) added outside bundled fixture; verify with field core/penetrometer test.'
+    },
+    ilagan: {
+      bulkDensityGcm3: 1.32,
+      slopePct: 8,
+      note: 'Supplemental alluvial benchmark bulkDensityGcm3 (1.32 g/cm3) and slopePct (8%) added outside bundled fixture (alluvial site pH 6.6; upland Ultisol zones require local pH/Bray-2 P test).'
+    },
+    pototan: {
+      bulkDensityGcm3: 1.38,
+      slopePct: 3,
+      note: 'Supplemental regional benchmark bulkDensityGcm3 (1.38 g/cm3) and slopePct (3%) added outside bundled fixture; verify with local technician.'
+    }
   };
   const extras = pilotBenchmarkExtras[sampleName];
 
@@ -262,6 +284,8 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       const parsed = FallbackFixtureSchema.safeParse(rawData);
       if (parsed.success) {
         const baseSoil = parsed.data.soil;
+        const usedExtras =
+          baseSoil.bulkDensityGcm3 === undefined || baseSoil.slopePct === undefined;
         return {
           ...baseSoil,
           isEstimate: true,
@@ -269,7 +293,9 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
           bulkDensityGcm3: baseSoil.bulkDensityGcm3 ?? extras.bulkDensityGcm3,
           phosphorusFixationRisk:
             baseSoil.phosphorusFixationRisk ?? derivePhosphorusFixationRisk(baseSoil.ph),
-          slopePct: baseSoil.slopePct ?? extras.slopePct
+          slopePct: baseSoil.slopePct ?? extras.slopePct,
+          needsReview: baseSoil.needsReview ?? usedExtras,
+          reviewNote: baseSoil.reviewNote ?? (usedExtras ? extras.note : undefined)
         };
       }
     }
@@ -290,7 +316,9 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       rawSocDgPerKg: 158,
       bulkDensityGcm3: extras.bulkDensityGcm3,
       phosphorusFixationRisk: derivePhosphorusFixationRisk(6.6),
-      slopePct: extras.slopePct
+      slopePct: extras.slopePct,
+      needsReview: true,
+      reviewNote: extras.note
     };
   }
 
@@ -307,7 +335,9 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       rawSocDgPerKg: 135,
       bulkDensityGcm3: extras.bulkDensityGcm3,
       phosphorusFixationRisk: derivePhosphorusFixationRisk(6.1),
-      slopePct: extras.slopePct
+      slopePct: extras.slopePct,
+      needsReview: true,
+      reviewNote: extras.note
     };
   }
 
@@ -323,6 +353,8 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
     rawSocDgPerKg: 142,
     bulkDensityGcm3: extras.bulkDensityGcm3,
     phosphorusFixationRisk: derivePhosphorusFixationRisk(6.3),
-    slopePct: extras.slopePct
+    slopePct: extras.slopePct,
+    needsReview: true,
+    reviewNote: extras.note
   };
 }

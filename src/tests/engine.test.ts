@@ -366,4 +366,56 @@ describe('Agronomic Rule Guardrails [AGRO-RULE-01..04]', () => {
     );
     expect(lowlandExp.risks.some((r) => /1\.46|plow-pan|compaction/i.test(r.textEn))).toBe(true);
   });
+
+  it('keeps neutral sloping uplands free of false acid warnings and avoids slope erosion misattribution on flat acidic lowlands', () => {
+    const neutralSloping: SoilData = {
+      ...mockSoil,
+      slopePct: 20,
+      ph: 6.5,
+      phosphorusFixationRisk: 'low'
+    };
+    const canopyCover = { s1Crop: byId('corn'), s2Crop: byId('mungbean'), s3Crop: byId('sweet_potato') };
+    const neutralExp = generatePlanExplanations(canopyCover, mockClimate, neutralSloping);
+    expect(neutralExp.reasons.some((r) => r.id === 'reason_erosion_armor')).toBe(true);
+    expect(neutralExp.risks.some((r) => r.id === 'risk_acid_lime_verify')).toBe(false);
+
+    const flatAcidicLowland: SoilData = {
+      ...mockSoil,
+      texture: 'clay',
+      drainage: 'poor',
+      slopePct: 2,
+      ph: 5.2,
+      phosphorusFixationRisk: 'high'
+    };
+    const doubleRice = { s1Crop: byId('rice'), s2Crop: byId('rice'), s3Crop: byId('fallow') };
+    const flatExp = generatePlanExplanations(doubleRice, mockClimate, flatAcidicLowland);
+    expect(flatExp.risks.some((r) => r.id === 'risk_erosion_acid_fallow')).toBe(false);
+    expect(flatExp.risks.some((r) => r.id === 'risk_acid_lime_verify')).toBe(true);
+
+    const plans = generateRotationRecommendations({
+      allCrops: crops,
+      climate: mockClimate,
+      soil: flatAcidicLowland,
+      priorities: defaultPriorities,
+      maxResults: 4
+    });
+    const baselinePlan = plans.find((p) => p.isBaseline);
+    expect(baselinePlan).toBeDefined();
+    expect(baselinePlan!.seasons[2].role).not.toBe('Drought-Hardy Soil Cover');
+    expect(baselinePlan!.seasons[2].role).toMatch(/Fallow/i);
+  });
+
+  it('propagates [AGRO-RULE-01..03] economic and climate adjustments cleanly', () => {
+    const relayMung = { s1Crop: byId('rice'), s2Crop: byId('mungbean'), s3Crop: byId('corn') };
+    const doubleRice = { s1Crop: byId('rice'), s2Crop: byId('rice'), s3Crop: byId('fallow') };
+    const cornMono = { s1Crop: byId('corn'), s2Crop: byId('corn'), s3Crop: byId('fallow') };
+
+    const relayScores = calculateSequenceScores(relayMung, mockClimate, mockSoil, defaultPriorities);
+    const riceMonoScores = calculateSequenceScores(doubleRice, mockClimate, mockSoil, defaultPriorities);
+    const cornMonoScores = calculateSequenceScores(cornMono, mockClimate, mockSoil, defaultPriorities);
+
+    expect(relayScores.economics).toBeGreaterThan(riceMonoScores.economics);
+    expect(relayScores.economics).toBeGreaterThan(cornMonoScores.economics);
+    expect(relayScores.climateRisk).toBeGreaterThan(cornMonoScores.climateRisk);
+  });
 });

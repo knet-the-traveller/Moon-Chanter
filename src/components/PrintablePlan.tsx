@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { applyFarmerSoilOverride } from '../services/soilGrids';
 import { MapPin, Database } from 'lucide-react';
 
 export const PrintablePlan: React.FC = () => {
@@ -13,7 +14,9 @@ export const PrintablePlan: React.FC = () => {
   } = useAppStore();
 
   const topPlan = recommendedPlans[0];
-  const effectiveSoil = { ...(soilData || {}), ...(soilOverride || {}) };
+  const effectiveSoil = soilData
+    ? applyFarmerSoilOverride(soilData, soilOverride)
+    : soilOverride || {};
 
   if (!topPlan || !climateData) return null;
 

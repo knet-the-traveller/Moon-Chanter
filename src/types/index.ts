@@ -32,6 +32,8 @@ export interface SoilData {
   bulkDensityGcm3?: number;
   phosphorusFixationRisk?: PhosphorusFixationRisk;
   slopePct?: number;
+  needsReview?: boolean;
+  reviewNote?: string;
 }
 
 export type SoilProfile = SoilData;

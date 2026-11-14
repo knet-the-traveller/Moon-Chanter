@@ -73,7 +73,12 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
           seasonName: { en: 'Hot Dry Season / Catch', local: 'Tag-init / Pangsalag' },
           periodMonths: 'Mar – May',
           crop: cand.s3Crop,
-          role: cand.s3Crop.droughtTolerance === 'high' ? 'Drought-Hardy Soil Cover' : 'Short-Cycle Cash Catch'
+          role:
+            cand.s3Crop.family === 'fallow'
+              ? 'Unplanted Bare Fallow / Stubble Rest'
+              : cand.s3Crop.droughtTolerance === 'high'
+                ? 'Drought-Hardy Soil Cover'
+                : 'Short-Cycle Cash Catch'
         }
       ],
       scores,

@@ -62,6 +62,8 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
     const munozProfile = await fetchSoilGridsData(15.714, 120.906);
     expect(munozProfile.isEstimate).toBe(true);
     expect(munozProfile.bulkDensityGcm3).toBeGreaterThan(1.4);
+    expect(munozProfile.needsReview).toBe(true);
+    expect(munozProfile.reviewNote).toMatch(/bulkDensityGcm3|penetrometer/i);
 
     await LocalCacheService.clear();
 
@@ -70,9 +72,36 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
     expect(bukidnonProfile.isEstimate).toBe(true);
     expect(bukidnonProfile.ph).toBeLessThan(5.5);
     expect(bukidnonProfile.phosphorusFixationRisk).toBe('high');
+    expect(bukidnonProfile.needsReview).toBe(true);
   });
 
-  it('preserves 1-tap Farmer Soil Override while recalculating phosphorusFixationRisk from overridden pH', () => {
+  it('estimates bulkDensityGcm3 from texture and marks needsReview when live SoilGrids bdod is absent', async () => {
+    const payloadWithoutBdod = {
+      properties: {
+        layers: [
+          { name: 'clay', depths: [{ values: { mean: 410 } }] },
+          { name: 'sand', depths: [{ values: { mean: 230 } }] },
+          { name: 'silt', depths: [{ values: { mean: 360 } }] },
+          { name: 'phh2o', depths: [{ values: { mean: 63 } }] },
+          { name: 'soc', depths: [{ values: { mean: 140 } }] }
+        ]
+      }
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => payloadWithoutBdod
+    });
+
+    const profile = await fetchSoilGridsData(15.801, 120.951);
+    expect(profile.texture).toBe('clay');
+    expect(profile.bulkDensityGcm3).toBe(1.44);
+    expect(profile.needsReview).toBe(true);
+    expect(profile.reviewNote).toMatch(/bdod/i);
+  });
+
+  it('preserves 1-tap Farmer Soil Override while recalculating phosphorusFixationRisk and handling null overrides', () => {
     const baseSoil: SoilProfile = {
       source: 'ISRIC SoilGrids Benchmark Profile',
       texture: 'clay',
@@ -83,6 +112,8 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
       bulkDensityGcm3: 1.44,
       phosphorusFixationRisk: 'high'
     };
+
+    expect(applyFarmerSoilOverride(baseSoil, null)).toBe(baseSoil);
 
     const overridden = applyFarmerSoilOverride(baseSoil, {
       texture: 'clay_loam',
