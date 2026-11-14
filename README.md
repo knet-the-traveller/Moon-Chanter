@@ -120,14 +120,25 @@ npm run preview
 
 ## 📊 Data Sources & References
 
-| Need | Source | Resolution & Notes |
-|---|---|---|
-| Temperature, Rainfall, Solar Insolation, Humidity | **NASA POWER API** (`power.larc.nasa.gov`) | 0.5° × 0.5° grid, multi-decadal climatology |
-| Optical Satellite Imagery & NDVI Greenness | **NASA GIBS** (EOSDIS) | MODIS Terra & VIIRS global tile layers |
-| Soil Texture, pH, Organic Carbon | **ISRIC SoilGrids 2.0** | 250m global telemetry at 0–15cm root depth |
-| Philippine Crop Agronomy & Rotations | PhilRice, DA-BPI, FAO, IRRI, PCARRD | Documented in `src/data/crops.json` |
+Aligned with the official **2026 NASA Space Apps Challenge Resources**:
 
-*For complete details, see [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) and [docs/METHODOLOGY.md](docs/METHODOLOGY.md).*
+| Resource / Platform | Satellite / Agency | Resolution & Role in FieldShift |
+|---|---|---|
+| **NASA POWER API** | NASA Langley Research Center (LaRC) | 0.5° × 0.5° grid, daily & 10-year monthly climatology (`T2M`, `T2M_MAX`, `PRECTOTCORR`, `ALLSKY_SFC_SW_DWN`, `RH2M`) |
+| **MODIS & VIIRS Imagery** | NASA GIBS / LP DAAC / USGS | 250m–1km optical satellite reflectance and 8-day vegetation greenness (NDVI) |
+| **Landsat (30m)** | USGS / NASA | 30m multispectral optical imagery for bare-field soil erosion risk monitoring |
+| **NASA SMAP** | NASA JPL / GSFC | 9km–36km surface & root-zone soil moisture anomalies for post-monsoon legume relay timing |
+| **NASA GPM & IMERG** | NASA / JAXA | 0.1° precipitation rate and extreme-storm accumulation for rainfall erosivity assessment |
+| **NASA SRTM** | NASA / NGA | 30m Digital Elevation Model (DEM) for lowland drainage basin and slope erosion hazard flagging |
+| **NASA JPL ECOSTRESS** | NASA Jet Propulsion Laboratory | 70m Land Surface Temperature (LST) and Evaporative Stress Index (ESI) for thermal stress hotspots |
+| **NASA NLDAS / GLDAS** | NASA GSFC | Land data assimilation for root-zone moisture and hydrologic sensitivity context |
+| **ESA Copernicus Sentinel-2** | European Space Agency (Partner) | 10m–20m multispectral red-edge/NIR for fine-scale vegetative cover |
+| **ECMWF ERA5 Reanalysis** | ECMWF / Copernicus (Partner) | 0.25° hourly/monthly reanalysis for microclimate and station gap-filling |
+| **FAO GAEZ v4** | UN FAO / IIASA | Global agro-climatic crop suitability indices and agro-edaphic constraints |
+| **ISRIC SoilGrids 2.0 & Baselines** | ISRIC / DA-BSWM / PhilRice | 250m topsoil physical properties (clay/sand/silt %, pH, SOC) + 1-tap **Farmer Soil Override** |
+| **Philippine Crop Agronomy** | PhilRice, DA-BPI, FAO, IRRI, PCARRD | Local agronomic profiles documented in `src/data/crops.json` |
+
+*For complete data specifications and provenance details, see [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) and [docs/METHODOLOGY.md](docs/METHODOLOGY.md).*
 
 ---
 
