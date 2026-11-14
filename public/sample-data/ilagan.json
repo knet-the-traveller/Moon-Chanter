@@ -1,0 +1,59 @@
+{
+  "location": {
+    "id": "ilagan",
+    "name": "City of Ilagan",
+    "province": "Isabela",
+    "region": "Cagayan Valley (Region II)",
+    "lat": 16.975,
+    "lon": 121.810,
+    "elevationMeters": 46,
+    "description": {
+      "en": "Corn Capital of the Philippines. Cagayan river basin alluvial soils with good drainage, ideal for diversified rotations of corn, legumes, and high-value vegetables.",
+      "fil": "Kabisera ng Mais ng Pilipinas. Matatabang lupang alluvial sa tabi ng ilog Cagayan na may maayos na daloy ng tubig, angkop sa mais at munggo."
+    }
+  },
+  "climate": {
+    "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
+    "variableList": ["T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "ALLSKY_SFC_SW_DWN", "RH2M"],
+    "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
+    "isSampleData": true,
+    "meanAnnualPrecipitation": 1980,
+    "meanAnnualTemp": 27.2,
+    "seasonalStats": {
+      "wet": { "precip": 1390, "avgTemp": 27.5, "maxTemp": 32.8 },
+      "dryCool": { "precip": 180, "avgTemp": 24.8, "maxTemp": 29.8 },
+      "dryHot": { "precip": 410, "avgTemp": 29.1, "maxTemp": 35.8 }
+    },
+    "monthly": [
+      { "month": "Jan", "monthNum": 1, "temp": 24.2, "tempMax": 28.8, "tempMin": 19.6, "rainfall": 45, "solarRadiation": 14.8, "humidity": 82 },
+      { "month": "Feb", "monthNum": 2, "temp": 25.1, "tempMax": 30.2, "tempMin": 20.0, "rainfall": 35, "solarRadiation": 17.5, "humidity": 78 },
+      { "month": "Mar", "monthNum": 3, "temp": 27.2, "tempMax": 33.4, "tempMin": 21.0, "rainfall": 52, "solarRadiation": 20.4, "humidity": 74 },
+      { "month": "Apr", "monthNum": 4, "temp": 29.2, "tempMax": 35.9, "tempMin": 22.5, "rainfall": 98, "solarRadiation": 22.1, "humidity": 71 },
+      { "month": "May", "monthNum": 5, "temp": 29.6, "tempMax": 35.7, "tempMin": 23.5, "rainfall": 195, "solarRadiation": 21.0, "humidity": 76 },
+      { "month": "Jun", "monthNum": 6, "temp": 29.0, "tempMax": 34.5, "tempMin": 23.5, "rainfall": 215, "solarRadiation": 19.5, "humidity": 80 },
+      { "month": "Jul", "monthNum": 7, "temp": 28.3, "tempMax": 33.4, "tempMin": 23.2, "rainfall": 240, "solarRadiation": 18.2, "humidity": 83 },
+      { "month": "Aug", "monthNum": 8, "temp": 28.0, "tempMax": 33.0, "tempMin": 23.0, "rainfall": 270, "solarRadiation": 17.8, "humidity": 84 },
+      { "month": "Sep", "monthNum": 9, "temp": 28.1, "tempMax": 33.1, "tempMin": 23.1, "rainfall": 265, "solarRadiation": 17.6, "humidity": 84 },
+      { "month": "Oct", "monthNum": 10, "temp": 27.5, "tempMax": 32.2, "tempMin": 22.8, "rainfall": 280, "solarRadiation": 16.5, "humidity": 85 },
+      { "month": "Nov", "monthNum": 11, "temp": 26.2, "tempMax": 30.8, "tempMin": 21.6, "rainfall": 175, "solarRadiation": 14.5, "humidity": 86 },
+      { "month": "Dec", "monthNum": 12, "temp": 24.8, "tempMax": 29.2, "tempMin": 20.4, "rainfall": 110, "solarRadiation": 13.9, "humidity": 85 }
+    ],
+    "heatStressDaysPerYear": 38,
+    "drySpellRisk": "moderate",
+    "excessWaterRisk": "high",
+    "heatRisk": "high",
+    "tenYearRainfallTrend": "stable",
+    "trendDeltaPercent": 1.2
+  },
+  "soil": {
+    "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean)",
+    "texture": "loam",
+    "drainage": "well",
+    "organicMatter": "medium",
+    "ph": 6.6,
+    "isEstimate": false,
+    "rawClayPercent": 24.1,
+    "rawSandPercent": 41.5,
+    "rawSocDgPerKg": 158
+  }
+}

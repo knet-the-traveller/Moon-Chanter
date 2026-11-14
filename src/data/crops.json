@@ -1,0 +1,351 @@
+[
+  {
+    "id": "rice",
+    "name": { "en": "Lowland Rice", "local": "Palay (Palayang Mababa)" },
+    "family": "grass",
+    "nitrogenFixing": false,
+    "rootDepth": "shallow",
+    "waterDemand": "high",
+    "droughtTolerance": "low",
+    "floodTolerance": "high",
+    "heatTolerance": "medium",
+    "seasonLengthDays": 115,
+    "plantingWindows": ["wet", "dry_cool"],
+    "residueBenefit": "medium",
+    "laborIntensity": "high",
+    "inputCost": "high",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["clay", "clay_loam", "loam"],
+      "drainage": ["poor", "moderate"],
+      "minPh": 5.0,
+      "maxPh": 7.5
+    },
+    "breakDiseaseFamilies": ["solanaceae", "legume"],
+    "notes": "Philippine staple crop. Thrives in submerged paddy conditions during monsoon. High water requirement; susceptible to dry spells without irrigation.",
+    "sources": [
+      "PhilRice (Philippine Rice Research Institute) PalayCheck System (2020)",
+      "IRRI (International Rice Research Institute) Agronomy Guide"
+    ]
+  },
+  {
+    "id": "corn",
+    "name": { "en": "Corn / Maize", "local": "Mais" },
+    "family": "grass",
+    "nitrogenFixing": false,
+    "rootDepth": "medium",
+    "waterDemand": "medium",
+    "droughtTolerance": "medium",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 105,
+    "plantingWindows": ["dry_cool", "wet"],
+    "residueBenefit": "high",
+    "laborIntensity": "medium",
+    "inputCost": "medium",
+    "marketTier": "medium",
+    "soilPref": {
+      "texture": ["clay_loam", "loam", "sandy_loam", "silt_loam"],
+      "drainage": ["well", "moderate"],
+      "minPh": 5.5,
+      "maxPh": 7.5
+    },
+    "breakDiseaseFamilies": ["solanaceae", "legume"],
+    "notes": "Major feed and food staple. Generates significant stover biomass for mulching and soil organic matter, but depletes soil nitrogen heavily.",
+    "sources": [
+      "DA-BAR (Department of Agriculture - Bureau of Agricultural Research) Corn Technical Bulletin",
+      "FAO Crop Water Information: Maize"
+    ]
+  },
+  {
+    "id": "mungbean",
+    "name": { "en": "Mungbean", "local": "Munggo" },
+    "family": "legume",
+    "nitrogenFixing": true,
+    "rootDepth": "medium",
+    "waterDemand": "low",
+    "droughtTolerance": "high",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 65,
+    "plantingWindows": ["dry_cool", "dry_hot"],
+    "residueBenefit": "high",
+    "laborIntensity": "low",
+    "inputCost": "low",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam"],
+      "drainage": ["well", "moderate"],
+      "minPh": 5.8,
+      "maxPh": 7.2
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae"],
+    "notes": "Ideal post-rice catch crop. Fixes 30-60 kg N/ha into the soil, breaks stem-borer cycles, and matures in just 60-65 days with minimal residual moisture.",
+    "sources": [
+      "DA-PhilRice & BPI (Bureau of Plant Industry) Mungbean Production Guide",
+      "AVRDC (World Vegetable Center) Legume Handbook"
+    ]
+  },
+  {
+    "id": "peanut",
+    "name": { "en": "Peanut / Groundnut", "local": "Mani" },
+    "family": "legume",
+    "nitrogenFixing": true,
+    "rootDepth": "deep",
+    "waterDemand": "low",
+    "droughtTolerance": "high",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 105,
+    "plantingWindows": ["dry_cool", "dry_hot"],
+    "residueBenefit": "medium",
+    "laborIntensity": "medium",
+    "inputCost": "medium",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "sandy"],
+      "drainage": ["well"],
+      "minPh": 5.5,
+      "maxPh": 7.0
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae"],
+    "notes": "Deep-rooting legume that accesses subsoil moisture and enriches soil with nitrogen. Demands well-drained, light friable soil for pod development.",
+    "sources": [
+      "DOST-PCAARRD Peanut Information Kit (2019)",
+      "ICRISAT Groundnut Compendium"
+    ]
+  },
+  {
+    "id": "sweet_potato",
+    "name": { "en": "Sweet Potato", "local": "Kamote" },
+    "family": "convolvulaceae",
+    "nitrogenFixing": false,
+    "rootDepth": "medium",
+    "waterDemand": "medium",
+    "droughtTolerance": "high",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 110,
+    "plantingWindows": ["dry_cool", "wet", "dry_hot"],
+    "residueBenefit": "high",
+    "laborIntensity": "low",
+    "inputCost": "low",
+    "marketTier": "medium",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam"],
+      "drainage": ["well", "moderate"],
+      "minPh": 5.2,
+      "maxPh": 6.8
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae", "legume"],
+    "notes": "Vigorous dense canopy covers soil rapidly, preventing topsoil erosion and suppressing weeds. Highly climate-resilient caloric buffer.",
+    "sources": [
+      "CIP (International Potato Center) Tropical Root Crops in SE Asia",
+      "DA-BPI Sweet Potato Varietal Release"
+    ]
+  },
+  {
+    "id": "eggplant",
+    "name": { "en": "Eggplant", "local": "Talong" },
+    "family": "solanaceae",
+    "nitrogenFixing": false,
+    "rootDepth": "deep",
+    "waterDemand": "medium",
+    "droughtTolerance": "medium",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 130,
+    "plantingWindows": ["dry_cool", "wet"],
+    "residueBenefit": "low",
+    "laborIntensity": "high",
+    "inputCost": "high",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["loam", "sandy_loam", "clay_loam"],
+      "drainage": ["well"],
+      "minPh": 5.8,
+      "maxPh": 7.0
+    },
+    "breakDiseaseFamilies": ["grass"],
+    "notes": "High cash-value vegetable in Philippine markets. Deep root system explores nutrients, but MUST NOT follow tomato or pepper due to Ralstonia solanacearum wilt risk.",
+    "sources": [
+      "UPLB-IPB (Institute of Plant Breeding) Eggplant Agronomy Manual",
+      "DA High Value Crops Development Program (HVCDP)"
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cassava",
+    "name": { "en": "Cassava", "local": "Kamoteng Kahoy / Balinghoy" },
+    "family": "euphorbiaceae",
+    "nitrogenFixing": false,
+    "rootDepth": "deep",
+    "waterDemand": "low",
+    "droughtTolerance": "high",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 240,
+    "plantingWindows": ["wet", "dry_cool"],
+    "residueBenefit": "low",
+    "laborIntensity": "low",
+    "inputCost": "low",
+    "marketTier": "medium",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam", "sandy"],
+      "drainage": ["well", "moderate"],
+      "minPh": 4.5,
+      "maxPh": 7.5
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae", "legume"],
+    "notes": "Exceptionally hardy crop capable of surviving extended dry spells. Deep roots penetrate hardpans, but long field occupancy limits annual multi-cropping.",
+    "sources": [
+      "PhilRootcrops (Philippine Root Crop Research and Training Center)",
+      "CIAT (International Center for Tropical Agriculture) Cassava Guide"
+    ]
+  },
+  {
+    "id": "cowpea",
+    "name": { "en": "Cowpea / Black-eyed Pea", "local": "Paayap / Kibal" },
+    "family": "legume",
+    "nitrogenFixing": true,
+    "rootDepth": "deep",
+    "waterDemand": "low",
+    "droughtTolerance": "high",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 75,
+    "plantingWindows": ["dry_cool", "dry_hot"],
+    "residueBenefit": "high",
+    "laborIntensity": "low",
+    "inputCost": "low",
+    "marketTier": "medium",
+    "soilPref": {
+      "texture": ["sandy", "sandy_loam", "loam", "clay_loam"],
+      "drainage": ["well", "moderate"],
+      "minPh": 5.5,
+      "maxPh": 7.5
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae"],
+    "notes": "Outstanding drought and heat resilience. Flourishes in sandy or depleted soils, produces high foliage for green manuring, and fixes atmospheric nitrogen efficiently.",
+    "sources": [
+      "IITA (International Institute of Tropical Agriculture) Cowpea Guide",
+      "DA-ATI (Agricultural Training Institute) Legume Guide"
+    ]
+  },
+  {
+    "id": "soybean",
+    "name": { "en": "Soybean", "local": "Soya / Balatong" },
+    "family": "legume",
+    "nitrogenFixing": true,
+    "rootDepth": "medium",
+    "waterDemand": "medium",
+    "droughtTolerance": "medium",
+    "floodTolerance": "low",
+    "heatTolerance": "medium",
+    "seasonLengthDays": 95,
+    "plantingWindows": ["dry_cool", "wet"],
+    "residueBenefit": "high",
+    "laborIntensity": "medium",
+    "inputCost": "medium",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["loam", "clay_loam", "silt_loam"],
+      "drainage": ["well", "moderate"],
+      "minPh": 6.0,
+      "maxPh": 7.0
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae"],
+    "notes": "High commercial demand for processing. High nitrogen fixation capacity, improving soil fertility for following grain crops.",
+    "sources": [
+      "DA National Soybean Program Reference Manual",
+      "PhilRice-JICA Crop Diversification Project"
+    ]
+  },
+  {
+    "id": "tomato",
+    "name": { "en": "Tomato", "local": "Kamatis" },
+    "family": "solanaceae",
+    "nitrogenFixing": false,
+    "rootDepth": "medium",
+    "waterDemand": "medium",
+    "droughtTolerance": "low",
+    "floodTolerance": "low",
+    "heatTolerance": "medium",
+    "seasonLengthDays": 90,
+    "plantingWindows": ["dry_cool"],
+    "residueBenefit": "low",
+    "laborIntensity": "high",
+    "inputCost": "high",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam"],
+      "drainage": ["well"],
+      "minPh": 6.0,
+      "maxPh": 6.8
+    },
+    "breakDiseaseFamilies": ["grass"],
+    "notes": "Highly remunerative off-season cash crop when grown in cool-dry months (Dec-Feb). Sensitive to waterlogged roots and high humidity foliar diseases.",
+    "sources": [
+      "UPLB Vegetable Production Manual",
+      "DA-HVCDP Tomato Production Protocol"
+    ]
+  },
+  {
+    "id": "ampalaya",
+    "name": { "en": "Bitter Gourd", "local": "Ampalaya" },
+    "family": "cucurbitaceae",
+    "nitrogenFixing": false,
+    "rootDepth": "medium",
+    "waterDemand": "medium",
+    "droughtTolerance": "medium",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 110,
+    "plantingWindows": ["dry_cool", "wet"],
+    "residueBenefit": "medium",
+    "laborIntensity": "high",
+    "inputCost": "medium",
+    "marketTier": "high",
+    "soilPref": {
+      "texture": ["sandy_loam", "loam", "clay_loam"],
+      "drainage": ["well", "moderate"],
+      "minPh": 6.0,
+      "maxPh": 7.0
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae", "legume"],
+    "notes": "High-value cucurbit that serves as an excellent rotation break between grains and nightshades. Requires trellising and attentive pest management.",
+    "sources": [
+      "East-West Seed Philippines Agronomy Handbook",
+      "DA-BAR Ampalaya Production Guide"
+    ]
+  },
+  {
+    "id": "cover_crotalaria",
+    "name": { "en": "Sunn Hemp / Green Manure", "local": "Sunn Hemp (Pataba sa Lupa)" },
+    "family": "legume",
+    "nitrogenFixing": true,
+    "rootDepth": "deep",
+    "waterDemand": "low",
+    "droughtTolerance": "high",
+    "floodTolerance": "low",
+    "heatTolerance": "high",
+    "seasonLengthDays": 55,
+    "plantingWindows": ["dry_hot", "dry_cool"],
+    "residueBenefit": "high",
+    "laborIntensity": "low",
+    "inputCost": "low",
+    "marketTier": "low",
+    "soilPref": {
+      "texture": ["sandy", "sandy_loam", "loam", "clay_loam", "clay"],
+      "drainage": ["well", "moderate", "poor"],
+      "minPh": 5.0,
+      "maxPh": 8.0
+    },
+    "breakDiseaseFamilies": ["grass", "solanaceae", "cucurbitaceae"],
+    "notes": "Superlative soil restorative cover crop. Produces up to 6 tons of dry biomass and fixes 80-120 kg N/ha in 60 days. Suppresses plant-parasitic nematodes.",
+    "sources": [
+      "FAO Cover Crop & Organic Matter Bulletin",
+      "PhilRice Sustainable Soil Management Series"
+    ]
+  }
+]
