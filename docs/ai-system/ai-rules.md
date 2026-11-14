@@ -100,3 +100,11 @@ These rules apply to every AI agent (Antigravity, Gemini, Kiro, Claude Code, Cur
       - Promptly raise blocking architectural questions instead of making assumptions.
       - Never bypass permission checks, credentials, or environment isolation boundaries.
       - Conclude with a clear, structured summary of deliverables and verification evidence.
+
+23. **Mandatory Pull Request Draft & Notification**:
+    - Whenever pushing changes to remote or completing work on a branch, the AI assistant **MUST** generate a complete Pull Request draft adhering strictly to `.github/pull_request_template.md` and notify the developer to paste or update it in their GitHub PR description.
+    - **Draft Requirements**:
+      - **AI Involvement**: Disclose the specific AI assistant/model used (`Agent: <Assistant Name>`) with verified compliance checkboxes.
+      - **Quality Gates Evidence**: Fill checkboxes based strictly on observed results from `npm test`, `npm run lint`, and `npx tsc -b`.
+      - **Step-by-Step Testing**: Provide concrete verification steps referencing `docs/LOCAL_TESTING_GUIDE.md`.
+      - **Scope Summary**: Outline key changes, touched files, and cited commits.
