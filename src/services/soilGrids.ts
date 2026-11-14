@@ -1,3 +1,4 @@
+import { buildSoilProvenance, cachedProvenance, soilProvenance, ProvenanceRecordSchema } from '../data/provenance';
 import { z } from 'zod';
 import type {
   SoilData,
@@ -23,6 +24,7 @@ const PhosphorusFixationRiskSchema = z.enum(['low', 'moderate', 'high']);
 
 const SoilDataSchema = z.object({
   source: z.string(),
+  provenance: ProvenanceRecordSchema.optional(),
   texture: SoilTextureSchema,
   drainage: DrainageClassSchema,
   organicMatter: OrganicMatterLevelSchema,
@@ -60,7 +62,7 @@ const SoilGridsApiPayloadSchema = z.object({
 });
 
 const FallbackFixtureSchema = z.object({
-  location: z.object({ name: z.string() }),
+  location: z.object({ name: z.string(), lat: z.number().min(-90).max(90).optional(), lon: z.number().min(-180).max(180).optional() }),
   soil: SoilDataSchema
 });
 
@@ -102,9 +104,24 @@ export function applyFarmerSoilOverride(
       ? derivePhosphorusFixationRisk(mergedPh)
       : baseSoil.phosphorusFixationRisk ?? derivePhosphorusFixationRisk(mergedPh));
 
+  const provenance = soilProvenance(baseSoil);
+  for (const key of Object.keys(provenance) as Array<keyof typeof provenance>) {
+    if (override[key] !== undefined || (key === 'phosphorusFixationRisk' && override.ph !== undefined)) {
+      const derivedFromOverridePh = key === 'phosphorusFixationRisk' && override.phosphorusFixationRisk === undefined && override.ph !== undefined;
+      provenance[key] = { ...provenance[key], source: 'Farmer-reported field input', tier: 'farmer',
+        variable: derivedFromOverridePh ? 'pH → phosphorusFixationRisk' : key,
+        cached: false, retrievedAt: null, productVersion: null, citation: undefined,
+        isSample: false, isSynthetic: false, spatialResolution: null, dateRange: null, depth: null,
+        sampleLocation: undefined, needsReview: true,
+        methodKey: derivedFromOverridePh ? 'provenance.methods.phosphorusFixationRisk' : 'provenance.methods.override',
+        method: derivedFromOverridePh ? 'Existing pH-based classification applied to farmer input.' : 'Farmer override; not a laboratory-verified observation.',
+        note: 'Confirm field input and any derived classification with a local agricultural technician.' };
+    }
+  }
   return {
     ...baseSoil,
     ...override,
+    provenance,
     ph: mergedPh,
     phosphorusFixationRisk
   };
@@ -116,7 +133,7 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
   if (cachedRaw) {
     const parsedCache = SoilDataSchema.safeParse(cachedRaw);
     if (parsedCache.success && parsedCache.data.bulkDensityGcm3 !== undefined) {
-      return parsedCache.data;
+      return { ...parsedCache.data, provenance: cachedProvenance(soilProvenance(parsedCache.data)) };
     }
   }
 
@@ -214,11 +231,37 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
         : 'SoilGrids bdod layer missing at coordinate; bulkDensityGcm3 estimated from texture class (needs local penetrometer/core verification).'
     };
 
+    soilResult.provenance = buildSoilProvenance(soilResult, true, undefined, hasMeasuredBdod);
+    const propertiesByMetric = { ph: 'phh2o', rawClayPercent: 'clay', rawSandPercent: 'sand', rawSocDgPerKg: 'soc' } as const;
+    for (const key of Object.keys(propertiesByMetric) as Array<keyof typeof propertiesByMetric>) {
+      const available = layers.some(layer => layer.name === propertiesByMetric[key]
+        && layer.depths?.some(depth => depth.values?.mean !== undefined && depth.values.mean !== null));
+      if (!available || (key === 'ph' && phVal <= 0)) {
+        Object.assign(soilResult.provenance[key]!, { isSynthetic: true, tier: 'synthetic', spatialResolution: null,
+          methodKey: 'provenance.methods.missingDefault', method: 'Legacy numeric substitute; the requested source property is unavailable.', needsReview: true });
+      }
+    }
+    const missingProperty = (name: string) => !layers.some(layer => layer.name === name
+      && layer.depths?.some(depth => depth.values?.mean !== undefined && depth.values.mean !== null));
+    const substituted = [
+      ...(['clay', 'sand', 'silt'].some(missingProperty) ? ['texture', 'drainage'] as const : []),
+      ...(missingProperty('soc') ? ['organicMatter'] as const : []),
+      ...(missingProperty('phh2o') || phVal <= 0 ? ['phosphorusFixationRisk'] as const : [])
+    ];
+    for (const key of substituted) Object.assign(soilResult.provenance[key]!, { isSynthetic: true, tier: 'synthetic',
+      methodKey: 'provenance.methods.missingDefault', needsReview: true });
+    const retrievedAt = new Date().toISOString();
+    for (const metadata of Object.values(soilResult.provenance)) metadata.retrievedAt = retrievedAt;
     await LocalCacheService.set(cacheKey, soilResult, TELEMETRY_CACHE_TTL_MS);
     return soilResult;
   } catch (err) {
     console.warn('SoilGrids live query failed. Falling back to local pilot profile.', err);
-    return await getFallbackSoil(lat, lon);
+    const fallback = await getFallbackSoil(lat, lon);
+    const name = isBukidnonCoordinates(lat, lon) ? 'Malaybalay, Bukidnon'
+      : getNearestSampleSlug(lat, lon) === 'ilagan' ? 'City of Ilagan'
+      : getNearestSampleSlug(lat, lon) === 'pototan' ? 'Pototan' : 'Science City of Muñoz';
+    fallback.provenance ??= buildSoilProvenance(fallback, false, { name }, false);
+    return fallback;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -284,7 +327,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
         const baseSoil = parsed.data.soil;
         const usedExtras =
           baseSoil.bulkDensityGcm3 === undefined || baseSoil.slopePct === undefined;
-        return {
+        const result: SoilData = {
           ...baseSoil,
           isEstimate: true,
           source: `ISRIC SoilGrids Benchmark Profile (${parsed.data.location.name})`,
@@ -295,6 +338,8 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
           needsReview: baseSoil.needsReview ?? usedExtras,
           reviewNote: baseSoil.reviewNote ?? (usedExtras ? extras.note : undefined)
         };
+        result.provenance = buildSoilProvenance(result, false, parsed.data.location, false);
+        return result;
       }
     }
   } catch {

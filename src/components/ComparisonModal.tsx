@@ -1,3 +1,5 @@
+import { PlanDataEvidence, LocalReviewChecklist } from './RotationCard';
+import { applyFarmerSoilOverride } from '../services/soilGrids';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
@@ -9,11 +11,12 @@ export const ComparisonModal: React.FC = () => {
     setComparisonModalOpen,
     comparedPlanIds,
     recommendedPlans,
-    language
+    language, climateData, soilData, soilOverride, landSummary
   } = useAppStore();
 
   if (!isComparisonModalOpen) return null;
 
+  const context = { climate: climateData, soil: soilData ? applyFarmerSoilOverride(soilData, soilOverride) : null, land: landSummary };
   const selectedPlans = recommendedPlans.filter((p) => comparedPlanIds.includes(p.id));
 
   return (
@@ -30,6 +33,7 @@ export const ComparisonModal: React.FC = () => {
             </p>
           </div>
           <button
+            aria-label={getTranslation(language, 'provenance.closeComparison')}
             onClick={() => setComparisonModalOpen(false)}
             className="p-2 rounded-full hover:bg-stone-100 text-stone-500 hover:text-stone-900 transition-colors"
           >
@@ -44,7 +48,7 @@ export const ComparisonModal: React.FC = () => {
               No plans selected for comparison. Click &quot;+ Compare Plan&quot; on any rotation card.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-w-[600px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {selectedPlans.map((plan, idx) => (
                 <div
                   key={plan.id}
@@ -126,6 +130,8 @@ export const ComparisonModal: React.FC = () => {
                       </div>
                     </div>
 
+                    <PlanDataEvidence context={context} language={language} />
+                    <LocalReviewChecklist plan={plan} context={context} language={language} />
                     {/* Climate Shock Resiliency */}
                     <div className="pt-3 text-xs">
                       <div className="font-bold text-stone-700 text-[11px] uppercase mb-1">

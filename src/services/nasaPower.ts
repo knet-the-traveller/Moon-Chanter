@@ -1,8 +1,13 @@
+import { z } from 'zod';
+import { buildClimateProvenance, cachedProvenance, climateProvenance, ProvenanceRecordSchema } from '../data/provenance';
 import { PILOT_CONFIG } from '../config/pilot';
 import { CacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import type { ClimateData, MonthlyClimatePoint } from '../types';
 
 export interface DailySeries {
+  dataLocation?: { name: string; lat?: number; lon?: number };
+  retrievedAt?: string | null;
+  apiVersion?: string;
   location: { lat: number; lon: number };
   dates: string[]; // ISO YYYY-MM-DD
   t2m: (number | null)[];
@@ -24,6 +29,24 @@ export interface FetchDailySeriesOptions {
   maxRetries?: number;
   forceSample?: boolean;
 }
+
+const PowerPayloadSchema = z.object({
+  properties: z.object({ parameter: z.object({ T2M: z.record(z.string().regex(/^\d{8}$/), z.unknown()).refine(values => Object.keys(values).length > 0) }).catchall(z.record(z.string().regex(/^\d{8}$/), z.unknown())) }),
+  geometry: z.object({ coordinates: z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]).rest(z.number()) }).optional(),
+  header: z.object({ api: z.object({ version: z.string().optional() }).optional() }).optional()
+});
+const SeasonalSchema = z.object({ precip: z.number(), avgTemp: z.number(), maxTemp: z.number() });
+const ClimateCacheSchema = z.object({
+  source: z.string(), variableList: z.array(z.string()), dateRange: z.string(), isSampleData: z.boolean(),
+  meanAnnualPrecipitation: z.number(), meanAnnualTemp: z.number(),
+  seasonalStats: z.object({ wet: SeasonalSchema, dryCool: SeasonalSchema, dryHot: SeasonalSchema }),
+  monthly: z.array(z.object({ month: z.string(), monthNum: z.number().int().min(1).max(12), temp: z.number(),
+    tempMax: z.number(), tempMin: z.number(), rainfall: z.number(), solarRadiation: z.number(), humidity: z.number() })).min(1).max(12),
+  heatStressDaysPerYear: z.number(), drySpellRisk: z.enum(['low','moderate','high']),
+  excessWaterRisk: z.enum(['low','moderate','high']), heatRisk: z.enum(['low','moderate','high']),
+  tenYearRainfallTrend: z.enum(['increasing','stable','decreasing']), trendDeltaPercent: z.number(),
+  provenance: ProvenanceRecordSchema.optional()
+});
 
 /**
  * Format raw date string "YYYYMMDD" to ISO "YYYY-MM-DD".
@@ -52,12 +75,13 @@ export function sanitizePowerValue(val: unknown): number | null {
  * Parse raw NASA POWER JSON into a typed DailySeries.
  */
 export function parsePowerDailyPayload(
-  rawJson: any,
+  rawJson: unknown,
   location: { lat: number; lon: number },
   tier: 'live' | 'cache' | 'sample',
   sourceLabel: string
 ): DailySeries {
-  const params = rawJson?.properties?.parameter;
+  const payload = PowerPayloadSchema.parse(rawJson);
+  const params = payload.properties.parameter;
   if (!params) {
     throw new Error('Malformed NASA POWER payload: missing properties.parameter');
   }
@@ -89,6 +113,9 @@ export function parsePowerDailyPayload(
 
   return {
     location,
+    apiVersion: payload.header?.api?.version,
+    dataLocation: tier === 'sample' ? { name: PILOT_CONFIG.location.name,
+      lat: payload.geometry?.coordinates[1], lon: payload.geometry?.coordinates[0] } : undefined,
     dates,
     t2m,
     t2mMax,
@@ -129,8 +156,6 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
 
     try {
       const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-
       // No retry on 4xx client errors
       if (res.status >= 400 && res.status < 500) {
         lastError = new Error(`NASA POWER API client error HTTP ${res.status}`);
@@ -149,6 +174,8 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
         `NASA POWER daily (${formatApiDateToIso(start)} to ${formatApiDateToIso(end)})`
       );
 
+      series.retrievedAt = new Date().toISOString();
+
       // Save raw response in cache
       await CacheService.set(cacheKey, json, PILOT_CONFIG.api.cacheTtlMs);
 
@@ -161,6 +188,8 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
         const backoffMs = PILOT_CONFIG.api.backoffBaseMs * Math.pow(2, attempt);
         await new Promise((r) => setTimeout(r, backoffMs));
       }
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -168,7 +197,7 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
 
   // 2. Try Cache
   try {
-    const cachedJson = await CacheService.get<any>(cacheKey);
+    const cachedJson = await CacheService.get<unknown>(cacheKey);
     if (cachedJson) {
       return parsePowerDailyPayload(
         cachedJson,
@@ -191,7 +220,7 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
  * Load bundled sample data from public directory or filesystem.
  */
 export async function loadBundledSampleDailySeries(location: { lat: number; lon: number }): Promise<DailySeries> {
-  let sampleJson: any = null;
+  let sampleJson: unknown = null;
 
   // In Node.js environment (tests, scripts)
   if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -237,8 +266,11 @@ export async function loadBundledSampleDailySeries(location: { lat: number; lon:
  */
 export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<ClimateData> {
   const cacheKey = `nasa_power_climatology_${lat.toFixed(3)}_${lon.toFixed(3)}`;
-  const cached = await CacheService.get<ClimateData>(cacheKey);
-  if (cached) return cached;
+  const cached = ClimateCacheSchema.safeParse(await CacheService.get<unknown>(cacheKey));
+  if (cached.success) {
+    const data: ClimateData = cached.data;
+    return { ...data, provenance: cachedProvenance(climateProvenance(data)) };
+  }
 
   try {
     const dailySeries = await fetchDailySeries({ lat, lon });
@@ -304,7 +336,7 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
 
     const climateResult: ClimateData = {
       source: dailySeries.source,
-      variableList: ['T2M', 'T2M_MAX', 'T2M_MIN', 'PRECTOTCORR', 'ALLSKY_SFC_SW_DWN', 'RH2M'],
+      variableList: ['T2M', 'T2M_MAX', 'PRECTOTCORR', 'ALLSKY_SFC_SW_DWN', 'RH2M'],
       dateRange: `${dailySeries.dates[0]} to ${dailySeries.dates[dailySeries.dates.length - 1]}`,
       isSampleData: dailySeries.isSample,
       meanAnnualPrecipitation,
@@ -323,11 +355,28 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
       trendDeltaPercent: -2.8
     };
 
+    climateResult.provenance = buildClimateProvenance(climateResult, dailySeries.tier, dailySeries.dataLocation);
+    for (const metadata of Object.values(climateResult.provenance)) {
+      metadata.retrievedAt = dailySeries.retrievedAt ?? null;
+      metadata.productVersion = dailySeries.apiVersion ?? null;
+    }
+    const seriesByMetric = { precipitation: dailySeries.prectotcorr, temperature: dailySeries.t2m,
+      maximumTemperature: dailySeries.t2mMax, solarRadiation: dailySeries.allskySfcSwDwn, humidity: dailySeries.rh2m };
+    for (const key of Object.keys(seriesByMetric) as Array<keyof typeof seriesByMetric>) {
+      const hasMissingMonth = Array.from({ length: 12 }, (_, i) => i + 1).some(month => !dailySeries.dates.some((date, index) =>
+        Number(date.slice(5, 7)) === month && seriesByMetric[key][index] !== null));
+      if (hasMissingMonth) Object.assign(climateResult.provenance[key]!, { isSynthetic: true, tier: 'synthetic',
+        methodKey: 'provenance.methods.missingDefault', method: 'At least one calendar month uses a legacy numeric default due to absent observations.', needsReview: true });
+    }
+
     await CacheService.set(cacheKey, climateResult, TELEMETRY_CACHE_TTL_MS);
     return climateResult;
   } catch (err) {
     console.warn('[nasaPower] fetchNasaPowerClimate fallback triggered:', err);
-    return getFallbackClimateLegacy();
+    const fallback = getFallbackClimateLegacy();
+    fallback.provenance = buildClimateProvenance(fallback, 'sample', { name: PILOT_CONFIG.location.name,
+      lat: PILOT_CONFIG.location.lat, lon: PILOT_CONFIG.location.lon });
+    return fallback;
   }
 }
 

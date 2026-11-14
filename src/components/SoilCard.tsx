@@ -1,3 +1,5 @@
+import { soilProvenance, formatProvenance } from '../data/provenance';
+import { applyFarmerSoilOverride } from '../services/soilGrids';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
@@ -26,9 +28,13 @@ export const SoilCard: React.FC = () => {
 
   if (!soilData) return null;
 
-  const effectiveTexture = soilOverride?.texture || soilData.texture;
-  const effectiveDrainage = soilOverride?.drainage || soilData.drainage;
-  const effectiveOrganicMatter = soilOverride?.organicMatter || soilData.organicMatter;
+  const effectiveSoil = applyFarmerSoilOverride(soilData, soilOverride);
+  const metadata = soilProvenance(effectiveSoil);
+  const source = (key: keyof typeof metadata) => formatProvenance(language, metadata[key]);
+  const unknown = getTranslation(language, 'provenance.unavailableValue');
+  const effectiveTexture = effectiveSoil.texture;
+  const effectiveDrainage = effectiveSoil.drainage;
+  const effectiveOrganicMatter = effectiveSoil.organicMatter;
   const isOverridden = !!soilOverride && Object.keys(soilOverride).length > 0;
 
   const texturePresets: { id: SoilTexture; nameEn: string; nameFil: string; defaultDrainage: DrainageClass }[] = [
@@ -77,7 +83,7 @@ export const SoilCard: React.FC = () => {
           </div>
         ) : (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-300">
-            ISRIC Automated Profile
+            {getTranslation(language, 'provenance.soilAutomated')}
           </span>
         )}
       </div>
@@ -93,7 +99,7 @@ export const SoilCard: React.FC = () => {
             {effectiveTexture.replace('_', ' ')}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            Clay: ~{soilData.rawClayPercent ?? 32}% · Sand: ~{soilData.rawSandPercent ?? 30}%
+            {getTranslation(language, 'provenance.baseFractions')}: {soilData.rawClayPercent !== undefined ? `${soilData.rawClayPercent}%` : unknown} / {soilData.rawSandPercent !== undefined ? `${soilData.rawSandPercent}%` : unknown}
           </div>
         </div>
 
@@ -106,7 +112,7 @@ export const SoilCard: React.FC = () => {
             {effectiveDrainage}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            Water retention capacity
+            {source('drainage')}
           </div>
         </div>
 
@@ -116,10 +122,10 @@ export const SoilCard: React.FC = () => {
             {getTranslation(language, 'conditions.ph')}
           </div>
           <div className="text-base font-bold text-stone-900 mt-1">
-            {soilData.ph} pH
+            {effectiveSoil.ph} pH
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            {soilData.ph < 5.5 ? 'Acidic' : soilData.ph > 7.3 ? 'Alkaline' : 'Optimal Neutral'}
+            {getTranslation(language, 'provenance.phReview')}
           </div>
         </div>
 
@@ -132,11 +138,14 @@ export const SoilCard: React.FC = () => {
             {effectiveOrganicMatter}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            SOC: ~{soilData.rawSocDgPerKg ? (soilData.rawSocDgPerKg / 100).toFixed(2) + '%' : '1.4%'}
+            SOC: {soilData.rawSocDgPerKg !== undefined ? (soilData.rawSocDgPerKg / 100).toFixed(2) + '%' : unknown}
           </div>
         </div>
       </div>
 
+      <ul className="text-xs text-stone-700 space-y-2 break-words" aria-label={getTranslation(language, 'provenance.title')}>
+        {Object.entries(metadata).map(([key, value]) => <li key={key}>{formatProvenance(language, value)}</li>)}
+      </ul>
       {/* Farmer Override Bar */}
       <div className="mt-4 pt-3 border-t border-stone-100">
         <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">

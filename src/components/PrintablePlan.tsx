@@ -1,3 +1,4 @@
+import { PlanDataEvidence, LocalReviewChecklist } from './RotationCard';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { applyFarmerSoilOverride } from '../services/soilGrids';
@@ -17,9 +18,9 @@ export const PrintablePlan: React.FC = () => {
   } = useAppStore();
 
   const topPlan = recommendedPlans[0];
-  const effectiveSoil = soilData
-    ? applyFarmerSoilOverride(soilData, soilOverride)
-    : soilOverride || {};
+  const resolvedSoil = soilData ? applyFarmerSoilOverride(soilData, soilOverride) : null;
+  const effectiveSoil = resolvedSoil ?? soilOverride ?? {};
+  const context = { climate: climateData, soil: resolvedSoil, land: landSummary };
 
   if (!topPlan || !climateData || advisoryIssuedAt === null) return null;
 
@@ -134,7 +135,7 @@ export const PrintablePlan: React.FC = () => {
         <ul className="list-disc pl-5 space-y-1 text-stone-700">
           {topPlan.reasons.map((r) => (
             <li key={r.id}>
-              <strong>[{r.ruleId}]</strong> {r.textEn} <span className="text-stone-500 italic">(Evidence: {r.dataEvidence})</span>
+              <strong>[{r.ruleId}]</strong> {language === 'fil' ? r.textFil : r.textEn} <span className="text-stone-500 italic">(Evidence: {r.dataEvidence})</span>
             </li>
           ))}
         </ul>
@@ -149,14 +150,16 @@ export const PrintablePlan: React.FC = () => {
           <ul className="space-y-1.5 text-stone-800">
             {topPlan.risks.map((risk) => (
               <li key={risk.id}>
-                <strong>⚠️ {risk.textEn}</strong>
-                <div className="text-stone-600 pl-4 mt-0.5">↳ Mitigation: {risk.mitigationEn}</div>
+                <strong>⚠️ {language === 'fil' ? risk.textFil : risk.textEn}</strong>
+                <div className="text-stone-600 pl-4 mt-0.5">↳ Mitigation: {language === 'fil' ? risk.mitigationFil : risk.mitigationEn}</div>
               </li>
             ))}
           </ul>
         </div>
       )}
 
+      <PlanDataEvidence context={context} language={language} forPrint />
+      <LocalReviewChecklist plan={topPlan} context={context} language={language} forPrint />
       {/* Extension Worker Sign-off & Notice */}
       <div className="pt-6 border-t border-stone-300 text-[11px] text-stone-600 flex justify-between items-end">
         <div className="max-w-md">

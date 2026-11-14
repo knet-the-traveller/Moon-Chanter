@@ -1,9 +1,12 @@
+import { formatProvenance } from '../data/provenance';
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
-import { MAP_LAYERS } from '../services/gibs';
+import { GIBS_SATELLITE_BASE, MAP_LAYERS, resolveMapLayer } from '../services/gibs';
+import { addPlaceLabels } from './mapPlaceLabels';
+import { hideEmptyTrueColorTile } from './imageryTiles';
 import { MapPin, Navigation, Layers, CheckCircle2, Info } from 'lucide-react';
 import type { LandMetric } from '../types';
 
@@ -39,8 +42,14 @@ export const MapPicker: React.FC = () => {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const activeTileLayerRef = useRef<L.TileLayer | null>(null);
+  const satelliteBaseRef = useRef<L.TileLayer | null>(null);
+  const standardBaseRef = useRef<L.TileLayer | null>(null);
+  const referenceLabelsRef = useRef<ReturnType<typeof addPlaceLabels> | null>(null);
 
-  const [activeLayerKey, setActiveLayerKey] = useState<string>('osm');
+  const [currentLayer, setCurrentLayer] = useState(MAP_LAYERS.osm);
+  const activeLayerKey = currentLayer.id;
+  const [imageryError, setImageryError] = useState(false);
+  const [labelsError, setLabelsError] = useState(false);
 
   // Initialize Map
   useEffect(() => {
@@ -56,16 +65,16 @@ export const MapPicker: React.FC = () => {
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // The pane's CSS places labels above imagery and below markers/popups.
+    map.createPane('satellite-labels');
 
-    // Initial tile layer (OSM)
+    // Keep OSM underneath satellite overlays for missing or failed imagery tiles.
     const initialLayerConfig = MAP_LAYERS.osm;
-    const tileLayer = L.tileLayer(initialLayerConfig.url, {
+    standardBaseRef.current = L.tileLayer(initialLayerConfig.url, {
       attribution: initialLayerConfig.attribution,
       maxZoom: initialLayerConfig.maxZoom,
       subdomains: initialLayerConfig.subdomains || ['a', 'b', 'c']
     }).addTo(map);
-
-    activeTileLayerRef.current = tileLayer;
 
     // Custom Map Marker using inline SVG DivIcon
     const customIcon = L.divIcon({
@@ -123,8 +132,14 @@ export const MapPicker: React.FC = () => {
     mapInstanceRef.current = map;
 
     return () => {
+      activeTileLayerRef.current = null;
+      satelliteBaseRef.current = null;
+      standardBaseRef.current = null;
+      referenceLabelsRef.current?.remove();
+      referenceLabelsRef.current = null;
       map.remove();
       mapInstanceRef.current = null;
+      markerRef.current = null;
     };
   }, []);
 
@@ -144,26 +159,66 @@ export const MapPicker: React.FC = () => {
   // Switch Tile Layer (GIBS True Color, NDVI, OSM)
   const handleLayerSwitch = (layerKey: string) => {
     if (!mapInstanceRef.current) return;
-    const config = MAP_LAYERS[layerKey];
+    const config = resolveMapLayer(layerKey, Date.now());
     if (!config) return;
 
     if (activeTileLayerRef.current) {
-      mapInstanceRef.current.removeLayer(activeTileLayerRef.current);
+      const previousLayer = activeTileLayerRef.current;
+      activeTileLayerRef.current = null;
+      mapInstanceRef.current.removeLayer(previousLayer);
     }
+    referenceLabelsRef.current?.remove();
+    referenceLabelsRef.current = null;
+    if (satelliteBaseRef.current) mapInstanceRef.current.removeLayer(satelliteBaseRef.current);
+    satelliteBaseRef.current = null;
+    setImageryError(false);
+    setLabelsError(false);
+    setCurrentLayer(config);
     mapInstanceRef.current.setMaxZoom(Math.min(MAX_MAP_ZOOM, config.maxZoom));
+
+    standardBaseRef.current?.setOpacity(config.isGibs ? 0 : 1);
+    if (!config.isGibs) return;
+
+    const satelliteBase = L.tileLayer(GIBS_SATELLITE_BASE.url, {
+      attribution: GIBS_SATELLITE_BASE.attribution,
+      maxZoom: config.maxZoom, maxNativeZoom: GIBS_SATELLITE_BASE.maxNativeZoom
+    });
+    satelliteBase.on('tileerror', () => {
+      if (satelliteBaseRef.current !== satelliteBase) return;
+      standardBaseRef.current?.setOpacity(1);
+      setImageryError(true);
+    });
+    satelliteBaseRef.current = satelliteBase;
+    satelliteBase.addTo(mapInstanceRef.current);
 
     const newLayer = L.tileLayer(config.url, {
       attribution: config.attribution,
       maxZoom: config.maxZoom,
-      opacity: config.opacity || 1.0,
+      maxNativeZoom: config.maxNativeZoom,
+      crossOrigin: config.id === 'gibsTrueColor' ? 'anonymous' : false,
+      opacity: config.opacity ?? 1.0,
       subdomains: config.subdomains || ['a', 'b', 'c']
-    }).addTo(mapInstanceRef.current);
+    });
+
+    newLayer.on('tileerror', () => {
+      if (activeTileLayerRef.current === newLayer) setImageryError(true);
+    });
+    if (config.id === 'gibsTrueColor') {
+      newLayer.on('tileload', (event: L.TileEvent) => {
+        if (activeTileLayerRef.current === newLayer && hideEmptyTrueColorTile(event.tile as HTMLImageElement)) {
+          setImageryError(true);
+        }
+      });
+    }
 
     activeTileLayerRef.current = newLayer;
-    setActiveLayerKey(layerKey);
+    newLayer.addTo(mapInstanceRef.current);
+
+    const labels = addPlaceLabels(mapInstanceRef.current);
+    referenceLabelsRef.current = labels;
+    setLabelsError(!labels.available);
   };
 
-  const currentLayer = MAP_LAYERS[activeLayerKey];
   const langKey = language === 'fil' ? 'local' : 'en';
 
   const t = (key: string) => getTranslation(language, key);
@@ -244,7 +299,7 @@ export const MapPicker: React.FC = () => {
         <div ref={mapContainerRef} className="h-full w-full" />
 
         {/* Floating Layer Switcher */}
-        <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1.5 rounded-xl shadow-lg border border-stone-200/80 text-xs flex flex-col gap-1">
+        <div data-map-layer-switcher className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1.5 rounded-xl shadow-lg border border-stone-200/80 text-xs flex flex-col gap-1">
           <div className="px-2 py-1 font-semibold text-stone-500 text-[10px] uppercase tracking-wider flex items-center gap-1">
             <Layers className="w-3 h-3 text-emerald-700" />
             <span>{getTranslation(language, 'map.overlay')}</span>
@@ -281,18 +336,39 @@ export const MapPicker: React.FC = () => {
           </button>
         </div>
 
-        {/* Legend Notice when GIBS layer active */}
+      </div>
+
+        {/* Keep the readable legend outside the imagery and place labels. */}
         {currentLayer?.isGibs && (
-          <div className="absolute bottom-3 left-3 z-[1000] max-w-xs bg-stone-900/90 text-amber-50 text-[11px] p-2.5 rounded-xl backdrop-blur-md shadow-md border border-stone-700">
-            <div className="font-semibold text-amber-300">
+          <div className="bg-white text-stone-900 text-sm leading-relaxed p-4 border-t border-stone-200">
+            <div className="text-sm font-bold text-emerald-900">
               {currentLayer.name[langKey]}
             </div>
-            <div className="text-stone-300 mt-0.5">
+            <div className="text-stone-800 mt-1">
               {currentLayer.legendDescription?.[langKey]}
             </div>
+            <p className="mt-1 text-stone-700">{t('map.satelliteDetail')}</p>
+            <p className="mt-1 text-stone-700">{t('map.satelliteBackground')}</p>
+            <p className="mt-1 text-stone-700">{t('map.placeNamesSource')}</p>
+            {currentLayer.observationDate && (
+              <p className="mt-2 border-t border-stone-200 pt-2 font-medium text-stone-700">
+                {t('map.imageryDate')}: {currentLayer.observationDate === 'default'
+                  ? t('map.latestNdvi') : `${currentLayer.observationDate} UTC`}
+              </p>
+            )}
           </div>
         )}
-      </div>
+
+      {currentLayer?.isGibs && (imageryError || labelsError) && (
+        <div className="border-t border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          {imageryError && <p role="alert">{t('map.imageryUnavailable')}</p>}
+          {labelsError && <p role="alert">{t('map.labelsUnavailable')}</p>}
+          <button type="button" onClick={() => handleLayerSwitch(activeLayerKey)}
+            className="mt-2 rounded bg-amber-300 px-3 py-2 font-semibold text-stone-900 hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-amber-900">
+            {t('map.retryImagery')}
+          </button>
+        </div>
+      )}
 
       <section className="border-t border-stone-200 p-4 sm:p-5" aria-labelledby="land-summary-title" aria-busy={isLoadingLand}>
         <h3 id="land-summary-title" className="text-base font-bold text-stone-900">{t('land.title')}</h3>
@@ -323,11 +399,7 @@ export const MapPicker: React.FC = () => {
                   <div key={metric.key} className="min-w-0 rounded-lg border border-stone-200 bg-stone-50 p-3">
                     <dt className="text-sm font-semibold text-stone-700">{metric.label}</dt>
                     <dd className="mt-1 break-words text-sm font-bold text-stone-950">{metric.value}</dd>
-                    <dd className="mt-2 break-words text-xs text-stone-700">{[
-                      provenance.source, provenance.variable,
-                      provenance.spatialResolution ?? t('land.unknownResolution'),
-                      provenance.dateRange ?? t('land.unknownPeriod')
-                    ].join(' | ')}</dd>
+                    <dd className="mt-2 break-words text-xs text-stone-700">{formatProvenance(language, { ...provenance, sampleLocation: { name: landSummary.sampleHub.name } })}</dd>
                   </div>
                 );
               })}
