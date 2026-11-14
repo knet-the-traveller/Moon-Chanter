@@ -19,12 +19,12 @@ describe('Local GEMINI.md Rule Audit', () => {
     expect(content).toContain('Agent: Antigravity / Gemini');
   });
 
-  it.runIf(hasLocalGemini)('GEMINI.md defines fresh feature branch and remote lifecycle mandate', () => {
+  it.runIf(hasLocalGemini)('GEMINI.md defines merged branch and PR advisory mandate', () => {
     expect(fs.existsSync(geminiPath)).toBe(true);
     const content = fs.readFileSync(geminiPath, 'utf-8');
-    expect(content).toContain('Fresh Feature Branch & Remote Lifecycle Mandate');
-    expect(content).toContain('git merge-base --is-ancestor');
-    expect(content).toContain('feature/');
-    expect(content).toContain('git push -u origin');
+    expect(content).toContain('Merged Branch & PR Form Advisory Mandate');
+    expect(content).toContain('No Forced Branch Creation');
+    expect(content).toContain('Stay on this branch');
+    expect(content).toContain('Spin up a fresh branch');
   });
 });
