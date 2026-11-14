@@ -100,6 +100,10 @@ npm run dev
 npm test
 ```
 
+### Visual Testing & Verification
+For visual, in-browser, and mobile-simulation testing of all interactive features (maps, NASA GIBS satellite layers, climate cards, priority sliders, and printable advisory plans), follow the:
+📖 **[Local Testing & Visual Run Guide](docs/LOCAL_TESTING_GUIDE.md)**
+
 ### Building for Production
 ```bash
 # Build optimized static bundle
