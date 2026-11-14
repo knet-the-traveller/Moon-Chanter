@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { getTranslation } from '../i18n';
 import { MapPin, Database } from 'lucide-react';
 
 export const PrintablePlan: React.FC = () => {
@@ -9,15 +10,17 @@ export const PrintablePlan: React.FC = () => {
     soilData,
     soilOverride,
     recommendedPlans,
+    advisoryIssuedAt,
+    landSummary,
     language
   } = useAppStore();
 
   const topPlan = recommendedPlans[0];
   const effectiveSoil = { ...(soilData || {}), ...(soilOverride || {}) };
 
-  if (!topPlan || !climateData) return null;
+  if (!topPlan || !climateData || advisoryIssuedAt === null) return null;
 
-  const todayStr = new Date().toLocaleDateString(language === 'fil' ? 'fil-PH' : 'en-PH', {
+  const todayStr = new Date(advisoryIssuedAt).toLocaleDateString(language === 'fil' ? 'fil-PH' : 'en-PH', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -42,7 +45,7 @@ export const PrintablePlan: React.FC = () => {
         </div>
         <div className="text-right text-xs text-stone-500">
           <div>Date: <strong>{todayStr}</strong></div>
-          <div>Advisory Ref: <strong className="font-mono">FS-{selectedLocation.lat.toFixed(2)}-{Date.now().toString().slice(-4)}</strong></div>
+          <div>Advisory Ref: <strong className="font-mono">FS-{selectedLocation.lat.toFixed(2)}-{advisoryIssuedAt.toString().slice(-4)}</strong></div>
         </div>
       </div>
 
@@ -55,7 +58,9 @@ export const PrintablePlan: React.FC = () => {
           <div className="text-sm font-bold text-stone-900">{selectedLocation.name}</div>
           <div className="text-stone-600">{selectedLocation.province}, {selectedLocation.region}</div>
           <div className="font-mono text-stone-500 text-[11px] mt-0.5">
-            Coords: {selectedLocation.lat.toFixed(4)}°N, {selectedLocation.lon.toFixed(4)}°E (Elev: ~{selectedLocation.elevationMeters}m)
+            Coords: {selectedLocation.lat.toFixed(4)}°N, {selectedLocation.lon.toFixed(4)}°E · {landSummary
+              ? `${getTranslation(language, 'land.elevation')}: ~${landSummary.elevationM} m`
+              : getTranslation(language, 'land.unknownElevation')}
           </div>
         </div>
 

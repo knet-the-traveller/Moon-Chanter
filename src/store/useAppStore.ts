@@ -3,6 +3,7 @@ import type {
   Language,
   ClimateData,
   SoilData,
+  LandSummary,
   FarmerPriorities,
   RotationPlan,
   ScenarioCondition,
@@ -14,8 +15,14 @@ import cropsData from '../data/crops.json';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
 import { fetchSoilGridsData } from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
+import { fetchLandSummary } from '../services/landSummary';
+import { CoordinatesSchema } from '../types/landFixture';
+import { getTranslation } from '../i18n';
 
 const allCrops = cropsData as Crop[];
+let telemetryRequestId = 0;
+let gpsRequestId = 0;
+let landController: AbortController | null = null;
 
 interface AppState {
   // Navigation & Preferences
@@ -40,6 +47,11 @@ interface AppState {
   telemetryError: string | null;
   climateData: ClimateData | null;
   soilData: SoilData | null;
+  landSummary: LandSummary | null;
+  isLoadingLand: boolean;
+  landError: string | null;
+  isLocatingGps: boolean;
+  gpsError: string | null;
   soilOverride: Partial<SoilData> | null;
 
   // Farmer Inputs & History
@@ -49,6 +61,7 @@ interface AppState {
 
   // Recommendations & Scenarios
   recommendedPlans: RotationPlan[];
+  advisoryIssuedAt: number | null;
   activeScenario: ScenarioCondition;
   comparedPlanIds: string[];
 
@@ -57,6 +70,8 @@ interface AppState {
   setCurrentStep: (step: 1 | 2 | 3 | 4) => void;
   setMethodologyModalOpen: (open: boolean) => void;
   setComparisonModalOpen: (open: boolean) => void;
+  setLocation: (lat: number, lon: number, location?: AppState['selectedLocation']) => Promise<void>;
+  locateWithGps: () => void;
   selectPilotPreset: (pilot: PilotLocation) => Promise<void>;
   setCustomCoordinates: (lat: number, lon: number, customName?: string) => Promise<void>;
   fetchTelemetry: (lat: number, lon: number) => Promise<void>;
@@ -92,6 +107,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   telemetryError: null,
   climateData: null,
   soilData: null,
+  landSummary: null,
+  isLoadingLand: false,
+  landError: null,
+  isLocatingGps: false,
+  gpsError: null,
   soilOverride: null,
 
   recentCropId: 'rice', // Common baseline in Philippines
@@ -106,70 +126,154 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   recommendedPlans: [],
+  advisoryIssuedAt: null,
   activeScenario: 'baseline',
   comparedPlanIds: [],
 
   setLanguage: (lang) => set({ language: lang }),
-  setCurrentStep: (step) => set({ currentStep: step }),
+  setCurrentStep: (step) => {
+    gpsRequestId += 1;
+    set({ currentStep: step, isLocatingGps: false, gpsError: null });
+  },
   setMethodologyModalOpen: (open) => set({ isMethodologyModalOpen: open }),
   setComparisonModalOpen: (open) => set({ isComparisonModalOpen: open }),
 
-  selectPilotPreset: async (pilot) => {
+  setLocation: async (lat, lon, location) => {
+    if (!CoordinatesSchema.safeParse({ lat, lon }).success) {
+      set({ landError: 'land.invalidCoordinates' });
+      return;
+    }
+    const selectionRequestId = ++telemetryRequestId;
+    landController?.abort();
+    gpsRequestId += 1;
+    const language = get().language;
+    const selectedLocation = location ?? {
+      name: `${getTranslation(language, 'map.customField')} (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`,
+      province: getTranslation(language, 'map.customProvince'),
+      region: getTranslation(language, 'map.customRegion'),
+      lat,
+      lon,
+      elevationMeters: 35
+    };
     set({
-      selectedLocation: {
-        id: pilot.id,
-        name: pilot.name,
-        province: pilot.province,
-        region: pilot.region,
-        lat: pilot.lat,
-        lon: pilot.lon,
-        elevationMeters: pilot.elevationMeters
-      },
-      soilOverride: null
+      selectedLocation: { ...selectedLocation, lat, lon },
+      soilOverride: null,
+      comparedPlanIds: [],
+      climateData: null,
+      soilData: null,
+      landSummary: null,
+      recommendedPlans: [],
+      advisoryIssuedAt: null,
+      isLoadingLand: true,
+      isLoadingTelemetry: true,
+      landError: null,
+      telemetryError: null,
+      isLocatingGps: false,
+      gpsError: null
     });
-    await get().fetchTelemetry(pilot.lat, pilot.lon);
-  },
-
-  setCustomCoordinates: async (lat, lon, customName) => {
-    set({
-      selectedLocation: {
-        id: undefined,
-        name: customName || `Field Point (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`,
-        province: 'Custom Location',
-        region: 'Philippines Agro-Zone',
-        lat,
-        lon,
-        elevationMeters: 35
-      },
-      soilOverride: null
-    });
+    if (selectionRequestId !== telemetryRequestId) return;
     await get().fetchTelemetry(lat, lon);
   },
 
-  fetchTelemetry: async (lat, lon) => {
-    set({ isLoadingTelemetry: true, telemetryError: null });
-    try {
-      const [climate, soil] = await Promise.all([
-        fetchNasaPowerClimate(lat, lon),
-        fetchSoilGridsData(lat, lon)
-      ]);
+  selectPilotPreset: (pilot) => get().setLocation(pilot.lat, pilot.lon, {
+    id: pilot.id,
+    name: pilot.name,
+    province: pilot.province,
+    region: pilot.region,
+    lat: pilot.lat,
+    lon: pilot.lon,
+    elevationMeters: pilot.elevationMeters
+  }),
 
-      set({
-        climateData: climate,
-        soilData: soil,
-        isLoadingTelemetry: false
-      });
+  setCustomCoordinates: (lat, lon, customName) => {
+    const language = get().language;
+    return get().setLocation(lat, lon, {
+      name: customName || `${getTranslation(language, 'map.customField')} (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`,
+      province: getTranslation(language, 'map.customProvince'),
+      region: getTranslation(language, 'map.customRegion'),
+      lat,
+      lon,
+      elevationMeters: 35
+    });
+  },
 
-      // Automatically recompute recommendations whenever telemetry updates
-      get().computeRecommendations();
-    } catch (err) {
-      console.error('Error fetching telemetry:', err);
-      set({
-        isLoadingTelemetry: false,
-        telemetryError: 'Unable to load live satellite telemetry. Using fallback regional benchmark.'
-      });
-      get().computeRecommendations();
+  locateWithGps: () => {
+    const requestId = ++gpsRequestId;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      set({ isLocatingGps: false, gpsError: 'map.gpsUnsupported' });
+      return;
     }
+    set({ isLocatingGps: true, gpsError: null });
+    const failed = () => {
+      if (requestId === gpsRequestId) set({ isLocatingGps: false, gpsError: 'map.gpsFailure' });
+    };
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (requestId !== gpsRequestId) return;
+          set({ isLocatingGps: false });
+          void get().setCustomCoordinates(position.coords.latitude, position.coords.longitude,
+            getTranslation(get().language, 'map.gpsField'));
+        },
+        failed,
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    } catch {
+      failed();
+    }
+  },
+
+  fetchTelemetry: async (lat, lon) => {
+    const location = get().selectedLocation;
+    if (location.lat !== lat || location.lon !== lon) {
+      await get().setLocation(lat, lon);
+      return;
+    }
+    const requestId = ++telemetryRequestId;
+    landController?.abort();
+    const controller = new AbortController();
+    landController = controller;
+    const isCurrent = () => requestId === telemetryRequestId;
+    set({
+      isLoadingTelemetry: true,
+      telemetryError: null,
+      isLoadingLand: true,
+      landError: null,
+      climateData: null,
+      soilData: null,
+      landSummary: null,
+      recommendedPlans: [],
+      advisoryIssuedAt: null
+    });
+    if (!isCurrent()) return;
+
+    const land = fetchLandSummary(lat, lon, controller.signal).then((summary) => {
+      if (!isCurrent()) return;
+      set({
+        landSummary: summary,
+        isLoadingLand: false,
+        selectedLocation: { ...get().selectedLocation, elevationMeters: summary.elevationM }
+      });
+    }).catch(() => {
+      if (isCurrent()) set({ isLoadingLand: false, landError: 'land.unavailable' });
+    });
+
+    const telemetry = Promise.allSettled([
+      fetchNasaPowerClimate(lat, lon), fetchSoilGridsData(lat, lon)
+    ]).then(([climate, soil]) => {
+      if (!isCurrent()) return;
+      const failed = climate.status === 'rejected' || soil.status === 'rejected';
+      set({
+        climateData: climate.status === 'fulfilled' ? climate.value : null,
+        soilData: soil.status === 'fulfilled' ? soil.value : null,
+        isLoadingTelemetry: false,
+        telemetryError: failed ? 'land.telemetryUnavailable' : null
+      });
+      get().computeRecommendations();
+    });
+
+    await Promise.all([land, telemetry]);
+    if (isCurrent()) landController = null;
   },
 
   setSoilOverride: (override) => {
@@ -228,7 +332,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       maxResults: 6
     });
 
-    set({ recommendedPlans: plans });
+    set({ recommendedPlans: plans, advisoryIssuedAt: Date.now() });
   },
 
   setActiveScenario: (scenario) => set({ activeScenario: scenario }),

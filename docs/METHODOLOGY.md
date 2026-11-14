@@ -112,3 +112,33 @@ Each recommendation synthesizes:
 1. **Rule Tags:** Formatted with standardized IDs (e.g., `[AGRO-RULE-01-NFIX]`, `[AGRO-RULE-02-ROOT-STRAT]`, `[AGRO-RULE-03-HYDRO-ALIGN]`).
 2. **Telemetry Citations:** Embeds exact measured values (e.g., *NASA POWER 10-year precipitation of 65mm in March–May*, *Soil Organic Carbon of 1.42%*).
 3. **Farmer-Actionable Mitigations:** Concrete agronomic actions for every identified operational risk (e.g., *apply rice straw mulch to reduce evaporation during late April flowering*).
+
+## Land NDVI profile and annual trend
+
+Municipal land fixtures supply twelve January–December NDVI values. The initial profiles are synthetic demonstrations with `needsReview` metadata and no claimed satellite observation period. The monthly profile describes seasonal variation. Annual trend uses ordinary least squares on comparable annual mean observations, with calendar year as the independent variable and units of NDVI change per year. Missing observations, a single year, or repeated years produce compatibility zero with an explicit unavailable reason. The UI must display insufficient data for this state. The initial fixtures contain no annual observations.
+
+## Preliminary lowland screen [LAND-RULE-FLOOD]
+
+The proposed screen flags elevation below 30 meters together with slope at or below 3 percent. Both named thresholds carry `needsReview` and require local drainage/flood validation. With the initial illustrative profiles, Pototan is flagged, while Muñoz, Ilagan, and Malaybalay are unflagged. Elevation exactly 30 meters is outside the screen; slope exactly 3 percent is included. Terrain alone cannot establish river, storm, drainage, or infrastructure exposure. A technician should consult local flood information before making a field decision.
+
+## Possible bare-field months [LAND-RULE-BARE]
+
+A month is flagged when its NDVI is strictly below `BARE_FIELD_NDVI_THRESHOLD = 0.25` and it is within `FALLOW_WINDOW_MONTHS = [3, 4, 5, 6]`. Both assumptions have `needsReview` metadata for regional crop-calendar and imagery validation. Output months are unique, sorted, and one-based. Low NDVI can reflect several surface and observation conditions, so each flag requires local verification.
+
+## Illustrative annual erosion [LAND-RULE-RUSLE]
+
+The calculation uses `A = R × K × LS × C × P`. R represents rainfall erosivity, K soil erodibility, LS slope length/steepness, C cover/management, and P support practices. This factor structure and its sheet/rill process scope follow USDA guidance. [USDA NRCS user guide](https://www.nrcs.usda.gov/sites/default/files/2022-10/RUSLE2_NRCS_Guide_April_2017_0.pdf)
+
+Fixtures explicitly use SI units for R (`MJ mm ha-1 h-1 yr-1`) and K (`t ha h ha-1 MJ-1 mm-1`), with dimensionless LS, C, and P, yielding metric tonnes per hectare per year. The estimate is rounded to one decimal. Negative/nonfinite factors, incompatible unit declarations, and numeric overflow are rejected.
+
+`coverFactorFromNdvi` uses the illustrative mapping `C = (1 − max(0, mean annual NDVI))²`, bounded between zero and one for NDVI in [-1, 1]. Increasing NDVI produces an equal or smaller C. The exponent 2 and this entire mapping carry `needsReview`; they require calibration with local management and erosion observations. This application implements a simplified factor calculation. The full NRCS model includes additional process and management treatment. The result addresses rainfall-driven sheet/rill processes. Municipal synthetic inputs, unresolved soil factors, gullies, channel erosion, and mass movement limit its application to field decisions. [USDA NRCS model overview](https://www.nrcs.usda.gov/resources/tech-tools/water-erosion-rusle2)
+
+### Land assumptions requiring verification
+
+- Existing preset elevations, new slope values, all monthly NDVI values, and R/K/LS/P values in the demonstration fixtures.
+- The 30-meter and 3-percent terrain-screen thresholds.
+- The NDVI threshold of 0.25 and the March–June fallow window.
+- The NDVI-to-C mapping and its exponent of 2.
+- Product resolutions, observation periods, and comparable annual NDVI observations, which remain unavailable in the synthetic fixtures.
+
+Every derived land summary propagates the fixture's sample/synthetic status and review notes. No severity bands are assigned to the erosion estimate.

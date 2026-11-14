@@ -1,3 +1,5 @@
+import { TELEMETRY_CACHE_TTL_MS } from '../services/cache';
+
 /**
  * Pilot Region Configuration & Tunable Climate Thresholds
  * 
@@ -134,6 +136,6 @@ export const PILOT_CONFIG: PilotConfig = {
     timeoutMs: 15000,
     maxRetries: 2,
     backoffBaseMs: 1000,
-    cacheTtlMs: 1000 * 60 * 60 * 24 * 30 // 30 days
+    cacheTtlMs: TELEMETRY_CACHE_TTL_MS
   }
 };
