@@ -9,38 +9,89 @@ export function calculateSequenceScores(
 ): PlanScoreBreakdown {
   const { s1Crop, s2Crop, s3Crop } = seq;
   const crops = [s1Crop, s2Crop, s3Crop];
+  const activeCrops = crops.filter((c) => c.family !== 'fallow');
+  const hasFallow = activeCrops.length < crops.length;
+  const isSlopingUpland =
+    (soil.slopePct !== undefined && soil.slopePct > 15) ||
+    (soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
+  const isAcidicOrPFixed = soil.ph < 5.5 || soil.phosphorusFixationRisk === 'high';
+  const hasDrySeasonRice = s2Crop.id === 'rice' || s3Crop.id === 'rice';
+  const hasHeatSterility = hasDrySeasonRice && climate.seasonalStats.dryHot.maxTemp > 35.0;
 
   // 1. SOIL HEALTH SCORE (0 - 100)
   let soilScore = 30; // base score
 
-  // Legume & Nitrogen Fixation
-  const legumeCount = crops.filter((c) => c.nitrogenFixing).length;
+  // [AGRO-RULE-01-NFIX] Legume & Biological Nitrogen Fixation (+35 to 80 kg N/ha)
+  const legumeCount = activeCrops.filter((c) => c.nitrogenFixing).length;
   if (legumeCount >= 2) soilScore += 35;
   else if (legumeCount === 1) soilScore += 25;
 
-  // Root Depth Diversity (shallow, medium, deep)
-  const rootDepths = new Set(crops.map((c) => c.rootDepth));
+  // Root Depth Diversity (shallow, medium, deep) across planted crops
+  const rootDepths = new Set(activeCrops.map((c) => c.rootDepth));
   if (rootDepths.size >= 3) soilScore += 20;
   else if (rootDepths.size === 2) soilScore += 12;
 
-  // Deep root bonus in clay soils to break hardpan
-  if (soil.texture === 'clay' && rootDepths.has('deep')) {
+  // Deep root bonus in clay or compacted soils (> 1.4 g/cm3 plow-pan)
+  const isCompacted = soil.bulkDensityGcm3 !== undefined && soil.bulkDensityGcm3 > 1.4;
+  if ((soil.texture === 'clay' || isCompacted) && (rootDepths.has('deep') || rootDepths.has('medium'))) {
     soilScore += 8;
+  }
+  if (isCompacted && s1Crop.id === 'rice' && s2Crop.id === 'rice') {
+    soilScore -= 8;
   }
 
   // Depleted Organic Matter boost when planting high residue / legume
-  if (soil.organicMatter === 'low' && (legumeCount > 0 || crops.some((c) => c.residueBenefit === 'high'))) {
+  if (soil.organicMatter === 'low' && (legumeCount > 0 || activeCrops.some((c) => c.residueBenefit === 'high'))) {
     soilScore += 10;
   }
 
   // Residue / Biomass Contribution
-  const highResidueCount = crops.filter((c) => c.residueBenefit === 'high').length;
+  const highResidueCount = activeCrops.filter((c) => c.residueBenefit === 'high').length;
   soilScore += highResidueCount * 8;
 
-  // Botanical Family Diversity (Pest & Pathogen Break)
-  const familyCount = new Set(crops.map((c) => c.family)).size;
-  if (familyCount === 3) soilScore += 15;
-  else if (familyCount === 2) soilScore += 8;
+  // [AGRO-RULE-03-PESTBREAK] Botanical Family Diversity & Host-Break Guardrails
+  const activeFamilyCount = new Set(activeCrops.map((c) => c.family)).size;
+  if (activeFamilyCount === 3) soilScore += 15;
+  else if (activeFamilyCount === 2) soilScore += 8;
+  else if (activeFamilyCount <= 1) soilScore -= 12;
+
+  const pairs: Array<[typeof s1Crop, typeof s2Crop]> = [
+    [s1Crop, s2Crop],
+    [s2Crop, s3Crop]
+  ];
+  let hasSevereHostConflict = false;
+  for (const [prev, next] of pairs) {
+    if (prev.family === 'fallow' || next.family === 'fallow') continue;
+    if (prev.id === 'corn' && next.id === 'corn') {
+      soilScore -= 22; // Fall Armyworm continuity
+      hasSevereHostConflict = true;
+    }
+    if (prev.family === 'solanaceae' && next.family === 'solanaceae') {
+      soilScore -= 28; // Bacterial Wilt
+      hasSevereHostConflict = true;
+    }
+    if (prev.family === 'amaryllidaceae' && next.family === 'amaryllidaceae') {
+      soilScore -= 24; // Purple Blotch
+      hasSevereHostConflict = true;
+    }
+    if (prev.id === 'rice' && next.id === 'rice') {
+      soilScore -= 10; // Rice stem-borer / blast host
+      hasSevereHostConflict = true;
+    }
+  }
+
+  // [AGRO-RULE-04-EROSION-ACID] Upland RUSLE canopy cover vs bare fallow & acid P-fixation stress
+  if (isSlopingUpland) {
+    if (hasFallow) {
+      soilScore -= 24;
+    } else if (
+      activeCrops.some((c) => c.id === 'mungbean' || c.id === 'sweet_potato' || c.nitrogenFixing)
+    ) {
+      soilScore += 14;
+    }
+  } else if (isAcidicOrPFixed && hasFallow) {
+    soilScore -= 8;
+  }
 
   soilScore = Math.min(100, Math.max(10, soilScore));
 
@@ -55,28 +106,49 @@ export function calculateSequenceScores(
   }
 
   // Season 2 (Cool Dry)
-  if (s2Crop.waterDemand === 'low' || s2Crop.waterDemand === 'medium') {
+  if (s2Crop.id === 'rice') {
+    waterScore -= 18; // Dry-season paddy demands > 1,000 mm
+  } else if (s2Crop.waterDemand === 'low' || s2Crop.waterDemand === 'medium') {
     waterScore += 15;
   }
 
-  // Season 3 (Hot Dry - minimal rain & dry spell danger)
-  if (s3Crop.droughtTolerance === 'high') waterScore += 25;
-  else if (s3Crop.droughtTolerance === 'medium') waterScore += 10;
-  else waterScore -= 20;
+  // [AGRO-RULE-01-NFIX] Short-cycle Pag-asa mungbean water savings (300-350 mm vs >1,000 mm rice)
+  if (s2Crop.id === 'mungbean' || s3Crop.id === 'mungbean') {
+    waterScore += 8;
+  }
 
-  if (s3Crop.waterDemand === 'low') waterScore += 15;
-  else if (s3Crop.waterDemand === 'high') waterScore -= 15;
+  // Season 3 (Hot Dry - minimal rain & dry spell danger)
+  if (s3Crop.family === 'fallow') {
+    if (isSlopingUpland) waterScore -= 12; // unarmored slope runoff
+  } else {
+    if (s3Crop.droughtTolerance === 'high') waterScore += 25;
+    else if (s3Crop.droughtTolerance === 'medium') waterScore += 10;
+    else waterScore -= 20;
+
+    if (s3Crop.waterDemand === 'low') waterScore += 15;
+    else if (s3Crop.waterDemand === 'high') waterScore -= 15;
+  }
 
   waterScore = Math.min(100, Math.max(10, waterScore));
 
   // 3. CLIMATE RISK SCORE (0 - 100)
-  let climateScore = 40;
+  let climateScore = 45;
 
-  // Heat stress mitigation in Hot Dry season (Apr - May)
-  if (climate.seasonalStats.dryHot.maxTemp >= 34.0) {
-    if (s3Crop.heatTolerance === 'high') climateScore += 25;
+  // [AGRO-RULE-02-HEAT35] Dry-season rice spikelet sterility cliff (> 35°C Apr-May)
+  if (hasHeatSterility) {
+    const excessC = climate.seasonalStats.dryHot.maxTemp - 35.0;
+    climateScore -= Math.round(28 + excessC * 10);
+  } else if (climate.seasonalStats.dryHot.maxTemp >= 34.0 && s3Crop.family !== 'fallow') {
+    if (s3Crop.heatTolerance === 'high') climateScore += 22;
     else if (s3Crop.heatTolerance === 'medium') climateScore += 10;
     else climateScore -= 20;
+  }
+
+  // [AGRO-RULE-03-PESTBREAK] Pest resilience under climate pressure
+  if (hasSevereHostConflict) {
+    climateScore -= 10;
+  } else if (activeFamilyCount === 3) {
+    climateScore += 6;
   }
 
   // Extreme rainfall and typhoon resistance in S1
@@ -84,9 +156,9 @@ export function calculateSequenceScores(
     climateScore += 20;
   }
 
-  // Dry spell risk protection
+  // Dry spell risk protection across active crops
   if (climate.drySpellRisk === 'high') {
-    const droughtHardyCount = crops.filter((c) => c.droughtTolerance === 'high').length;
+    const droughtHardyCount = activeCrops.filter((c) => c.droughtTolerance === 'high').length;
     climateScore += droughtHardyCount * 8;
   }
 
@@ -95,18 +167,34 @@ export function calculateSequenceScores(
   // 4. ECONOMICS SCORE (0 - 100)
   let econScore = 45;
 
-  // Market value tier
-  const highMarketCount = crops.filter((c) => c.marketTier === 'high').length;
+  // Market value tier across cultivated crops
+  const highMarketCount = activeCrops.filter((c) => c.marketTier === 'high').length;
   econScore += highMarketCount * 14;
 
-  // Input cost burden
-  const highInputCount = crops.filter((c) => c.inputCost === 'high').length;
-  const lowInputCount = crops.filter((c) => c.inputCost === 'low').length;
+  // Input cost burden (exclude fallow from cultivation low-input credit; penalize lost fallow harvest)
+  const highInputCount = activeCrops.filter((c) => c.inputCost === 'high').length;
+  const lowInputCount = activeCrops.filter((c) => c.inputCost === 'low').length;
   econScore -= highInputCount * 8;
   econScore += lowInputCount * 8;
+  if (hasFallow) econScore -= 12;
+
+  // [AGRO-RULE-01-NFIX] Synthetic N-fertilizer savings from biological fixation
+  if (legumeCount > 0) econScore += 8;
+  if (activeCrops.some((c) => c.id === 'mungbean')) econScore += 4;
+
+  // [AGRO-RULE-02-HEAT35] Spikelet sterility revenue loss penalty (7-10% yield loss per 1°C > 35°C)
+  if (hasHeatSterility) {
+    const excessC = climate.seasonalStats.dryHot.maxTemp - 35.0;
+    econScore -= Math.round(14 + excessC * 8);
+  }
+
+  // [AGRO-RULE-03-PESTBREAK] Pest & pathogen outbreak cost penalty
+  if (hasSevereHostConflict) {
+    econScore -= 10;
+  }
 
   // Staple security (presence of rice or corn provides food security)
-  const hasStaple = crops.some((c) => c.id === 'rice' || c.id === 'corn');
+  const hasStaple = activeCrops.some((c) => c.id === 'rice' || c.id === 'corn');
   if (hasStaple) econScore += 10;
 
   econScore = Math.min(100, Math.max(10, econScore));

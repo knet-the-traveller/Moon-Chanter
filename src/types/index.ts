@@ -19,6 +19,7 @@ export interface PilotLocation {
 export type SoilTexture = 'clay' | 'clay_loam' | 'loam' | 'sandy_loam' | 'sandy' | 'silt_loam';
 export type DrainageClass = 'poor' | 'moderate' | 'well';
 export type OrganicMatterLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type PhosphorusFixationRisk = 'low' | 'moderate' | 'high';
 
 export interface SoilData {
   source: string;
@@ -30,7 +31,14 @@ export interface SoilData {
   rawClayPercent?: number;
   rawSandPercent?: number;
   rawSocDgPerKg?: number;
+  bulkDensityGcm3?: number;
+  phosphorusFixationRisk?: PhosphorusFixationRisk;
+  slopePct?: number;
+  needsReview?: boolean;
+  reviewNote?: string;
 }
+
+export type SoilProfile = SoilData;
 
 export interface MonthlyClimatePoint {
   month: string; // e.g. "Jan", "Feb"
@@ -71,7 +79,16 @@ export type SeasonWindow = 'wet' | 'dry_cool' | 'dry_hot';
 export interface Crop {
   id: string;
   name: { en: string; local: string };
-  family: 'grass' | 'legume' | 'solanaceae' | 'convolvulaceae' | 'euphorbiaceae' | 'cucurbitaceae' | 'malvaceae';
+  family:
+    | 'grass'
+    | 'legume'
+    | 'solanaceae'
+    | 'convolvulaceae'
+    | 'euphorbiaceae'
+    | 'cucurbitaceae'
+    | 'malvaceae'
+    | 'amaryllidaceae'
+    | 'fallow';
   nitrogenFixing: boolean;
   rootDepth: RootDepth;
   waterDemand: RelativeTier;
@@ -135,6 +152,7 @@ export interface PlanReason {
 
 export interface PlanRisk {
   id: string;
+  ruleId?: string;
   textEn: string;
   textFil: string;
   mitigationEn: string;
@@ -143,6 +161,7 @@ export interface PlanRisk {
 
 export interface RotationPlan {
   id: string;
+  isBaseline?: boolean;
   name: { en: string; local: string };
   seasons: RotationSeasonStep[];
   scores: PlanScoreBreakdown;

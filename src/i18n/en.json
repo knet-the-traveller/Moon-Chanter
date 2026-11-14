@@ -93,6 +93,7 @@
     "robustBadge": "Climate-Robust",
     "moderateBadge": "Moderate Resilience",
     "vulnerableBadge": "Vulnerable to Shock",
+    "baselineBadge": "Existing Baseline",
     "scoreLabel": "Fit Score",
     "whyButton": "Why this plan?",
     "risksButton": "Operational Risks & Trade-offs",

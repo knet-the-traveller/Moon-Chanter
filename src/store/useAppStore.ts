@@ -13,7 +13,7 @@ import type {
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import cropsData from '../data/crops.json';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
-import { fetchSoilGridsData } from '../services/soilGrids';
+import { fetchSoilGridsData, applyFarmerSoilOverride } from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
 import { fetchLandSummary } from '../services/landSummary';
 import { CoordinatesSchema } from '../types/landFixture';
@@ -317,10 +317,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
-    const effectiveSoil: SoilData = {
-      ...soilData,
-      ...(soilOverride || {})
-    };
+    const effectiveSoil: SoilData = applyFarmerSoilOverride(soilData, soilOverride);
 
     const plans = generateRotationRecommendations({
       allCrops,

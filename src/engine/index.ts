@@ -48,10 +48,11 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
 
     const plan: RotationPlan = {
       id: planId,
-      name: {
+      name: cand.planName ?? {
         en: `${cand.s1Crop.name.en} → ${cand.s2Crop.name.en} → ${cand.s3Crop.name.en}`,
         local: `${cand.s1Crop.name.local} → ${cand.s2Crop.name.local} → ${cand.s3Crop.name.local}`
       },
+      isBaseline: cand.isBaseline,
       seasons: [
         {
           seasonKey: 'wet',
@@ -72,7 +73,12 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
           seasonName: { en: 'Hot Dry Season / Catch', local: 'Tag-init / Pangsalag' },
           periodMonths: 'Mar – May',
           crop: cand.s3Crop,
-          role: cand.s3Crop.droughtTolerance === 'high' ? 'Drought-Hardy Soil Cover' : 'Short-Cycle Cash Catch'
+          role:
+            cand.s3Crop.family === 'fallow'
+              ? 'Unplanted Bare Fallow / Stubble Rest'
+              : cand.s3Crop.droughtTolerance === 'high'
+                ? 'Drought-Hardy Soil Cover'
+                : 'Short-Cycle Cash Catch'
         }
       ],
       scores,
@@ -85,8 +91,15 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
     return plan;
   });
 
-  // 3. Rank by overall score descending
-  evaluatedPlans.sort((a, b) => b.scores.overall - a.scores.overall);
+  // 3. Rank adaptive plans by overall score descending and always retain the pinned baseline for comparison
+  const adaptivePlans = evaluatedPlans
+    .filter((p) => !p.isBaseline)
+    .sort((a, b) => b.scores.overall - a.scores.overall);
+  const baselinePlan = evaluatedPlans.find((p) => p.isBaseline);
 
-  return evaluatedPlans.slice(0, maxResults);
+  if (baselinePlan && maxResults >= 2) {
+    return [...adaptivePlans.slice(0, maxResults - 1), baselinePlan];
+  }
+
+  return adaptivePlans.slice(0, maxResults);
 }

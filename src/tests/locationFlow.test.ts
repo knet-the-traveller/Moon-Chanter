@@ -9,7 +9,10 @@ import { buildSampleLandSummary, fetchLandSummary } from '../services/landSummar
 import { useAppStore } from '../store/useAppStore';
 
 vi.mock('../services/nasaPower', () => ({ fetchNasaPowerClimate: vi.fn() }));
-vi.mock('../services/soilGrids', () => ({ fetchSoilGridsData: vi.fn() }));
+vi.mock('../services/soilGrids', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../services/soilGrids')>(),
+  fetchSoilGridsData: vi.fn()
+}));
 vi.mock('../services/landSummary', async (importOriginal) => ({
   ...await importOriginal<typeof import('../services/landSummary')>(), fetchLandSummary: vi.fn()
 }));
