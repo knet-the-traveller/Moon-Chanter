@@ -11,7 +11,7 @@
 ## 📌 Naming Note
 
 - **AniTala** (from Tagalog *Ani* [harvest] + *Tala* [guiding star]) is the public product name for the complete application, encompassing the introductory landing page and the seasonal crop rotation planner.
-- **FieldShift** is the internal module name used across the codebase (`src/components/`, `src/engine/`, `src/services/`) and currently appears in the planner screen header.
+- Legacy implementation labels, cache namespaces, and historical source attributions are retained for compatibility. The planner header and printable sheet still use legacy branding pending a separate UI update.
 - **"Field Shift: Adapting Farms with NASA Data"** is the official 2026 NASA Space Apps Challenge title.
 - *GabayAni* was an early working title and is fully deprecated; it does not appear in user-facing views.
 
