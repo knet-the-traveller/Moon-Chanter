@@ -408,7 +408,7 @@ export const MapPicker: React.FC = () => {
                   <div key={metric.key} className="min-w-0 rounded-lg border border-stone-200 bg-stone-50 p-3">
                     <dt className="text-sm font-semibold text-stone-700">{metric.label}</dt>
                     <dd className="mt-1 break-words text-sm font-bold text-stone-950">{metric.value}</dd>
-                    <dd className="mt-2 break-words text-xs text-stone-700">{provenance.source} · {t('provenance.review')}</dd>
+                    <dd className="mt-2 break-words text-xs text-stone-700">{provenance.source} · {provenance.dateRange ?? provenance.spatialResolution ?? t('provenance.reviewShort')} · {t('provenance.reviewShort')}</dd>
                   </div>
                 );
               })}
@@ -419,8 +419,8 @@ export const MapPicker: React.FC = () => {
               <p className="mt-1">{exampleProfile(landSummary.sampleHub.id).join(', ')}</p>
             </details>}
             {landSummary.screening && <p className="mt-3 text-sm text-stone-700">{t('mvp.screenLimit')}</p>}
-            <details className="mt-4 text-sm text-stone-800">
-              <summary className="cursor-pointer font-semibold">{t('mvp.landDetails')}</summary>
+            <details className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words">
+              <summary className="cursor-pointer py-1 font-semibold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">{t('mvp.landDetails')}</summary>
               <p className="mt-2 font-semibold">{t('land.ndviTrend')}: {landSummary.ndvi.trendAvailable?landSummary.ndvi.trend:t('land.insufficientTrendData')}</p>
               <ul className="mt-2 space-y-2 break-words text-xs">
                 {metrics.map(metric=><li key={metric.key}>{formatProvenance(language,{...metricProvenance(metric.key),sampleLocation:metricProvenance(metric.key).sampleLocation??{name:landSummary.sampleHub.name}})}</li>)}
