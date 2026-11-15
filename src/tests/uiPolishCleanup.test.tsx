@@ -219,4 +219,54 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(caveatsIndex).toBeGreaterThan(overrideIndex);
     expect(modelDetailsIndex).toBeGreaterThan(overrideIndex);
   });
+
+  it('renders MapPicker Expand Map toggle, LandSummary KPI tiles & details, and Step 2 WaterSourceCard and FieldNotesCard', async () => {
+    // 1. MapPicker Expand Map toggle and LandSummary tiles/details
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    useAppStore.setState({ language: 'en', isMapExpanded: false });
+    const { MapPicker } = await import('../components/MapPicker');
+    const mapHtml = renderToStaticMarkup(createElement(MapPicker));
+    expect(mapHtml).toContain(getTranslation('en', 'map.expandMap'));
+
+    const [beforeDetails, insideDetails] = mapHtml.split('<details');
+    const dlBlock = beforeDetails.split('<dl')[1] ?? '';
+    expect(dlBlock).toContain(getTranslation('en', 'land.elevation'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.slope'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.flood'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.bareMonths'));
+    expect(dlBlock).toContain(getTranslation('en', 'mvp.erosionTitle'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.monthlyNdvi'));
+    expect(insideDetails).toBeDefined();
+    expect(insideDetails.match(/<li>/g)).toHaveLength(7);
+
+    // Expand Map toggle state
+    useAppStore.setState({ isMapExpanded: true });
+    const expandedMapHtml = renderToStaticMarkup(createElement(MapPicker));
+    expect(expandedMapHtml).toContain(getTranslation('en', 'map.minimizeMap'));
+
+    // 2. Step 2 WaterSourceCard and FieldNotesCard
+    useAppStore.setState({
+      currentStep: 2,
+      language: 'en',
+      waterSource: 'irrigation_canal',
+      fieldSizeHa: 2.5,
+      plotNotes: 'Parcel near canal gate'
+    });
+    const appHtml = renderToStaticMarkup(createElement(App));
+
+    // WaterSourceCard assertions
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterSourceTitle'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterCanal'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterRainfed'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterPumpWell'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterSmallPond'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterNeedsReview'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterAccessHint'));
+
+    // FieldNotesCard assertions
+    expect(appHtml).toContain(getTranslation('en', 'conditions.fieldNotesTitle').replace(/&/g, '&amp;'));
+    expect(appHtml).toContain('name="fieldSizeHa"');
+    expect(appHtml).toContain('value="2.5"');
+    expect(appHtml).toContain('Parcel near canal gate');
+  });
 });

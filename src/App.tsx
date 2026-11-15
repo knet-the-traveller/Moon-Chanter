@@ -8,6 +8,8 @@ import { StepProgress } from './components/StepProgress';
 import { MapPicker } from './components/MapPicker';
 import { ClimateCard } from './components/ClimateCard';
 import { SoilCard } from './components/SoilCard';
+import { WaterSourceCard } from './components/WaterSourceCard';
+import { FieldNotesCard } from './components/FieldNotesCard';
 import { PrioritiesSection } from './components/PrioritiesSection';
 import { ScenarioBar } from './components/ScenarioBar';
 import { RotationCard } from './components/RotationCard';
@@ -79,11 +81,11 @@ export const App: React.FC = () => {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-[#1D3309] tracking-tight">
-                    {getTranslation(language, 'conditions.climateTitle')}
+                  <h2 className="text-xl sm:text-2xl font-black text-at-dk tracking-tight">
+                    {getTranslation(language, 'nav.conditions')}
                   </h2>
-                  <p className="text-xs sm:text-sm text-[#56664A] mt-0.5">
-                    Field: <strong className="text-[#1D3309]">{selectedLocation.name}</strong> ({selectedLocation.province}) · Coordinates: {selectedLocation.lat.toFixed(3)}°N, {selectedLocation.lon.toFixed(3)}°E
+                  <p className="text-xs sm:text-sm text-at-muted mt-0.5">
+                    Field: <strong className="text-at-dk">{selectedLocation.name}</strong> ({selectedLocation.province}) · Coordinates: {selectedLocation.lat.toFixed(3)}°N, {selectedLocation.lon.toFixed(3)}°E
                   </p>
                 </div>
 
@@ -91,7 +93,7 @@ export const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-[#D5E0C8] hover:border-[#1D3309] text-[#1D3309] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-at-line hover:border-at-dk text-at-dk flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Change Location</span>
@@ -99,17 +101,41 @@ export const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(3)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1D3309] hover:bg-[#2e4d11] text-white flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-at-dk hover:bg-at-dk/90 text-white flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                   >
                     <span>Configure Priorities</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#C7DA91]" />
+                    <ArrowRight className="w-3.5 h-3.5 text-at-lime" />
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <ClimateCard />
-                <SoilCard />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-5 space-y-4">
+                  <SoilCard />
+                </div>
+                <div className="lg:col-span-7 space-y-4">
+                  <WaterSourceCard />
+                  <ClimateCard />
+                  <FieldNotesCard />
+                  <div className="action bg-white rounded-2xl p-4 sm:p-5 border border-at-line shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-at-dk">
+                        {getTranslation(language, 'priorities.title')}
+                      </h3>
+                      <p className="text-xs text-at-muted mt-0.5">
+                        {getTranslation(language, 'priorities.subtitle')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(3)}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-bold bg-at-dk hover:bg-at-dk/90 text-at-lime flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span>Configure Priorities</span>
+                      <ArrowRight className="w-4 h-4 text-at-lime" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
