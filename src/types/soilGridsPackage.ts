@@ -79,7 +79,10 @@ export type SoilGridsPackage = z.infer<typeof SoilGridsPackageSchema>;
 const interval = z.object({ mean: z.number().nullable(), q05: z.number().nullable(), q95: z.number().nullable() });
 export const SoilModelEvidenceSchema = z.object({
   packageId: z.literal('soilgrids-pilots-v1'), gridId: z.string(), gridName: z.string(),
-  cellIndex: z.number().int().min(0).max(80), footprint: z.array(position).length(4),
+  cellIndex: z.number().int().min(0).max(80),
+  requestedCellIndex: z.number().int().min(0).max(80).optional(),
+  offsetDistanceMeters: z.number().nonnegative().optional(),
+  footprint: z.array(position).length(4),
   retrievedAt: timestamp, license: z.literal('CC-BY-4.0'),
   readings: z.array(z.object({ property: z.enum(SOIL_PROPERTIES), unit: z.string(),
     depths: z.object({ '0-5cm': interval, '5-15cm': interval }) })).length(6)

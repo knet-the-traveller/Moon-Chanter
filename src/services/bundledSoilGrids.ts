@@ -3,6 +3,12 @@ import { SOIL_DEPTHS, SOIL_PROPERTIES, SoilGridsPackageSchema } from '../types/s
 import type { SoilGridsPackage, SoilProperty, SoilModelEvidence } from '../types/soilGridsPackage';
 import type { SoilData, SoilTexture, MetricProvenance, SoilMetric } from '../types';
 import { SOIL_METRICS } from '../data/provenance';
+import {
+  deriveOrganicMatterFromSoc,
+  derivePreliminaryDrainage,
+  buildDerivedOrganicMatterProvenance,
+  buildDerivedDrainageProvenance
+} from './soilDerivation';
 
 // Validate the shipped artifact once, including masked cells. A damaged package
 // must fall through to the bounded existing live/cache/reference hierarchy.
@@ -28,7 +34,62 @@ export function soilCellFootprint(grid: SoilGridsPackage['grids'][number], index
     .map((index): Position => [...grid.nodes[index]]);
 }
 
-/** Returns null OUTSIDE packaged coverage; masked pixels inside remain missing. */
+function depthWeightedMean(
+  data: SoilGridsPackage,
+  grid: SoilGridsPackage['grids'][number],
+  property: SoilProperty,
+  index: number
+): number | undefined {
+  // Thickness-weighted 0–15 cm mean. Both depth predictions are mandatory.
+  // Per-depth Q05/Q95 stay separate: no invented aggregate prediction interval.
+  const [top, lower] = SOIL_DEPTHS.map(depth => grid.readings[property][depth].mean[index]);
+  return top === null || lower === null
+    ? undefined
+    : (top * 5 + lower * 10) / 15 / data.properties[property].divisor;
+}
+
+function isCompleteAgriculturalCell(
+  data: SoilGridsPackage,
+  grid: SoilGridsPackage['grids'][number],
+  index: number
+): boolean {
+  const ph = depthWeightedMean(data, grid, 'phh2o', index);
+  const clay = depthWeightedMean(data, grid, 'clay', index);
+  const sand = depthWeightedMean(data, grid, 'sand', index);
+  const silt = depthWeightedMean(data, grid, 'silt', index);
+  const soc = depthWeightedMean(data, grid, 'soc', index);
+  return ph !== undefined && clay !== undefined && sand !== undefined && silt !== undefined && soc !== undefined && clay + sand + silt > 0;
+}
+
+function findNearestValidCellIndex(
+  data: SoilGridsPackage,
+  grid: SoilGridsPackage['grids'][number],
+  requestedIndex: number
+): { index: number; distanceGridCells: number } | null {
+  const reqRow = Math.floor(requestedIndex / grid.cols);
+  const reqCol = requestedIndex % grid.cols;
+  let best: { index: number; distanceGridCells: number } | null = null;
+  for (let i = 0; i < grid.rows * grid.cols; i++) {
+    if (!isCompleteAgriculturalCell(data, grid, i)) continue;
+    const row = Math.floor(i / grid.cols);
+    const col = i % grid.cols;
+    const distanceGridCells = Math.hypot(row - reqRow, col - reqCol);
+    if (
+      !best ||
+      distanceGridCells < best.distanceGridCells - 1e-12 ||
+      (Math.abs(distanceGridCells - best.distanceGridCells) <= 1e-12 && i < best.index)
+    ) {
+      best = { index: i, distanceGridCells };
+    }
+  }
+  return best;
+}
+
+/**
+ * Resolves packaged SoilGrids model data inside pilot coverage; steps deterministically
+ * to the nearest valid cropland 250 m cell when the requested pixel is masked NoData,
+ * and returns null only outside packaged coverage or when an entire grid has no valid cells.
+ */
 export function resolveBundledSoil(lat: number, lon: number, data = bundledPackage): SoilData | null {
   if (!data) return null;
   for (const grid of data.grids) {
@@ -36,15 +97,31 @@ export function resolveBundledSoil(lat: number, lon: number, data = bundledPacka
     for (let index = 0; index < grid.rows * grid.cols; index++) {
       const footprint = soilCellFootprint(grid, index);
       if (!containsSoilCell(footprint, lat, lon)) continue;
-      return profileForCell(data, grid, index, footprint);
+      if (isCompleteAgriculturalCell(data, grid, index)) {
+        return profileForCell(data, grid, index, footprint);
+      }
+      const nearest = findNearestValidCellIndex(data, grid, index);
+      if (!nearest) return null;
+      return profileForCell(data, grid, nearest.index, soilCellFootprint(grid, nearest.index), {
+        requestedCellIndex: index,
+        offsetDistanceMeters: Math.round(nearest.distanceGridCells * 250)
+      });
     }
   }
   return null;
 }
 
-function profileForCell(data: SoilGridsPackage, grid: SoilGridsPackage['grids'][number], index: number, footprint: Position[]): SoilData {
+function profileForCell(
+  data: SoilGridsPackage,
+  grid: SoilGridsPackage['grids'][number],
+  index: number,
+  footprint: Position[],
+  stepMeta?: { requestedCellIndex: number; offsetDistanceMeters: number }
+): SoilData {
   const evidence: SoilModelEvidence = {
-    packageId: data.id, gridId: grid.id, gridName: grid.name, cellIndex: index, footprint,
+    packageId: data.id, gridId: grid.id, gridName: grid.name, cellIndex: index,
+    ...(stepMeta ? { requestedCellIndex: stepMeta.requestedCellIndex, offsetDistanceMeters: stepMeta.offsetDistanceMeters } : {}),
+    footprint,
     retrievedAt: data.retrievedAt, license: data.license,
     readings: SOIL_PROPERTIES.map(property => ({ property, unit: data.properties[property].unit,
       depths: Object.fromEntries(SOIL_DEPTHS.map(depth => [depth, Object.fromEntries(
@@ -55,12 +132,7 @@ function profileForCell(data: SoilGridsPackage, grid: SoilGridsPackage['grids'][
       )])) as SoilModelEvidence['readings'][number]['depths']
     }))
   };
-  // Thickness-weighted 0–15 cm mean. Both depth predictions are mandatory.
-  // Per-depth Q05/Q95 stay separate: no invented aggregate prediction interval.
-  const mean = (property: SoilProperty): number | undefined => {
-    const [top, lower] = SOIL_DEPTHS.map(depth => grid.readings[property][depth].mean[index]);
-    return top === null || lower === null ? undefined : (top * 5 + lower * 10) / 15 / data.properties[property].divisor;
-  };
+  const mean = (property: SoilProperty): number | undefined => depthWeightedMean(data, grid, property, index);
   const clay = mean('clay'), sand = mean('sand'), silt = mean('silt'), soc = mean('soc');
   let texture: SoilTexture | null = null;
   if (clay !== undefined && sand !== undefined && silt !== undefined && clay + sand + silt > 0) {
@@ -68,20 +140,59 @@ function profileForCell(data: SoilGridsPackage, grid: SoilGridsPackage['grids'][
     texture = clay >= 38 ? 'clay' : clay >= 26 ? 'clay_loam' : sand >= 55 ? 'sandy_loam' : silt >= 50 ? 'silt_loam' : 'loam';
   }
   const round = (value: number | undefined, digits: number) => value === undefined ? undefined : Number(value.toFixed(digits));
+  const clayPct = round(clay, 1);
+  const sandPct = round(sand, 1);
+  const rawSocDgPerKg = soc === undefined ? undefined : round(soc * 100, 2);
+  const organicMatter = deriveOrganicMatterFromSoc(rawSocDgPerKg);
+  const drainage = derivePreliminaryDrainage({ texture, clayPct, sandPct });
+  const stepNote = stepMeta
+    ? `Center cell #${stepMeta.requestedCellIndex + 1} is masked (urban/built-up/water); using nearest valid 250 m agricultural cell #${index + 1} (~${stepMeta.offsetDistanceMeters} m away). `
+    : '';
   const soil: SoilData = {
     source: 'ISRIC SoilGrids 2.0 · bundled model grid', modelEvidence: evidence,
-    ph: round(mean('phh2o'), 1) ?? null, rawClayPercent: round(clay, 1), rawSandPercent: round(sand, 1),
-    rawSocDgPerKg: soc === undefined ? undefined : round(soc * 100, 2),
+    ph: round(mean('phh2o'), 1) ?? null, rawClayPercent: clayPct, rawSandPercent: sandPct,
+    rawSocDgPerKg,
     bulkDensityGcm3: round(mean('bdod'), 2), texture,
-    // SOC is not measured organic matter; texture does not establish drainage.
-    drainage: null, organicMatter: 'unknown', isEstimate: false, needsReview: true,
-    reviewNote: 'Native 250 m soil model; not current field observations. Verify local texture, drainage and organic matter. Topsoil bulk density does not establish subsoil compaction. Unvalidated local classifications remain provisional.'
+    drainage, organicMatter, isEstimate: false, needsReview: true,
+    reviewNote: `${stepNote}Native 250 m soil model; OM derived from SOC (Van Bemmelen ×1.724) and drainage is a texture/slope screen requiring local farmer validation. Topsoil bulk density does not establish subsoil compaction. Unvalidated local classifications remain provisional.`
   };
   const variables: Partial<Record<SoilMetric, string>> = { texture: 'clay / sand / silt → texture', ph: 'phh2o',
     rawClayPercent: 'clay', rawSandPercent: 'sand', rawSocDgPerKg: 'soc', bulkDensityGcm3: 'bdod' };
   const units: Partial<Record<SoilMetric, string>> = { ph: 'pH', rawClayPercent: '%', rawSandPercent: '%',
     rawSocDgPerKg: 'dg/kg', bulkDensityGcm3: 'g/cm³', slopePct: '%' };
   soil.provenance = Object.fromEntries(SOIL_METRICS.map(key => {
+    if (key === 'organicMatter') {
+      return [key, {
+        ...buildDerivedOrganicMatterProvenance(rawSocDgPerKg, {
+          spatialResolution: '250 m',
+          depth: '0–5 cm and 5–15 cm',
+          baseSource: 'ISRIC SoilGrids 2.0',
+          note: stepMeta
+            ? `${stepNote}Derived from SoilGrids SOC via Van Bemmelen factor (1.724); verify with BSWM Soil Test Kit or laboratory analysis.`
+            : undefined
+        }),
+        productVersion: data.productVersion,
+        citation: data.citation,
+        retrievedAt: data.retrievedAt
+      } satisfies MetricProvenance];
+    }
+    if (key === 'drainage') {
+      return [key, {
+        ...buildDerivedDrainageProvenance({
+          drainage,
+          hasSlope: false,
+          spatialResolution: '250 m',
+          depth: '0–5 cm and 5–15 cm',
+          baseSource: 'ISRIC SoilGrids 2.0',
+          note: stepMeta
+            ? `${stepNote}Preliminary textural and topographic drainage estimate, not a field percolation test.`
+            : undefined
+        }),
+        productVersion: data.productVersion,
+        citation: data.citation,
+        retrievedAt: data.retrievedAt
+      } satisfies MetricProvenance];
+    }
     const nativeMetric = !['drainage', 'organicMatter', 'phosphorusFixationRisk', 'slopePct'].includes(key);
     const available = soil[key] !== undefined && soil[key] !== null && soil[key] !== 'unknown';
     return [key, {
