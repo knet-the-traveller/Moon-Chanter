@@ -192,7 +192,15 @@
     "hidePlanDrawer": "Itago ang Plano",
     "otherGoodPlans": "Iba Pang Magagandang Plano",
     "otherGoodPlansSub": "Iba pang salitan ng pananim na sinuri ayon sa kalagayan ng iyong bukid.",
-    "baselineBenchmarkBadge": "Karaniwang Benchmark na Salitan"
+    "baselineBenchmarkBadge": "Karaniwang Benchmark na Salitan",
+    "traitFamilyTitle": "Pamilya ng Pananim",
+    "traitFamilyDesc": "Ang pagpapalit-palit ng pamilya ng pananim ay pumuputol sa siklo ng mga peste at sakit sa lupa tulad ng bacterial wilt at nematod.",
+    "traitNFixerTitle": "Pang-ani ng Nitroheno (+N Fixer)",
+    "traitNFixerDesc": "Ang mga bacteria sa ugat ng legumbre ay nag-aambag ng 35–100 kg N/ha sa lupa, nagpapababa ng gastusin sa abono.",
+    "traitWaterTitle": "Pangangailangan sa Tubig",
+    "traitWaterDesc": "Ipinapakita ang kailangang tubig ng pananim upang maiwasan ang pinsala sa panahon ng tag-tuyot.",
+    "traitRootTitle": "Lalim ng Ugat",
+    "traitRootDesc": "Ang pagsasalit-salit ng mababaw at malalalim na ugat ay tumutulong sa pagluwag ng matigas na ilalim ng lupa."
   },
   "print": {
     "title": "AniTala Gabay sa Salitang Pananim",
@@ -259,6 +267,7 @@
     "landPrint": "Sanggunian ng lupa at halaman",
     "evidence": "Konteksto ng pinagkunan ng ebidensya",
     "closeComparison": "Isara ang paghahambing",
+    "closeMethodology": "Isara ang pamamaraan",
     "viewCaveats": "Tingnan ang Pinagmulan ng Datos, Resolusyon at Paunawa",
     "reviewShort": "Tiyakin sa bukid",
     "soilOriginBundled": "ISRIC SoilGrids 2.0 (250 m) · Naka-bundle na Grid",

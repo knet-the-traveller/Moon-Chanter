@@ -48,6 +48,7 @@ export const MethodologyModal: React.FC = () => {
           </div>
           <button
             type="button"
+            aria-label={getTranslation(language, 'provenance.closeMethodology')}
             onClick={() => setMethodologyModalOpen(false)}
             className="p-2 rounded-full hover:bg-at-ow text-at-muted hover:text-at-dk transition-colors cursor-pointer"
           >

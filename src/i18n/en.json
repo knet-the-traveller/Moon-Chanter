@@ -192,7 +192,15 @@
     "hidePlanDrawer": "Hide Plan",
     "otherGoodPlans": "Other Good Crop Plans",
     "otherGoodPlansSub": "Alternative adaptive rotations evaluated for your field conditions.",
-    "baselineBenchmarkBadge": "Conventional Baseline Benchmark"
+    "baselineBenchmarkBadge": "Conventional Baseline Benchmark",
+    "traitFamilyTitle": "Botanical Family",
+    "traitFamilyDesc": "Alternating botanical plant families breaks soil-borne pest and pathogen cycles like bacterial wilt and nematodes.",
+    "traitNFixerTitle": "Biological Nitrogen Fixer (+N)",
+    "traitNFixerDesc": "Legume nodule bacteria convert atmospheric nitrogen into plant-available soil nutrients, fixing 35–100 kg N/ha.",
+    "traitWaterTitle": "Water Demand Profile",
+    "traitWaterDesc": "Indicates relative seasonal water requirement to prevent deficit stress during dry periods.",
+    "traitRootTitle": "Root Stratification",
+    "traitRootDesc": "Alternating root depths between shallow fibrous roots and deep taproots prevents plow pan subsoil compaction."
   },
   "print": {
     "title": "AniTala Crop Rotation Advisory Plan",
@@ -259,6 +267,7 @@
     "landPrint": "Land and vegetation reference",
     "evidence": "Evidence source context",
     "closeComparison": "Close comparison",
+    "closeMethodology": "Close methodology",
     "viewCaveats": "View Data Sources, Resolutions & Caveats",
     "reviewShort": "Verify locally",
     "soilOriginBundled": "ISRIC SoilGrids 2.0 (250 m) · Bundled Grid",

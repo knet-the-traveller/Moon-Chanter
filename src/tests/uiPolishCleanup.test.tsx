@@ -382,4 +382,23 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(printHtml).toContain('3.2');
     expect(printHtml).toContain('Lower terrace near creek');
   });
+
+  it.each(['en', 'fil'] as const)('provides accessible close aria-label on MethodologyModal and interactive trait tooltips on RotationCard (%s)', async (language) => {
+    useAppStore.setState({ isMethodologyModalOpen: true, language });
+    const { MethodologyModal } = await import('../components/MethodologyModal');
+    const methodologyHtml = renderToStaticMarkup(createElement(MethodologyModal));
+    expect(methodologyHtml).toContain(`aria-label="${getTranslation(language, 'provenance.closeMethodology')}"`);
+
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const plan = useAppStore.getState().recommendedPlans[0];
+    const { RotationCard } = await import('../components/RotationCard');
+    const cardHtml = renderToStaticMarkup(createElement(RotationCard, { plan, rank: 1 }));
+
+    // Trait badge buttons with aria-expanded="false"
+    expect(cardHtml).toContain('aria-expanded="false"');
+    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>GRASS<\/button>|<button[^>]*aria-expanded="false"[^>]*>grass<\/button>/i);
+    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>\+N Fixer<\/button>/);
+    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>Water: /);
+    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>Root: /);
+  });
 });

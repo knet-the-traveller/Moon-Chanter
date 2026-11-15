@@ -3,7 +3,7 @@ import { contextProvenance, formatProvenance, formatLocalReview, hasProvisionalE
 import { generateLocalReviewChecklist } from '../engine/explainer';
 import type { PlanDataContext } from '../data/provenance';
 import type { Language } from '../types';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { RotationPlan } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
@@ -82,6 +82,45 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
 
   const [isWhyExpanded, setIsWhyExpanded] = useState(false);
   const [isRisksExpanded, setIsRisksExpanded] = useState(false);
+  const [activeTraitTooltip, setActiveTraitTooltip] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeTraitTooltip) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveTraitTooltip(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTraitTooltip]);
+
+  const getTraitTooltipInfo = (traitKey: string, crop: RotationPlan['seasons'][number]['crop']) => {
+    switch (traitKey) {
+      case 'family':
+        return {
+          title: `${getTranslation(language, 'results.traitFamilyTitle')}: ${crop.family.toUpperCase()}`,
+          desc: getTranslation(language, 'results.traitFamilyDesc')
+        };
+      case 'nfixer':
+        return {
+          title: getTranslation(language, 'results.traitNFixerTitle'),
+          desc: getTranslation(language, 'results.traitNFixerDesc')
+        };
+      case 'water':
+        return {
+          title: `${getTranslation(language, 'results.traitWaterTitle')}: ${crop.waterDemand.toUpperCase()}`,
+          desc: getTranslation(language, 'results.traitWaterDesc')
+        };
+      case 'root':
+        return {
+          title: `${getTranslation(language, 'results.traitRootTitle')}: ${crop.rootDepth.toUpperCase()}`,
+          desc: getTranslation(language, 'results.traitRootDesc')
+        };
+      default:
+        return { title: '', desc: '' };
+    }
+  };
 
   const context: PlanDataContext = {
     climate: climateData,
@@ -415,23 +454,96 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
                         {language === 'fil' ? crop.name.en : crop.name.local}
                       </div>
 
-                      {/* Badges */}
+                      {/* Trait Badge Controls */}
                       <div className="flex flex-wrap gap-1 mb-2.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white border border-at-line text-at-dk uppercase">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTraitTooltip((prev) => (prev === `${step.seasonKey}_family` ? null : `${step.seasonKey}_family`))}
+                          aria-expanded={activeTraitTooltip === `${step.seasonKey}_family`}
+                          aria-describedby={activeTraitTooltip === `${step.seasonKey}_family` ? `tt-${step.seasonKey}-family` : undefined}
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-at-dk uppercase ${
+                            activeTraitTooltip === `${step.seasonKey}_family`
+                              ? 'bg-at-dk text-white border-at-dk shadow-2xs'
+                              : 'bg-white hover:bg-at-ow border-at-line text-at-dk'
+                          }`}
+                        >
                           {crop.family}
-                        </span>
+                        </button>
+
                         {crop.nitrogenFixing && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-at-tint text-at-dk border border-at-green/40">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTraitTooltip((prev) => (prev === `${step.seasonKey}_nfixer` ? null : `${step.seasonKey}_nfixer`))}
+                            aria-expanded={activeTraitTooltip === `${step.seasonKey}_nfixer`}
+                            aria-describedby={activeTraitTooltip === `${step.seasonKey}_nfixer` ? `tt-${step.seasonKey}-nfixer` : undefined}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-at-dk ${
+                              activeTraitTooltip === `${step.seasonKey}_nfixer`
+                                ? 'bg-at-dk text-at-lime border-at-dk shadow-2xs'
+                                : 'bg-at-tint hover:bg-at-tint/80 text-at-dk border-at-green/40'
+                            }`}
+                          >
                             +N Fixer
-                          </span>
+                          </button>
                         )}
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200/50">
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveTraitTooltip((prev) => (prev === `${step.seasonKey}_water` ? null : `${step.seasonKey}_water`))}
+                          aria-expanded={activeTraitTooltip === `${step.seasonKey}_water`}
+                          aria-describedby={activeTraitTooltip === `${step.seasonKey}_water` ? `tt-${step.seasonKey}-water` : undefined}
+                          className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-600 ${
+                            activeTraitTooltip === `${step.seasonKey}_water`
+                              ? 'bg-blue-700 text-white border-blue-700 shadow-2xs'
+                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200/50'
+                          }`}
+                        >
                           Water: {crop.waterDemand}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/50">
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveTraitTooltip((prev) => (prev === `${step.seasonKey}_root` ? null : `${step.seasonKey}_root`))}
+                          aria-expanded={activeTraitTooltip === `${step.seasonKey}_root`}
+                          aria-describedby={activeTraitTooltip === `${step.seasonKey}_root` ? `tt-${step.seasonKey}-root` : undefined}
+                          className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-600 ${
+                            activeTraitTooltip === `${step.seasonKey}_root`
+                              ? 'bg-amber-800 text-white border-amber-800 shadow-2xs'
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200/50'
+                          }`}
+                        >
                           Root: {crop.rootDepth}
-                        </span>
+                        </button>
                       </div>
+
+                      {/* Click/Tap Accessible Trait Tooltip Panel */}
+                      {activeTraitTooltip && activeTraitTooltip.startsWith(`${step.seasonKey}_`) && (() => {
+                        const traitKey = activeTraitTooltip.replace(`${step.seasonKey}_`, '');
+                        const tooltipInfo = getTraitTooltipInfo(traitKey, crop);
+                        return (
+                          <div
+                            id={`tt-${step.seasonKey}-${traitKey}`}
+                            role="tooltip"
+                            className="mb-2.5 p-2.5 rounded-xl bg-at-dk text-white text-[11px] leading-relaxed shadow-sm animate-in fade-in duration-150 border border-at-green/30"
+                          >
+                            <div className="flex items-start justify-between gap-1.5 mb-1">
+                              <strong className="text-at-lime font-bold text-xs">
+                                {tooltipInfo.title}
+                              </strong>
+                              <button
+                                type="button"
+                                onClick={() => setActiveTraitTooltip(null)}
+                                className="text-white/70 hover:text-white p-0.5 text-xs leading-none cursor-pointer"
+                                aria-label={getTranslation(language, 'provenance.closeMethodology')}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <p className="text-white/90">
+                              {tooltipInfo.desc}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="text-[11px] font-semibold text-at-dk pt-2 border-t border-at-line/60">
