@@ -146,13 +146,17 @@ export function summarizeSeasonInstance(
     const tm = data.t2mMax[i];
     const r = data.rain[i];
 
-    if (t === null || r === null) {
-      missingDays++;
-    } else {
+    if (t == null || r == null || tm == null) missingDays++;
+    // Coverage uses all required variables, but each metric retains its own
+    // valid observations. Missing temperature must not erase measured rain.
+    if (t != null) {
       t2mSum += t;
       t2mCount++;
+    }
+    if (r != null) {
       rainSum += r;
 
+      if (i > 0 && Date.parse(data.dates[i]) - Date.parse(data.dates[i - 1]) !== 86400000) currentDrySpell = 0;
       if (r < dryDayThresholdMm) {
         currentDrySpell++;
         if (currentDrySpell > maxDrySpell) {
@@ -161,9 +165,11 @@ export function summarizeSeasonInstance(
       } else {
         currentDrySpell = 0;
       }
+    } else {
+      currentDrySpell = 0;
     }
 
-    if (tm !== null && tm >= heatThresholdC) {
+    if (tm != null && tm >= heatThresholdC) {
       heatDays++;
     }
   }
@@ -210,7 +216,12 @@ export function calculateClimateSummary(
 
     // Skip season instance if too incomplete (> maxMissingDayFraction)
     const missingFraction = instance.totalDays > 0 ? instance.missingDays / instance.totalDays : 1;
-    if (missingFraction <= maxMissingFraction && instance.totalDays >= 60) {
+    const year = Number(cycleId.slice(0, 4));
+    const expectedStart = Date.UTC(year, seasonKey === 'wet' ? 5 : 11, 1);
+    const expectedEnd = seasonKey === 'wet' ? Date.UTC(year, 11, 1) : Date.UTC(year + 1, 5, 1);
+    const expectedDays = (expectedEnd - expectedStart) / 86400000;
+    const calendarMissing = 1 - instance.validDays / expectedDays;
+    if (missingFraction <= maxMissingFraction && calendarMissing <= maxMissingFraction && instance.totalDays >= 60) {
       if (seasonKey === 'wet') {
         wetInstances.push(instance);
       } else {
@@ -263,14 +274,17 @@ export function calculateClimateSummary(
   });
 
   const years = Object.keys(annualMap).map(Number).sort((a, b) => a - b);
+  const acceptedYears: number[] = [];
   const annualAvgTemps: number[] = [];
   const annualTotalRains: number[] = [];
 
   years.forEach((y) => {
     const b = annualMap[y];
-    const avgT = b.temps.length >= 300 ? b.temps.reduce((x, z) => x + z, 0) / b.temps.length : null;
-    const totR = b.rain.length >= 300 ? b.rain.reduce((x, z) => x + z, 0) : null;
+    const expectedDays = (Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1)) / 86400000;
+    const avgT = b.temps.length === expectedDays ? b.temps.reduce((x, z) => x + z, 0) / b.temps.length : null;
+    const totR = b.rain.length === expectedDays ? b.rain.reduce((x, z) => x + z, 0) : null;
     if (avgT !== null && totR !== null) {
+      acceptedYears.push(y);
       annualAvgTemps.push(avgT);
       annualTotalRains.push(totR);
     }
@@ -280,7 +294,7 @@ export function calculateClimateSummary(
   let rainDecadePct = 0;
 
   if (years.length >= 3 && annualAvgTemps.length >= 3) {
-    const xSeq = years.slice(0, annualAvgTemps.length);
+    const xSeq = acceptedYears;
     const mTemp = calculateLinearRegressionSlope(xSeq, annualAvgTemps);
     const mRain = calculateLinearRegressionSlope(xSeq, annualTotalRains);
 
@@ -348,7 +362,7 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
 
   const droughtExplanation =
     summary.risks.drought === 'high'
-      ? `High drought risk triggered: average longest dry spell reaches ${dry.dryspellDaysAvg} consecutive days (threshold >= ${criteria.drought.highDryspellDays}) with only ${dry.rainfallMm} mm mean dry season rainfall.`
+      ? `High drought risk triggered: average longest dry spell reaches ${dry.dryspellDaysAvg} consecutive days (threshold >= ${criteria.drought.highDryspellDays}) and/or dry-season rainfall is ${dry.rainfallMm} mm (low-rain threshold <= ${criteria.drought.lowRainfallMm} mm).`
       : summary.risks.drought === 'med'
       ? `Moderate drought risk: average longest dry spell of ${dry.dryspellDaysAvg} days exceeds the warning threshold of ${criteria.drought.medDryspellDays} days.`
       : `Low drought risk: dry spell average (${dry.dryspellDaysAvg} days) remains below critical limits.`;
@@ -358,7 +372,7 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
       ? `High flood/waterlog risk: wet season precipitation averages ${wet.rainfallMm} mm (threshold >= ${criteria.flood.highRainfallMm} mm) with seasonal coefficient of variation of ${wet.rainfallVariability}.`
       : summary.risks.flood === 'med'
       ? `Moderate flood risk: wet season precipitation of ${wet.rainfallMm} mm requires adequate field ditch drainage.`
-      : `Low flood risk: wet season rainfall (${wet.rainfallMm} mm) is within manageable absorption capacity.`;
+      : `Low preliminary rainfall screen: wet-season rainfall is ${wet.rainfallMm} mm. This does not establish field infiltration capacity or flood safety.`;
 
   const heatExplanation =
     summary.risks.heat === 'high'

@@ -17,8 +17,9 @@ export interface CandidateSequence {
   planName?: { en: string; local: string };
 }
 
+// [AGRO-RULE-05-MODEL-SUPPORT] Model pH alone cannot identify upland terrain.
 function isUplandSoil(soil: SoilData): boolean {
-  return (soil.slopePct !== undefined && soil.slopePct > 15) || (soil.ph !== null && soil.ph < 5.5 && soil.drainage !== 'poor');
+  return (soil.slopePct !== undefined && soil.slopePct > 15) || (!soil.modelEvidence && soil.ph !== null && soil.ph < 5.5 && soil.drainage !== 'poor');
 }
 
 function buildBaselineCandidate(allCrops: Crop[], soil: SoilData): CandidateSequence | null {

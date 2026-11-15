@@ -56,15 +56,15 @@
     "liveBadge": "Live Telemetry Verified",
     "annualPrecip": "Annual Rainfall",
     "annualTemp": "Mean Temperature",
-    "heatStressDays": "Heat Stress Days (>34°C)",
-    "rainfallTrend": "10-Year Decadal Trend",
+    "heatStressDays": "Heat screening days (≥35°C)",
+    "rainfallTrend": "Rainfall trend (% per decade)",
     "wetSeason": "Wet Season (Jun–Nov)",
     "dryCoolSeason": "Cool Dry (Dec–Feb)",
     "dryHotSeason": "Hot Dry (Mar–May)",
     "soilTexture": "Soil Texture",
     "drainage": "Drainage Class",
     "ph": "Soil Reaction (pH)",
-    "organicMatter": "Organic Carbon (SOC)",
+    "organicMatter": "Organic-matter class",
     "overridePrompt": "Does your field soil differ? Click to override:",
     "overrideReset": "Reset to source profile"
   },
@@ -143,7 +143,15 @@
     "insufficientTrendData": "Insufficient annual observations",
     "unknownResolution": "Resolution unavailable",
     "unknownPeriod": "Observation period unavailable",
-    "unknownElevation": "Elevation unavailable"
+    "unknownElevation": "Elevation unavailable",
+    "realNotice": "Raster estimates · Needs local verification",
+    "gridReference": "SRTM pilot grid: {hub}; the selected native cell is used.",
+    "realLimitations": "Elevation and slope use SRTM from February 2000. Scientific NDVI history is available only at acquired reference points, subject to quality filtering. Flood susceptibility and erosion remain unavailable without verified supporting data.",
+    "nativeElevation": "Nearest native SRTM post; no field-survey accuracy implied",
+    "hornSlope": "Horn 3 × 3 slope with WGS84 metric spacing; percent gradient",
+    "qualityNdvi": "Already-scaled MOD13Q1.061; conservative land-only QA; monthly means require ≥3 accepted composites across ≥2 years. Composite start month is used; cloudy gaps remain unavailable.",
+    "qualityNdviTrend": "OLS trend requires five annual profiles, each with all 12 months and ≥16 accepted composites. Insufficient coverage remains unavailable.",
+    "ndviCoverage": "NDVI quality check: {accepted} of {total} composites accepted (2020–2024). Cloud, water and other rejected observations are excluded; missing months remain unavailable."
   },
   "provenance": {
     "title": "Data sources & limitations",
@@ -187,7 +195,20 @@
       "missingDefault": "Contains numeric substitutes for missing observations"
     },
     "cached": "Cached data",
-    "municipalSoilSource": "FieldShift municipal soil reference"
+    "municipalSoilSource": "FieldShift municipal soil reference",
+    "bundled-model": "Bundled scientific data",
+    "version": "Version",
+    "observedMethods": {
+      "precipitation": "Mean totals from complete calendar years; missing rainfall days exclude a year, with no zero filling.",
+      "temperature": "Daily means over accepted complete calendar years.",
+      "maximumTemperature": "Highest daily maximum in each calendar month across the source period; seasonal values are extremes, not typical monthly highs.",
+      "minimumTemperature": "Actual T2M_MIN averaged by calendar month; missing minima remain unavailable.",
+      "solarRadiation": "Calendar-month daily mean with at least 80% observed coverage; no numeric substitutes.",
+      "humidity": "Calendar-month daily mean with at least 80% observed coverage; no numeric substitutes.",
+      "heatStressDays": "Mean annual count of days with Tmax ≥35°C in complete years. This screening threshold requires local crop review.",
+      "rainfallTrend": "OLS on accepted complete annual totals and their actual years, expressed as % per decade. Descriptive only; no forecast or statistical significance claim.",
+      "risk": "Preliminary rainfall, dry-spell and heat screens for complete Jun–Nov and Dec–May seasons. Thresholds require local calibration. Rainfall does not establish field flood hazard."
+    }
   },
   "localReview": {
     "title": "Information Gaps & Local Review Checklist",
@@ -216,5 +237,33 @@
     "loading": "Loading field data. Recommendations will appear after the available inputs have been checked.",
     "missingTelemetry": "Climate or soil data is unavailable. Return to Locate Farm and select the location again to retry.",
     "noPrintablePlan": "No advisory is available to print yet."
+  },
+  "soilModel": {
+    "title": "SoilGrids model extract · 250 m cells",
+    "coverage": "Packaged area: {grid}; selected cell {cell}. Coverage is a 2.25 × 2.25 km grid around the pilot point, not the entire municipality. Missing pixels stay unavailable.",
+    "limits": "These are historical soil-model predictions, not live measurements. Confirm drainage and organic matter separately. Topsoil bulk density does not establish subsoil compaction.",
+    "retrieved": "Raster data acquired {date}; this is not an observation date",
+    "showPredictions": "View source predictions and uncertainty",
+    "uncertainty": "Q05 and Q95 are the model’s 5th and 95th percentiles for each depth. They describe prediction uncertainty, not field-test accuracy. No combined 0–15 cm uncertainty interval is calculated.",
+    "original": "Original model values, before farmer overrides",
+    "property": "Property",
+    "depth": "Depth",
+    "mean": "Mean",
+    "phh2o": "pH in water",
+    "clay": "Clay",
+    "sand": "Sand",
+    "silt": "Silt",
+    "soc": "Soil organic carbon",
+    "bdod": "Bulk density",
+    "weightedMean": "Profile values use (0–5 cm mean × 5 + 5–15 cm mean × 10) ÷ 15. Both depths are required. Texture uses existing local thresholds and needs verification.",
+    "notInferred": "Missing or unsupported field property; no value inferred",
+    "download": "Download source raster subsets and provenance",
+    "drainagePrompt": "Field drainage (confirm locally)",
+    "poor": "Poor",
+    "moderate": "Moderate",
+    "well": "Well drained",
+    "organicMatterPrompt": "Field organic-matter class",
+    "depthMean": "0–15 cm estimate; depth means weighted by thickness (5:10)",
+    "noPredictions": "No soil predictions are available for this cell. Check your actual field location or enter verified field observations below. Neighboring cells are not substituted."
   }
 }

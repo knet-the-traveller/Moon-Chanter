@@ -146,7 +146,7 @@ export const ClimateCard: React.FC = () => {
             <span>{getTranslation(language, 'conditions.rainfallTrend')}</span>
           </div>
           <div className="text-sm font-bold text-stone-900 mt-1 capitalize">
-            {climateData.tenYearRainfallTrend} ({climateData.trendDeltaPercent > 0 ? '+' : ''}{climateData.trendDeltaPercent}%)
+            {metadata.rainfallTrend.tier === 'unavailable' ? getTranslation(language,'provenance.unavailableValue') : `${climateData.tenYearRainfallTrend} (${climateData.trendDeltaPercent > 0 ? '+' : ''}${climateData.trendDeltaPercent}%)`}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
             Dry Spell Risk: <span className="font-semibold uppercase text-stone-700">{climateData.drySpellRisk}</span>
@@ -190,7 +190,7 @@ export const ClimateCard: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#4b5563' }} />
               <YAxis yAxisId="rain" orientation="left" tick={{ fontSize: 11, fill: '#2563eb' }} unit="mm" />
-              <YAxis yAxisId="temp" orientation="right" domain={[20, 40]} tick={{ fontSize: 11, fill: '#d97706' }} unit="°" />
+              <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 2', 'dataMax + 2']} tick={{ fontSize: 11, fill: '#d97706' }} unit="°" />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#ffffff',

@@ -1,10 +1,13 @@
+vi.mock('../services/bundledPower', () => ({ resolveBundledPower: () => null }));
+// Keep these API/cache/reference checks independent of the packaged pilot grids.
+vi.mock('../services/bundledSoilGrids', () => ({ resolveBundledSoil: () => null }));
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { buildClimateProvenance, buildSoilProvenance, cachedProvenance, climateProvenance, formatProvenance } from '../data/provenance';
 import { applyFarmerSoilOverride, fetchSoilGridsData, soilCacheKey } from '../services/soilGrids';
-import { fetchNasaPowerClimate } from '../services/nasaPower';
+import { fetchNasaPowerClimate, climateCacheKey } from '../services/nasaPower';
 import { CacheService } from '../services/cache';
 import { ClimateCard } from '../components/ClimateCard';
 import { SoilCard } from '../components/SoilCard';
@@ -89,11 +92,11 @@ describe('metric provenance', () => {
     expect(missing.provenance?.ph?.isSample).toBe(true);
   });
   it('retains climate cache sample identity and flags malformed cache metadata for reload', async () => {
-    await CacheService.set('nasa_power_climatology_15.714_120.906',climate());
+    await CacheService.set(climateCacheKey(15.714,120.906),climate());
     const cached = await fetchNasaPowerClimate(15.714,120.906);
     expect(cached.provenance?.precipitation?.sampleLocation?.name).toBe('Science City of Muñoz');
     expect(cached.provenance?.precipitation?.tier).toBe('sample');
-    await CacheService.set('nasa_power_climatology_15.714_120.906',{...climate(),provenance:{bad:{source:42}}});
+    await CacheService.set(climateCacheKey(15.714,120.906),{...climate(),provenance:{bad:{source:42}}});
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:false,status:400}));
     const reloaded = await fetchNasaPowerClimate(15.714,120.906);
     expect(reloaded.provenance?.precipitation?.sampleLocation?.name).toBe('Science City of Muñoz');

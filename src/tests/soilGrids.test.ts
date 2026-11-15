@@ -1,3 +1,5 @@
+// Keep these API/cache/reference checks independent of the packaged pilot grids.
+vi.mock('../services/bundledSoilGrids', () => ({ resolveBundledSoil: () => null }));
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchSoilGridsData,

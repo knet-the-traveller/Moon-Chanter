@@ -1,0 +1,6 @@
+c91ef3b4ed7905760d6af902bde485b4e0d50a7409b711bb3403a43e179900fe  public/data/real-data/ndvi-v1-source.zip
+955492824e4c5a4da0313a83c31fdaaedb2d6ee06dce04b63b5c5c8638163587  public/data/real-data/power-v1-source.zip
+8629f0d2ecec67b786aed28e7e4930a67e2faca332534b06b089978a79b3d5dd  public/data/real-data/terrain-v1-source.zip
+09466d4dc59883c7d2ce6355998e933200aa7ba55645f792ad1b41d077f783be  src/data/real-data/ndvi-v1.json
+73aa82d920e33840992bb420e154dd1d972215555e2c0da4f685b04b1cd32f36  src/data/real-data/power-v1.json
+a1b401a0802925284b5913005373bd6af772007db6297dd11d9b8a448705cbda  src/data/real-data/terrain-v1.json

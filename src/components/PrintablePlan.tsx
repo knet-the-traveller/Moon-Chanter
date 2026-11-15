@@ -63,7 +63,7 @@ export const PrintablePlan: React.FC = () => {
           <div className="text-sm font-bold text-stone-900">{selectedLocation.name}</div>
           <div className="text-stone-600">{selectedLocation.province}, {selectedLocation.region}</div>
           <div className="font-mono text-stone-500 text-[11px] mt-0.5">
-            Coords: {selectedLocation.lat.toFixed(4)}°N, {selectedLocation.lon.toFixed(4)}°E · {landSummary
+            Coords: {selectedLocation.lat.toFixed(4)}°N, {selectedLocation.lon.toFixed(4)}°E · {landSummary?.elevationM != null
               ? `${getTranslation(language, 'land.elevation')}: ~${landSummary.elevationM} m`
               : getTranslation(language, 'land.unknownElevation')}
           </div>

@@ -162,9 +162,10 @@ export function generatePlanExplanations(
   }
 
   // [AGRO-RULE-04-EROSION-ACID]: Upland Erosion (RUSLE), Acidity/Lime, and Lowland Plow-Pan Verification
+  // [AGRO-RULE-05-MODEL-SUPPORT] Imported pH does not establish terrain.
   const isSlopingUpland =
     (soil.slopePct !== undefined && soil.slopePct > 15) ||
-    (soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
+    (!soil.modelEvidence && soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
   const isAcidicOrPFixed = soil.ph < 5.5 || soil.phosphorusFixationRisk === 'high';
 
   if (isSlopingUpland && hasFallow) {
@@ -210,7 +211,8 @@ export function generatePlanExplanations(
     });
   }
 
-  if (soil.bulkDensityGcm3 !== undefined && soil.bulkDensityGcm3 > 1.4) {
+  // [AGRO-RULE-05-MODEL-SUPPORT] SoilGrids topsoil prediction is not a compaction test.
+  if (!soil.modelEvidence && soil.bulkDensityGcm3 !== undefined && soil.bulkDensityGcm3 > 1.4) {
     risks.push({
       id: 'risk_plow_pan_compaction',
       ruleId: 'AGRO-RULE-04-EROSION-ACID',

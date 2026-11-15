@@ -7,7 +7,7 @@ import { hasRequiredSoilInputs } from '../engine/soilInputs';
 export const MetricProvenanceSchema = z.object({
   source: z.string(), variable: z.string(), spatialResolution: z.string().nullable(), dateRange: z.string().nullable(),
   isSample: z.boolean(), isSynthetic: z.boolean(), needsReview: z.boolean(), note: z.string(),
-  tier: z.enum(['live','cached-live','sample','synthetic','farmer','unavailable']).optional(),
+  tier: z.enum(['live','cached-live','bundled-model','sample','synthetic','farmer','unavailable']).optional(),
   unit: z.string().optional(), depth: z.string().nullable().optional(), method: z.string().optional(), methodKey: z.string().optional(),
   cached: z.boolean().optional(), productVersion: z.string().nullable().optional(),
   citation: z.url().optional(), retrievedAt: z.iso.datetime({ offset: true }).nullable().optional(),
@@ -34,6 +34,7 @@ export function soilProvenance(data: SoilData): Record<SoilMetric, MetricProvena
     const metadata = data.provenance?.[key];
     if (data[key] === null || data[key] === undefined || (key === 'organicMatter' && data.organicMatter === 'unknown')) {
       return [key, { ...unknownProvenance(metadata?.source ?? data.source, metadata?.variable ?? key),
+        ...metadata, tier: 'unavailable',
         isSample: metadata?.isSample ?? data.isEstimate, cached: metadata?.cached,
         sampleLocation: metadata?.sampleLocation }];
     }
@@ -46,7 +47,7 @@ export function cachedProvenance<T extends string>(metadata: Record<T, MetricPro
   }])) as Record<T, MetricProvenance>;
 }
 
-export function buildClimateProvenance(data: ClimateData, tier: 'live' | 'cache' | 'sample',
+export function buildClimateProvenance(data: ClimateData, tier: 'live' | 'cache' | 'sample' | 'bundled-model',
   sampleLocation?: MetricProvenance['sampleLocation']): Record<ClimateMetric, MetricProvenance> {
   const definitions: Record<ClimateMetric, [string, string, string | null, string]> = {
     precipitation: ['PRECTOTCORR','mm/month; mm/year','0.5° latitude × 0.625° longitude', 'Daily means × mean month lengths; monthly totals summed for seasons/year.'],
@@ -105,7 +106,7 @@ export function formatProvenance(language: Language, metadata: MetricProvenance)
   const status = metadata.isSynthetic ? t('synthetic') : t(metadata.tier ?? (metadata.isSample ? 'sample' : 'unavailable'));
   const source = metadata.tier === 'farmer' ? t('farmer') : metadata.source.startsWith('FieldShift illustrative') ? t('illustrativeSource')
     : metadata.source === 'FieldShift municipal soil reference' ? t('municipalSoilSource') : metadata.source;
-  return [source, metadata.productVersion ? `API ${metadata.productVersion}` : null, metadata.variable, metadata.spatialResolution ?? t('unknownResolution'),
+  return [source, metadata.productVersion ? `${t('version')} ${metadata.productVersion}` : null, metadata.variable, metadata.spatialResolution ?? t('unknownResolution'),
     metadata.dateRange ?? t('unknownDates'), metadata.unit, metadata.depth,
     metadata.methodKey ? getTranslation(language, metadata.methodKey) : null,
     metadata.sampleLocation ? `${t('reference')}: ${metadata.sampleLocation.name}` : null,

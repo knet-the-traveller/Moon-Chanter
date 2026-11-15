@@ -1,3 +1,5 @@
+// Keep these API/cache/reference checks independent of the packaged pilot grids.
+vi.mock('../services/bundledSoilGrids', () => ({ resolveBundledSoil: () => null }));
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';

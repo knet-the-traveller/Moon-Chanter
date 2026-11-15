@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { resolveBundledSoil } from '../services/bundledSoilGrids';
 import cropsData from '../data/crops.json';
 import type { Crop, ClimateData, SoilData, FarmerPriorities } from '../types';
 import { generateCandidateRotations } from '../engine/candidateGenerator';
@@ -428,5 +429,33 @@ describe('Agronomic Rule Guardrails [AGRO-RULE-01..04]', () => {
     expect(relayScores.economics).toBeGreaterThan(riceMonoScores.economics);
     expect(relayScores.economics).toBeGreaterThan(cornMonoScores.economics);
     expect(relayScores.climateRisk).toBeGreaterThan(cornMonoScores.climateRisk);
+  });
+});
+
+
+describe('AGRO-RULE-05-MODEL-SUPPORT: imported soil predictions', () => {
+  const modelEvidence = resolveBundledSoil(16.975, 121.810)!.modelEvidence;
+  it('does not turn imported 0–15 cm density into a subsoil compaction score or warning', () => {
+    const sequence = { s1Crop: crops.find(crop => crop.id === 'rice')!,
+      s2Crop: crops.find(crop => crop.id === 'rice')!, s3Crop: crops.find(crop => crop.id === 'fallow')! };
+    const base = { ...mockSoil, texture: 'loam' as const, modelEvidence };
+    const dense = { ...base, bulkDensityGcm3: 1.8 };
+    expect(calculateSequenceScores(sequence, mockClimate, dense, defaultPriorities))
+      .toEqual(calculateSequenceScores(sequence, mockClimate, base, defaultPriorities));
+    expect(generatePlanExplanations(sequence, mockClimate, dense).risks.some(risk => risk.id === 'risk_plow_pan_compaction')).toBe(false);
+    expect(generatePlanExplanations(sequence, mockClimate, { ...dense, modelEvidence: undefined }).risks
+      .some(risk => risk.id === 'risk_plow_pan_compaction')).toBe(true);
+  });
+  it('requires terrain evidence before classifying model soil as sloping upland', () => {
+    const soil = { ...mockSoil, ph: 4.7, drainage: 'well' as const, modelEvidence };
+    const unknownTerrain = generateCandidateRotations({ allCrops: crops, soil });
+    const flat = generateCandidateRotations({ allCrops: crops, soil: { ...soil, slopePct: 0 } });
+    expect(unknownTerrain).toEqual(flat);
+    const baseline = unknownTerrain.find(sequence => sequence.isBaseline)!;
+    expect(calculateSequenceScores(baseline, mockClimate, soil, defaultPriorities))
+      .toEqual(calculateSequenceScores(baseline, mockClimate, { ...soil, slopePct: 0 }, defaultPriorities));
+    expect(generatePlanExplanations(baseline, mockClimate, soil).risks.some(risk => risk.id === 'risk_erosion_acid_fallow')).toBe(false);
+    const sloping = generateCandidateRotations({ allCrops: crops, soil: { ...soil, slopePct: 20 } });
+    expect(sloping.find(sequence => sequence.isBaseline)?.s1Crop.id).toBe('corn');
   });
 });

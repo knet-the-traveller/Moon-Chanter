@@ -1,3 +1,4 @@
+import { SoilModelDetails } from './SoilModelDetails';
 import { soilProvenance, formatProvenance } from '../data/provenance';
 import { applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
 import { hasRequiredSoilInputs } from '../engine/soilInputs';
@@ -126,6 +127,8 @@ export const SoilCard: React.FC = () => {
         {getTranslation(language, 'dataQuality.missingSoil')}
       </p>}
 
+      {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} />}
+
       {/* Soil KPI Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
         {/* Texture */}
@@ -198,10 +201,11 @@ export const SoilCard: React.FC = () => {
             return (
               <button
                 key={preset.id}
+                type="button" aria-pressed={isSelected}
                 onClick={() =>
                   setSoilOverride({
                     texture: preset.id,
-                    drainage: preset.defaultDrainage
+                    ...(soilData.modelEvidence ? {} : { drainage: preset.defaultDrainage })
                   })
                 }
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
@@ -217,14 +221,25 @@ export const SoilCard: React.FC = () => {
           })}
         </div>
 
+        {soilData.modelEvidence && <fieldset className="mt-3">
+          <legend className="mb-2 text-xs font-semibold text-stone-800">{getTranslation(language, 'soilModel.drainagePrompt')}</legend>
+          <div className="flex flex-wrap gap-2">
+            {(['poor', 'moderate', 'well'] as const).map(drainage => <button key={drainage} type="button"
+              aria-pressed={effectiveDrainage === drainage} onClick={() => setSoilOverride({ drainage })}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-emerald-800 ${effectiveDrainage === drainage ? 'border-emerald-800 bg-emerald-800 text-white' : 'border-stone-400 bg-white text-stone-900'}`}>
+              {getTranslation(language, `soilModel.${drainage}`)}
+            </button>)}
+          </div>
+        </fieldset>}
         {/* OM Override Selection */}
         <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
-          <span className="font-medium text-stone-500">Organic Matter:</span>
+          <span className="font-medium text-stone-700">{getTranslation(language, 'soilModel.organicMatterPrompt')}:</span>
           {omLevels.map((lvl) => {
             const isSelected = effectiveOrganicMatter === lvl.id;
             return (
               <button
                 key={lvl.id}
+                type="button" aria-pressed={isSelected}
                 onClick={() => setSoilOverride({ organicMatter: lvl.id })}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   isSelected

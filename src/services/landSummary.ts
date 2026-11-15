@@ -1,3 +1,4 @@
+import { resolveRealLand } from './realLandData';
 import { z } from 'zod';
 import type { LandSummary, MetricProvenance } from '../types';
 import {
@@ -106,6 +107,8 @@ function loadFixture(slug: string): Promise<MunicipalLandFixture> {
 export async function fetchLandSummary(lat: number, lon: number, signal?: AbortSignal): Promise<LandSummary> {
   CoordinatesSchema.parse({ lat, lon });
   signal?.throwIfAborted();
+  const real = resolveRealLand(lat, lon);
+  if (real) return real;
   // Shared fixture loads have their own timeouts. A canceled caller cannot cancel another caller's fixtures.
   const loading = Promise.allSettled(FIXTURE_SLUGS.map(loadFixture));
   const results = await new Promise<PromiseSettledResult<MunicipalLandFixture>[]>((resolve, reject) => {

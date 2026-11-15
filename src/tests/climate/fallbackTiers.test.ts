@@ -1,3 +1,4 @@
+vi.mock('../../services/bundledPower', () => ({ resolveBundledPower: () => null }));
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchDailySeries } from '../../services/nasaPower';
 import { CacheService } from '../../services/cache';
@@ -52,8 +53,8 @@ describe('NASA POWER Service Fallback Hierarchy (Live -> Cache -> Sample)', () =
     };
 
     // Pre-populate cache
-    const cacheKey = `nasa_power_daily_15.714_120.906_20140101_20231231`;
-    await CacheService.set(cacheKey, cachedPayload);
+    const cacheKey = `nasa_power_daily_v2_15.714_120.906_20140101_20231231`;
+    await CacheService.set(cacheKey, {payload:cachedPayload,retrievedAt:'2026-11-15T03:00:00Z'});
 
     // Mock live API failure
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network timeout'));

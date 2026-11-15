@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { buildClimateProvenance, cachedProvenance, climateProvenance, ProvenanceRecordSchema } from '../data/provenance';
+import { CoordinatesSchema } from '../types/landFixture';
 import { PILOT_CONFIG } from '../config/pilot';
 import { CacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
-import type { ClimateData, MonthlyClimatePoint } from '../types';
+import { buildObservedClimate } from './observedClimate';
+import type { ClimateData } from '../types';
 
 export interface DailySeries {
   dataLocation?: { name: string; lat?: number; lon?: number };
@@ -12,10 +14,11 @@ export interface DailySeries {
   dates: string[]; // ISO YYYY-MM-DD
   t2m: (number | null)[];
   t2mMax: (number | null)[];
+  t2mMin?: (number | null)[];
   prectotcorr: (number | null)[];
   rh2m: (number | null)[];
   allskySfcSwDwn: (number | null)[];
-  tier: 'live' | 'cache' | 'sample';
+  tier: 'live' | 'cache' | 'sample' | 'bundled-model';
   isSample: boolean;
   source: string;
 }
@@ -35,14 +38,16 @@ const PowerPayloadSchema = z.object({
   geometry: z.object({ coordinates: z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]).rest(z.number()) }).optional(),
   header: z.object({ api: z.object({ version: z.string().optional() }).optional() }).optional()
 });
-const SeasonalSchema = z.object({ precip: z.number(), avgTemp: z.number(), maxTemp: z.number() });
+export const climateCacheKey = (lat: number, lon: number) => `nasa_power_observed_v3_${lat}_${lon}`;
+const RawCacheSchema = z.object({ payload: z.unknown(), retrievedAt: z.iso.datetime({offset:true}) });
+const SeasonalSchema = z.object({ precip: z.number().nonnegative(), avgTemp: z.number(), maxTemp: z.number() });
 const ClimateCacheSchema = z.object({
   source: z.string(), variableList: z.array(z.string()), dateRange: z.string(), isSampleData: z.boolean(),
-  meanAnnualPrecipitation: z.number(), meanAnnualTemp: z.number(),
+  meanAnnualPrecipitation: z.number().nonnegative(), meanAnnualTemp: z.number(),
   seasonalStats: z.object({ wet: SeasonalSchema, dryCool: SeasonalSchema, dryHot: SeasonalSchema }),
   monthly: z.array(z.object({ month: z.string(), monthNum: z.number().int().min(1).max(12), temp: z.number(),
-    tempMax: z.number(), tempMin: z.number(), rainfall: z.number(), solarRadiation: z.number(), humidity: z.number() })).min(1).max(12),
-  heatStressDaysPerYear: z.number(), drySpellRisk: z.enum(['low','moderate','high']),
+    tempMax: z.number(), tempMin: z.number().nullable(), rainfall: z.number().nonnegative(), solarRadiation: z.number().nonnegative(), humidity: z.number().min(0).max(100) })).length(12).refine(rows => new Set(rows.map(m=>m.monthNum)).size===12),
+  heatStressDaysPerYear: z.number().min(0).max(366), drySpellRisk: z.enum(['low','moderate','high']),
   excessWaterRisk: z.enum(['low','moderate','high']), heatRisk: z.enum(['low','moderate','high']),
   tenYearRainfallTrend: z.enum(['increasing','stable','decreasing']), trendDeltaPercent: z.number(),
   provenance: ProvenanceRecordSchema.optional()
@@ -62,7 +67,7 @@ export function formatApiDateToIso(dateStr: string): string {
  * Sanitize NASA POWER numeric values. Treats missing-value fill code (-999, -999.00) as null.
  */
 export function sanitizePowerValue(val: unknown): number | null {
-  if (val === null || val === undefined || typeof val !== 'number' || isNaN(val)) {
+  if (val === null || val === undefined || typeof val !== 'number' || !Number.isFinite(val)) {
     return null;
   }
   if (val <= -900) {
@@ -77,10 +82,18 @@ export function sanitizePowerValue(val: unknown): number | null {
 export function parsePowerDailyPayload(
   rawJson: unknown,
   location: { lat: number; lon: number },
-  tier: 'live' | 'cache' | 'sample',
+  tier: 'live' | 'cache' | 'sample' | 'bundled-model',
   sourceLabel: string
 ): DailySeries {
   const payload = PowerPayloadSchema.parse(rawJson);
+  CoordinatesSchema.parse(location);
+  // POWER echoes the requested point (rounded to four decimal places by the
+  // caller). A reference fallback deliberately has a different data location.
+  const coordinates = payload.geometry?.coordinates;
+  if (tier !== 'sample' && coordinates && (Math.abs(coordinates[0] - location.lon) > 0.0001
+    || Math.abs(coordinates[1] - location.lat) > 0.0001)) {
+    throw new Error('POWER response coordinates differ from the requested point');
+  }
   const params = payload.properties.parameter;
   if (!params) {
     throw new Error('Malformed NASA POWER payload: missing properties.parameter');
@@ -88,16 +101,28 @@ export function parsePowerDailyPayload(
 
   const rawT2m = params.T2M || {};
   const rawT2mMax = params.T2M_MAX || {};
+  const rawT2mMin = params.T2M_MIN || {};
   const rawPrectotcorr = params.PRECTOTCORR || {};
   const rawRh2m = params.RH2M || {};
   const rawAllsky = params.ALLSKY_SFC_SW_DWN || {};
 
   // Sort dates chronologically
-  const sortedDates = Object.keys(rawT2m).sort();
+  const keys = [...new Set(Object.values(params).flatMap(values => Object.keys(values)))].sort();
+  for (const key of keys) {
+    const iso = formatApiDateToIso(key);
+    const date = new Date(`${iso}T00:00:00Z`);
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== iso) throw new Error('Invalid POWER calendar date');
+  }
+  const sortedDates: string[] = [];
+  const first = Date.parse(`${formatApiDateToIso(keys[0])}T00:00:00Z`);
+  const last = Date.parse(`${formatApiDateToIso(keys[keys.length - 1])}T00:00:00Z`);
+  if (last - first > 120 * 366 * 86400000) throw new Error('POWER date range too large');
+  for (let day = first; day <= last; day += 86400000) sortedDates.push(new Date(day).toISOString().slice(0, 10).replaceAll('-', ''));
 
   const dates: string[] = [];
   const t2m: (number | null)[] = [];
   const t2mMax: (number | null)[] = [];
+  const t2mMin: (number | null)[] = [];
   const prectotcorr: (number | null)[] = [];
   const rh2m: (number | null)[] = [];
   const allskySfcSwDwn: (number | null)[] = [];
@@ -106,9 +131,13 @@ export function parsePowerDailyPayload(
     dates.push(formatApiDateToIso(d));
     t2m.push(sanitizePowerValue(rawT2m[d]));
     t2mMax.push(sanitizePowerValue(rawT2mMax[d]));
-    prectotcorr.push(sanitizePowerValue(rawPrectotcorr[d]));
-    rh2m.push(sanitizePowerValue(rawRh2m[d]));
-    allskySfcSwDwn.push(sanitizePowerValue(rawAllsky[d]));
+    t2mMin.push(sanitizePowerValue(rawT2mMin[d]));
+    const rain = sanitizePowerValue(rawPrectotcorr[d]);
+    prectotcorr.push(rain !== null && rain >= 0 ? rain : null);
+    const humidity = sanitizePowerValue(rawRh2m[d]);
+    const radiation = sanitizePowerValue(rawAllsky[d]);
+    rh2m.push(humidity !== null && humidity >= 0 && humidity <= 100 ? humidity : null);
+    allskySfcSwDwn.push(radiation !== null && radiation >= 0 ? radiation : null);
   }
 
   return {
@@ -119,6 +148,7 @@ export function parsePowerDailyPayload(
     dates,
     t2m,
     t2mMax,
+    t2mMin,
     prectotcorr,
     rh2m,
     allskySfcSwDwn,
@@ -139,16 +169,36 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
   const timeoutMs = options?.timeoutMs ?? PILOT_CONFIG.api.timeoutMs;
   const maxRetries = options?.maxRetries ?? PILOT_CONFIG.api.maxRetries;
 
-  const location = { lat, lon };
-  const cacheKey = `nasa_power_daily_${lat.toFixed(3)}_${lon.toFixed(3)}_${start}_${end}`;
+  const location = CoordinatesSchema.parse({ lat, lon });
+  for (const date of [start, end]) {
+    if (!/^\d{8}$/.test(date) || new Date(`${formatApiDateToIso(date)}T00:00:00Z`).toISOString().slice(0,10) !== formatApiDateToIso(date)) throw new Error('Invalid POWER request date');
+  }
+  if (start > end) throw new Error('POWER start is after end');
+  const cacheKey = `nasa_power_daily_v2_${lat}_${lon}_${start}_${end}`;
 
   if (options?.forceSample) {
     return loadBundledSampleDailySeries(location);
   }
 
+  // Versioned, public offline observations for exact pilot points only.
+  const { resolveBundledPower } = await import('./bundledPower');
+  const bundled = resolveBundledPower(lat, lon, start, end);
+  if (bundled) return bundled;
+
+  // A valid seven-day raw cache avoids redundant requests and preserves the
+  // original retrieval timestamp. Malformed envelopes are never consumed.
+  try {
+    const cached = RawCacheSchema.safeParse(await CacheService.get<unknown>(cacheKey));
+    if (cached.success) {
+      const series = parsePowerDailyPayload(cached.data.payload, location, 'cache', `NASA POWER cached daily (${formatApiDateToIso(start)} to ${formatApiDateToIso(end)})`);
+      series.retrievedAt = cached.data.retrievedAt;
+      return series;
+    }
+  } catch { /* Continue to bounded acquisition. */ }
+
   // 1. Try Live API with timeout & retries
   let lastError: Error | null = null;
-  const url = `${PILOT_CONFIG.api.baseUrl}?parameters=T2M,T2M_MAX,PRECTOTCORR,RH2M,ALLSKY_SFC_SW_DWN&community=AG&longitude=${lon.toFixed(4)}&latitude=${lat.toFixed(4)}&start=${start}&end=${end}&format=JSON`;
+  const url = `${PILOT_CONFIG.api.baseUrl}?parameters=T2M,T2M_MAX,T2M_MIN,PRECTOTCORR,RH2M,ALLSKY_SFC_SW_DWN&community=AG&longitude=${lon.toFixed(4)}&latitude=${lat.toFixed(4)}&start=${start}&end=${end}&format=JSON`;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
@@ -177,7 +227,7 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
       series.retrievedAt = new Date().toISOString();
 
       // Save raw response in cache
-      await CacheService.set(cacheKey, json, PILOT_CONFIG.api.cacheTtlMs);
+      await CacheService.set(cacheKey, {payload:json,retrievedAt:series.retrievedAt}, PILOT_CONFIG.api.cacheTtlMs);
 
       return series;
     } catch (err: unknown) {
@@ -193,24 +243,7 @@ export async function fetchDailySeries(options?: FetchDailySeriesOptions): Promi
     }
   }
 
-  console.warn(`[nasaPower] Live API fetch failed (${lastError?.message}). Checking cache...`);
-
-  // 2. Try Cache
-  try {
-    const cachedJson = await CacheService.get<unknown>(cacheKey);
-    if (cachedJson) {
-      return parsePowerDailyPayload(
-        cachedJson,
-        location,
-        'cache',
-        `NASA POWER cached daily (${formatApiDateToIso(start)} to ${formatApiDateToIso(end)})`
-      );
-    }
-  } catch {
-    // ignore cache read failure
-  }
-
-  console.warn(`[nasaPower] Cache miss or unavailable. Falling back to bundled sample data...`);
+  console.warn(`[nasaPower] Live API fetch failed (${lastError?.message}); using labeled bundled reference.`);
 
   // 3. Fallback to bundled sample data
   return loadBundledSampleDailySeries(location);
@@ -265,7 +298,8 @@ export async function loadBundledSampleDailySeries(location: { lat: number; lon:
  * Legacy Climatology helper for backward compatibility with UI components.
  */
 export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<ClimateData> {
-  const cacheKey = `nasa_power_climatology_${lat.toFixed(3)}_${lon.toFixed(3)}`;
+  CoordinatesSchema.parse({lat,lon});
+  const cacheKey = climateCacheKey(lat,lon);
   const cached = ClimateCacheSchema.safeParse(await CacheService.get<unknown>(cacheKey));
   if (cached.success) {
     const data: ClimateData = cached.data;
@@ -274,100 +308,8 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
 
   try {
     const dailySeries = await fetchDailySeries({ lat, lon });
-    // Convert daily to monthly summary format for UI cards
-    const monthlyMap: Record<number, { temps: number[]; maxTemps: number[]; precips: number[]; rads: number[]; rhs: number[] }> = {};
-    for (let m = 1; m <= 12; m++) {
-      monthlyMap[m] = { temps: [], maxTemps: [], precips: [], rads: [], rhs: [] };
-    }
-
-    dailySeries.dates.forEach((dateStr, idx) => {
-      const monthNum = parseInt(dateStr.slice(5, 7), 10);
-      const t = dailySeries.t2m[idx];
-      const tm = dailySeries.t2mMax[idx];
-      const p = dailySeries.prectotcorr[idx];
-      const r = dailySeries.allskySfcSwDwn[idx];
-      const rh = dailySeries.rh2m[idx];
-
-      if (t !== null) monthlyMap[monthNum].temps.push(t);
-      if (tm !== null) monthlyMap[monthNum].maxTemps.push(tm);
-      if (p !== null) monthlyMap[monthNum].precips.push(p);
-      if (r !== null) monthlyMap[monthNum].rads.push(r);
-      if (rh !== null) monthlyMap[monthNum].rhs.push(rh);
-    });
-
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const daysInMonth = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-    const monthly: MonthlyClimatePoint[] = monthNames.map((name, i) => {
-      const mNum = i + 1;
-      const b = monthlyMap[mNum];
-      const avgT = b.temps.length ? b.temps.reduce((x, y) => x + y, 0) / b.temps.length : 27;
-      const avgTm = b.maxTemps.length ? Math.max(...b.maxTemps) : 32;
-      const avgMin = avgT - 5;
-      const dailyPrecipMean = b.precips.length ? b.precips.reduce((x, y) => x + y, 0) / b.precips.length : 2;
-      const monthlyRain = Math.round(dailyPrecipMean * daysInMonth[i]);
-      const avgRad = b.rads.length ? b.rads.reduce((x, y) => x + y, 0) / b.rads.length : 18;
-      const avgRh = b.rhs.length ? b.rhs.reduce((x, y) => x + y, 0) / b.rhs.length : 78;
-
-      return {
-        month: name,
-        monthNum: mNum,
-        temp: Number(avgT.toFixed(1)),
-        tempMax: Number(avgTm.toFixed(1)),
-        tempMin: Number(avgMin.toFixed(1)),
-        rainfall: monthlyRain,
-        solarRadiation: Number(avgRad.toFixed(1)),
-        humidity: Math.round(avgRh)
-      };
-    });
-
-    const meanAnnualPrecipitation = monthly.reduce((acc, m) => acc + m.rainfall, 0);
-    const meanAnnualTemp = Number((monthly.reduce((acc, m) => acc + m.temp, 0) / 12).toFixed(1));
-
-    const wetMonths = monthly.filter((m) => m.monthNum >= 6 && m.monthNum <= 11);
-    const coolDryMonths = monthly.filter((m) => m.monthNum === 12 || m.monthNum === 1 || m.monthNum === 2);
-    const hotDryMonths = monthly.filter((m) => m.monthNum >= 3 && m.monthNum <= 5);
-
-    const calcSeasonal = (subset: MonthlyClimatePoint[]) => ({
-      precip: subset.reduce((acc, m) => acc + m.rainfall, 0),
-      avgTemp: Number((subset.reduce((acc, m) => acc + m.temp, 0) / subset.length).toFixed(1)),
-      maxTemp: Math.max(...subset.map((m) => m.tempMax))
-    });
-
-    const climateResult: ClimateData = {
-      source: dailySeries.source,
-      variableList: ['T2M', 'T2M_MAX', 'PRECTOTCORR', 'ALLSKY_SFC_SW_DWN', 'RH2M'],
-      dateRange: `${dailySeries.dates[0]} to ${dailySeries.dates[dailySeries.dates.length - 1]}`,
-      isSampleData: dailySeries.isSample,
-      meanAnnualPrecipitation,
-      meanAnnualTemp,
-      seasonalStats: {
-        wet: calcSeasonal(wetMonths),
-        dryCool: calcSeasonal(coolDryMonths),
-        dryHot: calcSeasonal(hotDryMonths)
-      },
-      monthly,
-      heatStressDaysPerYear: 38,
-      drySpellRisk: 'high',
-      excessWaterRisk: 'high',
-      heatRisk: 'high',
-      tenYearRainfallTrend: 'decreasing',
-      trendDeltaPercent: -2.8
-    };
-
-    climateResult.provenance = buildClimateProvenance(climateResult, dailySeries.tier, dailySeries.dataLocation);
-    for (const metadata of Object.values(climateResult.provenance)) {
-      metadata.retrievedAt = dailySeries.retrievedAt ?? null;
-      metadata.productVersion = dailySeries.apiVersion ?? null;
-    }
-    const seriesByMetric = { precipitation: dailySeries.prectotcorr, temperature: dailySeries.t2m,
-      maximumTemperature: dailySeries.t2mMax, solarRadiation: dailySeries.allskySfcSwDwn, humidity: dailySeries.rh2m };
-    for (const key of Object.keys(seriesByMetric) as Array<keyof typeof seriesByMetric>) {
-      const hasMissingMonth = Array.from({ length: 12 }, (_, i) => i + 1).some(month => !dailySeries.dates.some((date, index) =>
-        Number(date.slice(5, 7)) === month && seriesByMetric[key][index] !== null));
-      if (hasMissingMonth) Object.assign(climateResult.provenance[key]!, { isSynthetic: true, tier: 'synthetic',
-        methodKey: 'provenance.methods.missingDefault', method: 'At least one calendar month uses a legacy numeric default due to absent observations.', needsReview: true });
-    }
+    const climateResult = buildObservedClimate(dailySeries);
+    if (!climateResult) throw new Error('Insufficient complete calendar years for an observed climate profile');
 
     await CacheService.set(cacheKey, climateResult, TELEMETRY_CACHE_TTL_MS);
     return climateResult;

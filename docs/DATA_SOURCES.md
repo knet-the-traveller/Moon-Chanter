@@ -29,7 +29,7 @@ The table below aligns FieldShift with the official **2026 NASA Space Apps Chall
 | **FAO GAEZ v4** (Global Agro-Ecological Zones) | [gaez.fao.org](https://gaez.fao.org/) | 5 arc-minute global grid | Global agro-climatic crop suitability indices, agro-edaphic yield potentials, and crop cycle length constraints. |
 | **ESA Copernicus Sentinel-2** *(Space Agency Partner)* | [dataspace.copernicus.eu](https://dataspace.copernicus.eu/) | $10\text{ m--}20\text{ m}$, 5-day revisit | High-resolution optical red-edge, NIR, and SWIR imagery: complements Landsat/MODIS for field-scale crop cover monitoring and bare-soil exposure mapping. |
 | **ECMWF ERA5 Reanalysis** *(Space Agency Partner)* | [cds.climate.copernicus.eu](https://cds.climate.copernicus.eu/) | $0.25^\circ$ ($\approx 31\text{ km}$), hourly to monthly | Global atmospheric and surface meteorological reanalysis: serves as gap-filling climatology for localized microclimates where surface weather stations are sparse. |
-| **ISRIC SoilGrids v2.0** + **Philippine Baselines** (**DA-BSWM**, **PhilRice**, **DOST-PCAARRD**, **PSA**, **USDA Ag Data Commons**) | [rest.isric.org](https://rest.isric.org) \| [agdatacommons.gov](https://www.nal.usda.gov/services/agdatacommons) | $250\text{ m}$ global topsoil telemetry (0–15 cm) | Soil physical properties (clay/sand/silt %, pH, Soil Organic Carbon) paired with local Philippine soil series and 1-tap **Farmer Soil Override**. *(Provides worldwide and Southeast Asian applicability, substituting US-only WSS, SSURGO, CDL, and PRISM datasets).* |
+| **ISRIC SoilGrids 2.0** | [Public raster access](https://files.isric.org/soilgrids/latest/data/) | 250 m soil-model predictions; observation period unavailable | Separate native pilot extracts for pH, fractions, SOC and bulk density, with per-depth uncertainty. [Implementation, license and limits](SOILGRIDS_PILOT_MILESTONE.md). Municipal examples remain separate; these are not live field measurements. |
 
 ---
 
@@ -123,13 +123,19 @@ The engine evaluates 5 sensitivity scenarios (`src/engine/climate/scenarios.ts`)
 
 ## 4. Supplementary Soil Physical Properties: ISRIC SoilGrids 2.0
 
-- **Organization:** International Soil Reference and Information Centre (ISRIC)
-- **Endpoint:** `https://rest.isric.org/soilgrids/v2.0/properties/query`
-- **Resolution:** 250m global model
-- **Properties:** Clay, sand, silt %, pH ($H_2O$), and Soil Organic Carbon (SOC) at 0–15 cm root depth.
+- **Provider and reuse:** ISRIC — World Soil Information, CC BY 4.0 with attribution. [Provider access/license statement](https://docs.isric.org/globaldata/soilgrids/SoilGrids_faqs_02.html).
+- **Pilot source:** versioned original-raster extracts, native 250 m cells, two depths and per-depth mean/Q05/Q95. Retrieval date is not an observation date.
+- **Coverage:** small 2.25 × 2.25 km grids at four presets. Masked cells remain unavailable; data are not copied to arbitrary distant fields.
+- **Outside packaged coverage:** existing validated API cache/request and explicitly labeled municipal examples. The provider reports its REST service paused; no claim of reliable live soil telemetry.
+- **Interpretation:** SOC does not establish organic matter; drainage and subsoil compaction require field evidence. See [the milestone record](SOILGRIDS_PILOT_MILESTONE.md) for units, methods, source artifacts, reproducibility and remaining gaps.
 
 ---
 
 ## 5. Local Agronomic Knowledge Base: `crops.json`
 
 Curates 12 representative crops cultivated across the Philippine archipelago with citations from PhilRice, DA-BPI, PCARRD, and FAO.
+
+
+## Versioned real pilot sources (15 November 2026)
+
+TERRAIN-01 SRTM, VEG-01 scientific MOD13Q1.061 and calculated CLIMATE-01 POWER now complement the SoilGrids package. They have explicit small-area/point coverage, source archives/checksums and missing-data/QA rules. They do not replace GIBS display imagery or the immutable demonstration fixtures. POWER retains the historical 2014–2023 baseline; SRTM is from February 2000 and MODIS from 2020–2024. Flood susceptibility, quantitative erosion and unsupported NDVI trends remain unavailable. Exact units, retrieval metadata, source reuse and verification are in [the real-source milestone](REAL_SOURCE_INTEGRATION_MILESTONE.md).
