@@ -5,6 +5,8 @@ import { PILOT_CONFIG } from '../config/pilot';
 import { CacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import { buildObservedClimate } from './observedClimate';
 import type { ClimateData } from '../types';
+import { PLANNING_CALENDAR_VERSION } from '../config/planningCalendar';
+import { aggregatePlanningClimatology } from './planningClimatology';
 
 export interface DailySeries {
   dataLocation?: { name: string; lat?: number; lon?: number };
@@ -38,10 +40,13 @@ const PowerPayloadSchema = z.object({
   geometry: z.object({ coordinates: z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]).rest(z.number()) }).optional(),
   header: z.object({ api: z.object({ version: z.string().optional() }).optional() }).optional()
 });
-export const climateCacheKey = (lat: number, lon: number) => `nasa_power_observed_v3_${lat}_${lon}`;
+// Old derived profiles used different month groupings. Keep raw observations,
+// but never reuse those old seasonal aggregates under the new calendar.
+export const climateCacheKey = (lat: number, lon: number) => `nasa_power_observed_v4_${lat}_${lon}`;
 const RawCacheSchema = z.object({ payload: z.unknown(), retrievedAt: z.iso.datetime({offset:true}) });
 const SeasonalSchema = z.object({ precip: z.number().nonnegative(), avgTemp: z.number(), maxTemp: z.number() });
 const ClimateCacheSchema = z.object({
+  calendarVersion: z.literal(PLANNING_CALENDAR_VERSION),
   source: z.string(), variableList: z.array(z.string()), dateRange: z.string(), isSampleData: z.boolean(),
   meanAnnualPrecipitation: z.number().nonnegative(), meanAnnualTemp: z.number(),
   seasonalStats: z.object({ wet: SeasonalSchema, dryCool: SeasonalSchema, dryHot: SeasonalSchema }),
@@ -327,8 +332,26 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
   } catch (err) {
     console.warn('[nasaPower] fetchNasaPowerClimate fallback triggered:', err);
     const fallback = getFallbackClimateLegacy();
+    fallback.calendarVersion = PLANNING_CALENDAR_VERSION;
+    fallback.seasonalStats = aggregatePlanningClimatology(fallback.monthly);
+    // Keep the emergency example internally consistent. It has no acquired
+    // daily observations or verified observation period.
+    fallback.meanAnnualPrecipitation = Number(fallback.monthly.reduce((sum, row) => sum + row.rainfall, 0).toFixed(1));
+    fallback.meanAnnualTemp = Number((fallback.monthly.reduce((sum, row) => sum + row.temp, 0) / fallback.monthly.length).toFixed(1));
+    fallback.source = 'FieldShift illustrative climate reference';
+    fallback.dateRange = '';
     fallback.provenance = buildClimateProvenance(fallback, 'sample', { name: PILOT_CONFIG.location.name,
       lat: PILOT_CONFIG.location.lat, lon: PILOT_CONFIG.location.lon });
+    for (const metadata of Object.values(fallback.provenance)) {
+      metadata.source = fallback.source;
+      metadata.isSynthetic = true;
+      metadata.tier = 'synthetic';
+      metadata.dateRange = null;
+      metadata.citation = undefined;
+      metadata.methodKey = 'provenance.methods.emergencyClimate';
+      metadata.note = 'Synthetic monthly emergency example, not acquired observations. Seasonal/annual rainfall uses monthly sums; temperature uses unweighted monthly means. Heat counts, trends and risk classes are illustrative placeholders requiring local review.';
+      metadata.method = metadata.note;
+    }
     return fallback;
   }
 }

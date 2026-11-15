@@ -1,6 +1,7 @@
 import type { DailySeries } from '../../services/nasaPower';
 import type { ClimateSummary, SeasonalMetrics } from '../../types/contracts';
 import { PILOT_CONFIG, PRESET_VERIFICATIONS } from '../../config/pilot';
+import { PLANNING_CALENDAR_VERSION, seasonalBounds } from '../../config/planningCalendar';
 
 export interface SeasonInstance {
   seasonKey: 'wet' | 'dry' | 'coolDry' | 'hotDry';
@@ -95,7 +96,8 @@ export function resolveWindowsVerified(lat: number, lon: number, explicit?: bool
   ];
   for (const p of presets) {
     if (Math.abs(p.lat - lat) < 0.2 && Math.abs(p.lon - lon) < 0.2) {
-      return PRESET_VERIFICATIONS[p.id]?.windowsVerified ?? false;
+      const verification = PRESET_VERIFICATIONS[p.id];
+      return verification?.calendarVersion === PLANNING_CALENDAR_VERSION && verification.windowsVerified;
     }
   }
   return false;
@@ -105,8 +107,8 @@ export function resolveWindowsVerified(lat: number, lon: number, explicit?: bool
  * Group daily series by seasonal cycles, correctly handling non-overlapping windows:
  * - Wet: June 1 – October 31 (months 6-10)
  * - Dry (Aggregate): November 1 – May 31 (months 11-12, 1-5, crosses calendar year)
- *   - coolDry: November 1 – January 31 (months 11-12, 1)
- *   - hotDry: February 1 – May 31 (months 2-5)
+ *   - coolDry: November 1 – February 28/29 (months 11-12, 1-2)
+ *   - hotDry: March 1 – May 31 (months 3-5)
  */
 export function groupDailySeriesBySeasons(
   series: DailySeries
@@ -135,12 +137,12 @@ export function groupDailySeriesBySeasons(
       pushToBucket(`${year}-wet`, idx, dateStr);
     } else if (coolDryMonths.has(month)) {
       // November or December: start of dry season in this year (e.g. Nov 2014 -> 2014-2015-dry)
-      // January: tail of dry season that started previous year (e.g. Jan 2015 -> 2014-2015-dry)
-      const dryStartYear = month === 1 ? year - 1 : year;
+      // January/February belong to the dry cycle that began the previous year.
+      const dryStartYear = month < PILOT_CONFIG.thresholds.seasons.dry.months[0] ? year - 1 : year;
       pushToBucket(`${dryStartYear}-${dryStartYear + 1}-dry`, idx, dateStr);
       pushToBucket(`${dryStartYear}-${dryStartYear + 1}-coolDry`, idx, dateStr);
     } else if (hotDryMonths.has(month)) {
-      // Feb-May: tail of dry season that started previous year (e.g. Feb 2015 -> 2014-2015-dry)
+      // March-May: tail of the dry season that started the previous year.
       // and hotDry window for the current calendar year (e.g. 2015-hotDry)
       pushToBucket(`${year - 1}-${year}-dry`, idx, dateStr);
       pushToBucket(`${year}-hotDry`, idx, dateStr);
@@ -233,7 +235,7 @@ export function summarizeSeasonInstance(
     meanT2m,
     totalRainfallMm: rainSum,
     maxDrySpellDays: maxDrySpell,
-    heatStressDays: heatDays35, // Consistent with >= 35°C threshold
+    heatStressDays: heatDaysLegacy, // Configured threshold; 35°C by default.
     heatDaysAbove34C: heatDays34,
     heatDaysAbove35C: heatDays35,
     heavyRainDays
@@ -272,25 +274,21 @@ export function calculateClimateSummary(
 
     if (cycleId.endsWith('-wet')) {
       seasonKey = 'wet';
-      expectedStart = Date.UTC(year, 5, 1); // June 1
-      expectedEnd = Date.UTC(year, 10, 1);  // Nov 1
+      ({start: expectedStart, end: expectedEnd} = seasonalBounds(year, PILOT_CONFIG.thresholds.seasons.wet.months));
       minDays = 60;
     } else if (cycleId.endsWith('-coolDry')) {
       seasonKey = 'coolDry';
       year = Number(cycleId.split('-')[0]);
-      expectedStart = Date.UTC(year, 10, 1); // Nov 1
-      expectedEnd = Date.UTC(year + 1, 1, 1); // Feb 1
+      ({start: expectedStart, end: expectedEnd} = seasonalBounds(year, PILOT_CONFIG.thresholds.seasons.dryWindows.coolDry.months));
       minDays = 30;
     } else if (cycleId.endsWith('-hotDry')) {
       seasonKey = 'hotDry';
-      expectedStart = Date.UTC(year, 1, 1); // Feb 1
-      expectedEnd = Date.UTC(year, 5, 1);   // June 1
+      ({start: expectedStart, end: expectedEnd} = seasonalBounds(year, PILOT_CONFIG.thresholds.seasons.dryWindows.hotDry.months));
       minDays = 30;
     } else if (cycleId.endsWith('-dry')) {
       seasonKey = 'dry';
       year = Number(cycleId.split('-')[0]);
-      expectedStart = Date.UTC(year, 10, 1); // Nov 1
-      expectedEnd = Date.UTC(year + 1, 5, 1); // June 1
+      ({start: expectedStart, end: expectedEnd} = seasonalBounds(year, PILOT_CONFIG.thresholds.seasons.dry.months));
       minDays = 60;
     }
 
@@ -365,12 +363,12 @@ export function calculateClimateSummary(
   const coolDrySummary = {
     ...aggregateSeason('coolDry', coolDryInstances),
     name: 'coolDry' as const,
-    months: PILOT_CONFIG.thresholds.seasons.dryWindows.coolDry.months
+    months: [...PILOT_CONFIG.thresholds.seasons.dryWindows.coolDry.months]
   };
   const hotDrySummary = {
     ...aggregateSeason('hotDry', hotDryInstances),
     name: 'hotDry' as const,
-    months: PILOT_CONFIG.thresholds.seasons.dryWindows.hotDry.months
+    months: [...PILOT_CONFIG.thresholds.seasons.dryWindows.hotDry.months]
   };
 
   // 10-Year Decadal Linear Regression Trend
@@ -480,8 +478,15 @@ export function calculateClimateSummary(
 
   return {
     location: series.location,
+    calendarVersion: PLANNING_CALENDAR_VERSION,
+    heatThresholdC,
     period: { start: startDate, end: endDate },
     seasons: [wetSummary, drySummary],
+    planningSeasons: [
+      {...wetSummary, months: [...PILOT_CONFIG.thresholds.seasons.wet.months]},
+      coolDrySummary,
+      hotDrySummary
+    ],
     dryWindows: {
       coolDry: coolDrySummary,
       hotDry: hotDrySummary
@@ -513,6 +518,7 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
   const wet = summary.seasons.find((s) => s.name === 'wet') ?? summary.seasons[0];
   const dry = summary.seasons.find((s) => s.name === 'dry') ?? summary.seasons[1];
   const criteria = PILOT_CONFIG.thresholds.riskCriteria;
+  const heatThresholdC = summary.heatThresholdC ?? PILOT_CONFIG.thresholds.heatStressTempThresholdC;
 
   const droughtExplanation =
     summary.risks.drought === 'high'
@@ -530,10 +536,10 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
 
   const heatExplanation =
     summary.risks.heat === 'high'
-      ? `High heat stress risk: an average of ${dry.heatStressDays} days per season reach or exceed ${PILOT_CONFIG.thresholds.heatStressTempThresholdC}°C, posing flowering abortion hazards.`
+      ? `High heat stress risk: an average of ${dry.heatStressDays} days per season reach or exceed ${heatThresholdC}°C, posing flowering abortion hazards.`
       : summary.risks.heat === 'med'
-      ? `Moderate heat risk: ${dry.heatStressDays} days/season reach ${PILOT_CONFIG.thresholds.heatStressTempThresholdC}°C.`
-      : `Low heat risk: temperatures rarely breach the ${PILOT_CONFIG.thresholds.heatStressTempThresholdC}°C threshold (${dry.heatStressDays} days/season).`;
+      ? `Moderate heat risk: ${dry.heatStressDays} days/season reach ${heatThresholdC}°C.`
+      : `Low heat risk: temperatures rarely breach the ${heatThresholdC}°C threshold (${dry.heatStressDays} days/season).`;
 
   return {
     drought: {
@@ -551,7 +557,7 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
     heat: {
       level: summary.risks.heat,
       heatStressDaysPerSeason: dry.heatStressDays,
-      thresholdC: PILOT_CONFIG.thresholds.heatStressTempThresholdC,
+      thresholdC: heatThresholdC,
       explanation: heatExplanation
     }
   };

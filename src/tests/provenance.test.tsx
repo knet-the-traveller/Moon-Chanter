@@ -9,6 +9,8 @@ import { buildClimateProvenance, buildSoilProvenance, cachedProvenance, climateP
 import { applyFarmerSoilOverride, fetchSoilGridsData, soilCacheKey } from '../services/soilGrids';
 import { fetchNasaPowerClimate, climateCacheKey } from '../services/nasaPower';
 import { CacheService } from '../services/cache';
+import { PLANNING_CALENDAR_VERSION } from '../config/planningCalendar';
+import { aggregatePlanningClimatology } from '../services/planningClimatology';
 import { ClimateCard } from '../components/ClimateCard';
 import { SoilCard } from '../components/SoilCard';
 import { RotationCard } from '../components/RotationCard';
@@ -92,7 +94,7 @@ describe('metric provenance', () => {
     expect(missing.provenance?.ph?.isSample).toBe(true);
   });
   it('retains climate cache sample identity and flags malformed cache metadata for reload', async () => {
-    await CacheService.set(climateCacheKey(15.714,120.906),climate());
+    await CacheService.set(climateCacheKey(15.714,120.906),{...climate(),calendarVersion:PLANNING_CALENDAR_VERSION});
     const cached = await fetchNasaPowerClimate(15.714,120.906);
     expect(cached.provenance?.precipitation?.sampleLocation?.name).toBe('Science City of Muñoz');
     expect(cached.provenance?.precipitation?.tier).toBe('sample');
@@ -100,6 +102,12 @@ describe('metric provenance', () => {
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:false,status:400}));
     const reloaded = await fetchNasaPowerClimate(15.714,120.906);
     expect(reloaded.provenance?.precipitation?.sampleLocation?.name).toBe('Science City of Muñoz');
+    expect(reloaded.calendarVersion).toBe(PLANNING_CALENDAR_VERSION);
+    const monthly = aggregatePlanningClimatology(reloaded.monthly);
+    for (const key of ['wet', 'dryCool', 'dryHot'] as const) {
+      expect(reloaded.seasonalStats[key].precip).toBe(monthly[key].precip);
+      expect(reloaded.seasonalStats[key].maxTemp).toBe(monthly[key].maxTemp);
+    }
   });
   it.each(['en','fil'] as const)('renders provenance in cards, plans, comparison and print in %s', language => {
     useAppStore.setState({language,climateData:climate(),soilData:soil(),soilOverride:{texture:'sandy'},isComparisonModalOpen:true});

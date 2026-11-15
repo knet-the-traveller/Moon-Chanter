@@ -1,4 +1,5 @@
 import { TELEMETRY_CACHE_TTL_MS } from '../services/cache';
+import { PLANNING_MONTHS } from './planningCalendar';
 
 /**
  * Pilot Region Configuration & Tunable Climate Thresholds
@@ -46,11 +47,11 @@ export interface PilotConfig {
       dryWindows: {
         coolDry: {
           name: 'coolDry';
-          months: number[]; // [11, 12, 1] (November - January, residual moisture)
+          months: number[]; // November - February, crosses calendar year
         };
         hotDry: {
           name: 'hotDry';
-          months: number[]; // [2, 3, 4, 5] (February - May, terminal drought/heat)
+          months: number[]; // March - May
         };
       };
     };
@@ -122,20 +123,20 @@ export const PILOT_CONFIG: PilotConfig = {
     seasons: {
       wet: {
         name: 'wet',
-        months: [6, 7, 8, 9, 10] // June through October (5 months)
+        months: [...PLANNING_MONTHS.wet]
       },
       dry: {
         name: 'dry',
-        months: [11, 12, 1, 2, 3, 4, 5]  // November through May (7 months, crosses year boundary)
+        months: [...PLANNING_MONTHS.coolDry, ...PLANNING_MONTHS.hotDry]
       },
       dryWindows: {
         coolDry: {
           name: 'coolDry',
-          months: [11, 12, 1] // November through January (3 months, crosses year boundary)
+          months: [...PLANNING_MONTHS.coolDry]
         },
         hotDry: {
           name: 'hotDry',
-          months: [2, 3, 4, 5] // February through May (4 months)
+          months: [...PLANNING_MONTHS.hotDry]
         }
       }
     },
@@ -204,9 +205,12 @@ export function scenarioAdjustment(id: CompatibleScenarioId, deltas?: ScenarioDe
 }
 export interface PilotPresetVerification {
   windowsVerified: boolean;
+  calendarVersion?: string;
 }
 
 export const PRESET_VERIFICATIONS: Record<string, PilotPresetVerification> = {
+  // Legacy flags are not proof of verification for a new calendar revision.
+  // resolveWindowsVerified requires an explicitly matching calendarVersion.
   munoz: { windowsVerified: true },
   ilagan: { windowsVerified: true },
   pototan: { windowsVerified: false },

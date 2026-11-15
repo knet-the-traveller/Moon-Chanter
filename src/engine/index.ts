@@ -3,6 +3,7 @@ import { generateCandidateRotations } from './candidateGenerator';
 import { calculateSequenceScores } from './scoring';
 import { evaluateScenarios } from './scenarios';
 import { generatePlanExplanations } from './explainer';
+import { planningPeriod } from '../config/planningCalendar';
 
 export interface RecommendationEngineParams {
   allCrops: Crop[];
@@ -57,21 +58,21 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
         {
           seasonKey: 'wet',
           seasonName: { en: 'Wet Season (Monsoon)', local: 'Tag-ulan (Habagat)' },
-          periodMonths: 'Jun – Oct',
+          periodMonths: planningPeriod('wet'),
           crop: cand.s1Crop,
           role: cand.s1Crop.id === 'rice' ? 'Staple Cash Crop' : 'Early Monsoon Diversification'
         },
         {
           seasonKey: 'dry_cool',
           seasonName: { en: 'Cool Dry Season', local: 'Malamig na Tag-araw (Amihan)' },
-          periodMonths: 'Nov – Feb',
+          periodMonths: planningPeriod('coolDry'),
           crop: cand.s2Crop,
           role: cand.s2Crop.nitrogenFixing ? 'Soil Restorative Pulse' : 'Secondary Commercial Harvest'
         },
         {
           seasonKey: 'dry_hot',
           seasonName: { en: 'Hot Dry Season / Catch', local: 'Tag-init / Pangsalag' },
-          periodMonths: 'Mar – May',
+          periodMonths: planningPeriod('hotDry'),
           crop: cand.s3Crop,
           role:
             cand.s3Crop.family === 'fallow'

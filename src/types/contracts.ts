@@ -14,13 +14,17 @@ export interface SeasonalMetrics {
   rainfallMm: number;                            // mean seasonal total across years
   rainfallVariability: number;                   // coefficient of variation of seasonal totals (stdDev / mean)
   dryspellDaysAvg: number;                       // mean of the longest dry spell per season (days)
-  heatStressDays: number;                        // mean days per season above heat threshold (legacy alias for >= 35°C)
+  heatStressDays: number;                        // mean days per season >= configured threshold (default 35°C)
   heatDaysAbove34C?: number;                     // mean days per season with T2M_MAX >= 34°C
   heatDaysAbove35C?: number;                     // mean days per season with T2M_MAX >= 35°C
   soilMoistureIndex?: number;                    // left undefined for now (SMAP comes later)
 }
 
 export interface ClimateSummary {
+  /** Versioned planning calendar; absent on legacy consumer-created profiles. */
+  calendarVersion?: string;
+  /** Threshold used for heatStressDays and heat risk; absent on legacy summaries. */
+  heatThresholdC?: number;
   location: { lat: number; lon: number };
   period: { start: string; end: string };          // ISO dates (YYYY-MM-DD)
   seasons: Array<SeasonalMetrics & { name: "wet" | "dry" }>; // Strictly "wet" | "dry"
@@ -28,6 +32,12 @@ export interface ClimateSummary {
     coolDry: SeasonalMetrics & { name: "coolDry"; months: number[] };
     hotDry: SeasonalMetrics & { name: "hotDry"; months: number[] };
   };
+  /** Three ordered planning windows; wet/dry aggregates above stay compatible. */
+  planningSeasons?: [
+    SeasonalMetrics & {name: 'wet'; months: number[]},
+    SeasonalMetrics & {name: 'coolDry'; months: number[]},
+    SeasonalMetrics & {name: 'hotDry'; months: number[]}
+  ];
   windowsVerified?: boolean;
   trend10y: { tempC: number; rainfallPct: number }; // slope per decade
   risks: {
