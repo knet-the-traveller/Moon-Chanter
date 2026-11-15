@@ -142,8 +142,8 @@ export const soilCacheKey = (lat: number, lon: number) => `soilgrids_v2_${lat.to
 
 export async function fetchSoilGridsData(lat: number, lon: number): Promise<SoilData> {
   CoordinatesSchema.parse({ lat, lon });
-  const bundled = resolveBundledSoil(lat, lon);
-  if (bundled) return bundled;
+  const bundled = resolveBundledSoil(lat, lon, undefined, { fallbackToNearest: true });
+  if (bundled && hasSourceReadings(bundled)) return bundled;
   const cacheKey = soilCacheKey(lat, lon);
   const cached = SoilCacheSchema.safeParse(await LocalCacheService.get<unknown>(cacheKey));
   if (cached.success) {

@@ -1,10 +1,10 @@
 import type { DailySeries } from '../../services/nasaPower';
-import type { ClimateSummary } from '../../types/contracts';
-import { PILOT_CONFIG } from '../../config/pilot';
+import type { ClimateSummary, SeasonalMetrics } from '../../types/contracts';
+import { PILOT_CONFIG, PRESET_VERIFICATIONS } from '../../config/pilot';
 
 export interface SeasonInstance {
-  seasonKey: 'wet' | 'dry';
-  cycleId: string; // e.g. "2014-wet" or "2014-2015-dry"
+  seasonKey: 'wet' | 'dry' | 'coolDry' | 'hotDry';
+  cycleId: string; // e.g. "2014-wet" or "2014-2015-dry" or "2014-2015-coolDry" or "2015-hotDry"
   totalDays: number;
   validDays: number;
   missingDays: number;
@@ -12,6 +12,9 @@ export interface SeasonInstance {
   totalRainfallMm: number;
   maxDrySpellDays: number;
   heatStressDays: number;
+  heatDaysAbove34C: number;
+  heatDaysAbove35C: number;
+  heavyRainDays: number;
 }
 
 export interface RiskExplanation {
@@ -80,7 +83,30 @@ export function calculateMeanAndStdDev(values: number[]): { mean: number; stdDev
 }
 
 /**
- * Group daily series by seasonal cycles, correctly handling the Dec–May year boundary.
+ * Pure helper: determine if preset seasonal windows are verified for coordinates.
+ */
+export function resolveWindowsVerified(lat: number, lon: number, explicit?: boolean): boolean {
+  if (explicit !== undefined) return explicit;
+  const presets = [
+    { id: 'munoz', lat: 15.71715, lon: 120.90643 },
+    { id: 'ilagan', lat: 16.975, lon: 121.810 },
+    { id: 'pototan', lat: 10.952, lon: 122.632 },
+    { id: 'bukidnon', lat: 8.15558, lon: 125.12834 }
+  ];
+  for (const p of presets) {
+    if (Math.abs(p.lat - lat) < 0.2 && Math.abs(p.lon - lon) < 0.2) {
+      return PRESET_VERIFICATIONS[p.id]?.windowsVerified ?? false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Group daily series by seasonal cycles, correctly handling non-overlapping windows:
+ * - Wet: June 1 – October 31 (months 6-10)
+ * - Dry (Aggregate): November 1 – May 31 (months 11-12, 1-5, crosses calendar year)
+ *   - coolDry: November 1 – January 31 (months 11-12, 1)
+ *   - hotDry: February 1 – May 31 (months 2-5)
  */
 export function groupDailySeriesBySeasons(
   series: DailySeries
@@ -88,33 +114,36 @@ export function groupDailySeriesBySeasons(
   const buckets: Record<string, { dates: string[]; t2m: (number | null)[]; t2mMax: (number | null)[]; rain: (number | null)[] }> = {};
 
   const wetMonths = new Set(PILOT_CONFIG.thresholds.seasons.wet.months);
-  const dryMonths = new Set(PILOT_CONFIG.thresholds.seasons.dry.months);
+  const coolDryMonths = new Set(PILOT_CONFIG.thresholds.seasons.dryWindows.coolDry.months);
+  const hotDryMonths = new Set(PILOT_CONFIG.thresholds.seasons.dryWindows.hotDry.months);
+
+  const pushToBucket = (cycleId: string, idx: number, dateStr: string) => {
+    if (!buckets[cycleId]) {
+      buckets[cycleId] = { dates: [], t2m: [], t2mMax: [], rain: [] };
+    }
+    buckets[cycleId].dates.push(dateStr);
+    buckets[cycleId].t2m.push(series.t2m[idx]);
+    buckets[cycleId].t2mMax.push(series.t2mMax[idx]);
+    buckets[cycleId].rain.push(series.prectotcorr[idx]);
+  };
 
   series.dates.forEach((dateStr, idx) => {
     const year = parseInt(dateStr.slice(0, 4), 10);
     const month = parseInt(dateStr.slice(5, 7), 10);
 
-    let cycleId = '';
     if (wetMonths.has(month)) {
-      cycleId = `${year}-wet`;
-    } else if (dryMonths.has(month)) {
-      // December belongs to the cycle starting in that year (e.g. Dec 2014 is part of 2014-2015-dry)
-      // Jan-May belong to the cycle that started in the prior December (e.g. Jan 2015 is part of 2014-2015-dry)
-      if (month === 12) {
-        cycleId = `${year}-${year + 1}-dry`;
-      } else {
-        cycleId = `${year - 1}-${year}-dry`;
-      }
-    }
-
-    if (cycleId) {
-      if (!buckets[cycleId]) {
-        buckets[cycleId] = { dates: [], t2m: [], t2mMax: [], rain: [] };
-      }
-      buckets[cycleId].dates.push(dateStr);
-      buckets[cycleId].t2m.push(series.t2m[idx]);
-      buckets[cycleId].t2mMax.push(series.t2mMax[idx]);
-      buckets[cycleId].rain.push(series.prectotcorr[idx]);
+      pushToBucket(`${year}-wet`, idx, dateStr);
+    } else if (coolDryMonths.has(month)) {
+      // November or December: start of dry season in this year (e.g. Nov 2014 -> 2014-2015-dry)
+      // January: tail of dry season that started previous year (e.g. Jan 2015 -> 2014-2015-dry)
+      const dryStartYear = month === 1 ? year - 1 : year;
+      pushToBucket(`${dryStartYear}-${dryStartYear + 1}-dry`, idx, dateStr);
+      pushToBucket(`${dryStartYear}-${dryStartYear + 1}-coolDry`, idx, dateStr);
+    } else if (hotDryMonths.has(month)) {
+      // Feb-May: tail of dry season that started previous year (e.g. Feb 2015 -> 2014-2015-dry)
+      // and hotDry window for the current calendar year (e.g. 2015-hotDry)
+      pushToBucket(`${year - 1}-${year}-dry`, idx, dateStr);
+      pushToBucket(`${year}-hotDry`, idx, dateStr);
     }
   });
 
@@ -126,17 +155,23 @@ export function groupDailySeriesBySeasons(
  */
 export function summarizeSeasonInstance(
   cycleId: string,
-  seasonKey: 'wet' | 'dry',
+  seasonKey: 'wet' | 'dry' | 'coolDry' | 'hotDry',
   data: { dates: string[]; t2m: (number | null)[]; t2mMax: (number | null)[]; rain: (number | null)[] },
-  heatThresholdC: number,
-  dryDayThresholdMm: number
+  heatThresholdC: number = PILOT_CONFIG.thresholds.heatStressTempThresholdC,
+  dryDayThresholdMm: number = PILOT_CONFIG.thresholds.dryDayPrecipThresholdMm,
+  heatThreshold34C: number = PILOT_CONFIG.thresholds.heatStressTempThreshold34C,
+  heatThreshold35C: number = PILOT_CONFIG.thresholds.heatStressTempThreshold35C,
+  heavyRainThresholdMm: number = 50.0
 ): SeasonInstance {
   const totalDays = data.dates.length;
   let missingDays = 0;
   let t2mSum = 0;
   let t2mCount = 0;
   let rainSum = 0;
-  let heatDays = 0;
+  let heatDaysLegacy = 0;
+  let heatDays34 = 0;
+  let heatDays35 = 0;
+  let heavyRainDays = 0;
 
   let currentDrySpell = 0;
   let maxDrySpell = 0;
@@ -165,12 +200,24 @@ export function summarizeSeasonInstance(
       } else {
         currentDrySpell = 0;
       }
+
+      if (r >= heavyRainThresholdMm) {
+        heavyRainDays++;
+      }
     } else {
       currentDrySpell = 0;
     }
 
-    if (tm != null && tm >= heatThresholdC) {
-      heatDays++;
+    if (tm != null) {
+      if (tm >= heatThresholdC) {
+        heatDaysLegacy++;
+      }
+      if (tm >= heatThreshold34C) {
+        heatDays34++;
+      }
+      if (tm >= heatThreshold35C) {
+        heatDays35++;
+      }
     }
   }
 
@@ -186,7 +233,10 @@ export function summarizeSeasonInstance(
     meanT2m,
     totalRainfallMm: rainSum,
     maxDrySpellDays: maxDrySpell,
-    heatStressDays: heatDays
+    heatStressDays: heatDays35, // Consistent with >= 35°C threshold
+    heatDaysAbove34C: heatDays34,
+    heatDaysAbove35C: heatDays35,
+    heavyRainDays
   };
 }
 
@@ -199,6 +249,7 @@ export function calculateClimateSummary(
     heatThresholdC?: number;
     dryDayThresholdMm?: number;
     maxMissingDayFraction?: number;
+    windowsVerified?: boolean;
   }
 ): ClimateSummary {
   const heatThresholdC = options?.heatThresholdC ?? PILOT_CONFIG.thresholds.heatStressTempThresholdC;
@@ -209,29 +260,71 @@ export function calculateClimateSummary(
 
   const wetInstances: SeasonInstance[] = [];
   const dryInstances: SeasonInstance[] = [];
+  const coolDryInstances: SeasonInstance[] = [];
+  const hotDryInstances: SeasonInstance[] = [];
 
   for (const [cycleId, data] of Object.entries(seasonalBuckets)) {
-    const seasonKey = cycleId.endsWith('-wet') ? 'wet' : 'dry';
-    const instance = summarizeSeasonInstance(cycleId, seasonKey, data, heatThresholdC, dryDayThresholdMm);
+    let seasonKey: 'wet' | 'dry' | 'coolDry' | 'hotDry' = 'dry';
+    let year = Number(cycleId.slice(0, 4));
+    let expectedStart = 0;
+    let expectedEnd = 0;
+    let minDays = 60;
+
+    if (cycleId.endsWith('-wet')) {
+      seasonKey = 'wet';
+      expectedStart = Date.UTC(year, 5, 1); // June 1
+      expectedEnd = Date.UTC(year, 10, 1);  // Nov 1
+      minDays = 60;
+    } else if (cycleId.endsWith('-coolDry')) {
+      seasonKey = 'coolDry';
+      year = Number(cycleId.split('-')[0]);
+      expectedStart = Date.UTC(year, 10, 1); // Nov 1
+      expectedEnd = Date.UTC(year + 1, 1, 1); // Feb 1
+      minDays = 30;
+    } else if (cycleId.endsWith('-hotDry')) {
+      seasonKey = 'hotDry';
+      expectedStart = Date.UTC(year, 1, 1); // Feb 1
+      expectedEnd = Date.UTC(year, 5, 1);   // June 1
+      minDays = 30;
+    } else if (cycleId.endsWith('-dry')) {
+      seasonKey = 'dry';
+      year = Number(cycleId.split('-')[0]);
+      expectedStart = Date.UTC(year, 10, 1); // Nov 1
+      expectedEnd = Date.UTC(year + 1, 5, 1); // June 1
+      minDays = 60;
+    }
+
+    const instance = summarizeSeasonInstance(
+      cycleId,
+      seasonKey,
+      data,
+      heatThresholdC,
+      dryDayThresholdMm,
+      PILOT_CONFIG.thresholds.heatStressTempThreshold34C,
+      PILOT_CONFIG.thresholds.heatStressTempThreshold35C,
+      50.0
+    );
 
     // Skip season instance if too incomplete (> maxMissingDayFraction)
     const missingFraction = instance.totalDays > 0 ? instance.missingDays / instance.totalDays : 1;
-    const year = Number(cycleId.slice(0, 4));
-    const expectedStart = Date.UTC(year, seasonKey === 'wet' ? 5 : 11, 1);
-    const expectedEnd = seasonKey === 'wet' ? Date.UTC(year, 11, 1) : Date.UTC(year + 1, 5, 1);
     const expectedDays = (expectedEnd - expectedStart) / 86400000;
     const calendarMissing = 1 - instance.validDays / expectedDays;
-    if (missingFraction <= maxMissingFraction && calendarMissing <= maxMissingFraction && instance.totalDays >= 60) {
+
+    if (missingFraction <= maxMissingFraction && calendarMissing <= maxMissingFraction && instance.totalDays >= minDays) {
       if (seasonKey === 'wet') {
         wetInstances.push(instance);
-      } else {
+      } else if (seasonKey === 'dry') {
         dryInstances.push(instance);
+      } else if (seasonKey === 'coolDry') {
+        coolDryInstances.push(instance);
+      } else if (seasonKey === 'hotDry') {
+        hotDryInstances.push(instance);
       }
     }
   }
 
   // Calculate seasonal aggregate means across years
-  const aggregateSeason = (name: 'wet' | 'dry', instances: SeasonInstance[]) => {
+  const aggregateSeason = (name: 'wet' | 'dry' | 'coolDry' | 'hotDry', instances: SeasonInstance[]): SeasonalMetrics & { heavyRainDays?: number } => {
     if (instances.length === 0) {
       return {
         name,
@@ -239,7 +332,10 @@ export function calculateClimateSummary(
         rainfallMm: 0,
         rainfallVariability: 0,
         dryspellDaysAvg: 0,
-        heatStressDays: 0
+        heatStressDays: 0,
+        heatDaysAbove34C: 0,
+        heatDaysAbove35C: 0,
+        heavyRainDays: 0
       };
     }
 
@@ -247,6 +343,9 @@ export function calculateClimateSummary(
     const rainStats = calculateMeanAndStdDev(instances.map((i) => i.totalRainfallMm));
     const drySpellMean = instances.reduce((a, b) => a + b.maxDrySpellDays, 0) / instances.length;
     const heatDaysMean = instances.reduce((a, b) => a + b.heatStressDays, 0) / instances.length;
+    const heat34Mean = instances.reduce((a, b) => a + b.heatDaysAbove34C, 0) / instances.length;
+    const heat35Mean = instances.reduce((a, b) => a + b.heatDaysAbove35C, 0) / instances.length;
+    const heavyRainMean = instances.reduce((a, b) => a + b.heavyRainDays, 0) / instances.length;
 
     return {
       name,
@@ -254,12 +353,25 @@ export function calculateClimateSummary(
       rainfallMm: Math.round(rainStats.mean),
       rainfallVariability: Number(rainStats.cv.toFixed(2)),
       dryspellDaysAvg: Number(drySpellMean.toFixed(1)),
-      heatStressDays: Number(heatDaysMean.toFixed(1))
+      heatStressDays: Number(heatDaysMean.toFixed(1)),
+      heatDaysAbove34C: Number(heat34Mean.toFixed(1)),
+      heatDaysAbove35C: Number(heat35Mean.toFixed(1)),
+      heavyRainDays: Number(heavyRainMean.toFixed(1))
     };
   };
 
-  const wetSummary = aggregateSeason('wet', wetInstances);
-  const drySummary = aggregateSeason('dry', dryInstances);
+  const wetSummary = { ...aggregateSeason('wet', wetInstances), name: 'wet' as const };
+  const drySummary = { ...aggregateSeason('dry', dryInstances), name: 'dry' as const };
+  const coolDrySummary = {
+    ...aggregateSeason('coolDry', coolDryInstances),
+    name: 'coolDry' as const,
+    months: PILOT_CONFIG.thresholds.seasons.dryWindows.coolDry.months
+  };
+  const hotDrySummary = {
+    ...aggregateSeason('hotDry', hotDryInstances),
+    name: 'hotDry' as const,
+    months: PILOT_CONFIG.thresholds.seasons.dryWindows.hotDry.months
+  };
 
   // 10-Year Decadal Linear Regression Trend
   // Group annual totals by calendar year
@@ -331,6 +443,38 @@ export function calculateClimateSummary(
     heatRisk = 'med';
   }
 
+  // Continuous Risk Scores (0-100)
+  const droughtScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(
+        ((550 - drySummary.rainfallMm) / (550 - 250) * 60) +
+        ((drySummary.dryspellDaysAvg - 10) / (30 - 10) * 40)
+      )
+    )
+  );
+
+  const wetHeavyRain = wetSummary.heavyRainDays ?? 0;
+  const floodScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(
+        ((wetHeavyRain - 4) / (14 - 4) * 70) +
+        (wetSummary.rainfallVariability * 100 * 0.3)
+      )
+    )
+  );
+
+  const heatScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(((drySummary.heatStressDays - 20) / (90 - 20)) * 100)
+    )
+  );
+
   const startDate = series.dates[0] || PILOT_CONFIG.period.startDate;
   const endDate = series.dates[series.dates.length - 1] || PILOT_CONFIG.period.endDate;
 
@@ -338,6 +482,11 @@ export function calculateClimateSummary(
     location: series.location,
     period: { start: startDate, end: endDate },
     seasons: [wetSummary, drySummary],
+    dryWindows: {
+      coolDry: coolDrySummary,
+      hotDry: hotDrySummary
+    },
+    windowsVerified: resolveWindowsVerified(series.location.lat, series.location.lon, options?.windowsVerified),
     trend10y: {
       tempC: tempDecadeSlope,
       rainfallPct: rainDecadePct
@@ -346,6 +495,11 @@ export function calculateClimateSummary(
       drought: droughtRisk,
       flood: floodRisk,
       heat: heatRisk
+    },
+    riskScores: {
+      drought: droughtScore,
+      flood: floodScore,
+      heat: heatScore
     },
     sources: [series.source],
     isSample: series.isSample

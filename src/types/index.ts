@@ -151,7 +151,8 @@ export interface PlanScoreBreakdown {
   labor: number; // 0 - 100
 }
 
-export type ScenarioCondition = 'baseline' | 'hotter' | 'drier' | 'hotterAndDrier' | 'wetter';
+export type CanonicalScenarioId = 'baseline' | 'hotter' | 'drier' | 'compound' | 'wetter';
+export type ScenarioCondition = CanonicalScenarioId | 'hotterAndDrier' | 'hotter_drier';
 
 export interface PlanReason {
   id: string;
