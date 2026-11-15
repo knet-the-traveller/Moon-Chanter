@@ -43,3 +43,36 @@ it('uses real slope evidence in existing soil rules without retaining legacy sub
  expect(withTerrainEvidence(soil,{...land,slopePct:null}).slopePct).toBeUndefined();
  expect(withTerrainEvidence(soil,{...land,isSample:true})).toBe(soil);
 });
+
+it('refines preliminary synthetic drainage from real SRTM slopePct without overwriting farmer or sample drainage',async()=>{
+ const {withTerrainEvidence}=await import('../services/realLandData');
+ const {buildDerivedDrainageProvenance}=await import('../services/soilDerivation');
+ const land=resolveRealLand(15.714,120.906)!;
+ const syntheticClay:import('../types').SoilData={
+  source:'ISRIC SoilGrids 2.0',texture:'clay',rawClayPercent:40,rawSandPercent:25,
+  drainage:'poor',organicMatter:'medium',ph:5.6,isEstimate:false,
+  provenance:{drainage:buildDerivedDrainageProvenance({drainage:'poor',hasSlope:false})}
+ };
+ const sloped=withTerrainEvidence(syntheticClay,{...land,slopePct:12});
+ expect(sloped.slopePct).toBe(12);
+ expect(sloped.drainage).toBe('moderate');
+ expect(sloped.provenance?.drainage?.tier).toBe('synthetic');
+ expect(sloped.provenance?.drainage?.variable).toContain('SRTM slopePct');
+
+ const farmerClay:import('../types').SoilData={
+  ...syntheticClay,
+  provenance:{drainage:{...syntheticClay.provenance!.drainage!,tier:'farmer',isSynthetic:false,source:'Farmer-reported field input'}}
+ };
+ const farmerSloped=withTerrainEvidence(farmerClay,{...land,slopePct:18});
+ expect(farmerSloped.slopePct).toBe(18);
+ expect(farmerSloped.drainage).toBe('poor');
+ expect(farmerSloped.provenance?.drainage?.tier).toBe('farmer');
+
+ const sampleClay:import('../types').SoilData={
+  ...syntheticClay,
+  provenance:{drainage:{...syntheticClay.provenance!.drainage!,tier:'sample',isSample:true,isSynthetic:false,source:'FieldShift municipal soil reference'}}
+ };
+ const sampleSloped=withTerrainEvidence(sampleClay,{...land,slopePct:18});
+ expect(sampleSloped.drainage).toBe('poor');
+ expect(sampleSloped.provenance?.drainage?.tier).toBe('sample');
+});

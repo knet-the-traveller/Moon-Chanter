@@ -4,6 +4,7 @@ import rawTerrain from '../data/real-data/terrain-v1.json';
 import type { LandSummary, LandMetric, MetricProvenance } from '../types';
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import { unknownProvenance } from '../data/provenance';
+import { buildDerivedDrainageProvenance, derivePreliminaryDrainage } from './soilDerivation';
 
 const asset = z.object({url: z.url().refine(url=>url.startsWith('https://api.opentopodata.org/v1/srtm30m?')), retrievedAt:z.iso.datetime({offset:true}),sha256:z.string().regex(/^[a-f0-9]{64}$/),file:z.string()});
 export const TerrainPackageSchema = z.object({
@@ -69,5 +70,18 @@ export function withTerrainEvidence(soil:import('../types').SoilData,land:LandSu
  if(!land||land.isSample)return soil;
  const {slopePct:_old,...rest}=soil;
  const provenance={...soil.provenance,slopePct:land.provenance.slopePct};
- return land.slopePct===null?{...rest,provenance}:{...rest,slopePct:land.slopePct,provenance};
+ let drainage=soil.drainage;
+ if(soil.provenance?.drainage?.tier==='synthetic'){
+  drainage=derivePreliminaryDrainage({texture:soil.texture,clayPct:soil.rawClayPercent,sandPct:soil.rawSandPercent,slopePct:land.slopePct});
+  provenance.drainage=buildDerivedDrainageProvenance({
+   drainage,
+   hasSlope:land.slopePct!==null,
+   spatialResolution:soil.provenance.texture?.spatialResolution,
+   depth:soil.provenance.texture?.depth,
+   baseSource:soil.provenance.texture?.source,
+   note:soil.reviewNote,
+   sampleLocation:soil.provenance.texture?.sampleLocation
+  });
+ }
+ return land.slopePct===null?{...rest,drainage,provenance}:{...rest,drainage,slopePct:land.slopePct,provenance};
 }
