@@ -16,62 +16,77 @@ Modern smallholder farming requires high trust. A farmer will not risk their sea
 
 ```mermaid
 flowchart TD
-    In[Field Location, Soil & Climate Telemetry] --> Gen[Candidate Sequence Generation]
+    In[Field Location, Soil, SRTM & NASA Telemetry] --> Pre[Bundled/API Soil Completion & Override Gate]
+    Pre --> Gen[Baseline Pinning & Candidate Generation]
     Gen --> Filt[Hard Constraints Filtering]
     Filt --> Score[5-Pillar Multi-Objective Scoring]
     Score --> Weight[User Priority Weight Normalization]
-    Weight --> Stress[Scenario Stress-Testing]
-    Stress --> Rank[Ranking & Certification]
-    Rank --> Explain[Plain-Language Explainability Synthesis]
+    Weight --> Stress[Sensitivity Scenario Stress-Testing]
+    Stress --> Rank[Provisional Advisory Ranking & Robustness Screen]
+    Rank --> Explain[Rule-Tagged Explanations & Local Review Checklist]
 ```
 
-### Stage 1: Candidate Permutation & Hard Constraints
+### Stage 0: Soil Input Completion & Provenance Gate (`hasRequiredSoilInputs`)
+
+Before ranking runs (`src/engine/soilInputs.ts`), FieldShift requires complete field soil parameters (`texture`, `drainage`, `ph`, `organicMatter`):
+- **Masked 250 m SoilGrids Pixel Recovery (`src/services/bundledSoilGrids.ts`):** When a selected town center pixel (such as Science City of Muñoz cell #41 or Malaybalay cell #41) is masked `NoData` (urban/built-up/water), `resolveBundledSoil` steps deterministically (Euclidean grid distance) to the nearest complete 250 m agricultural cell (Muñoz cell #32, Malaybalay cell #42, ~250 m away) and discloses the exact requested cell, substituted cell, and offset distance in `SoilModelDetails`.
+- **Transparent Derived Properties (`src/services/soilDerivation.ts`):** When SoilGrids supplies native `soc` (dg/kg) and clay/sand/silt texture without laboratory organic-matter or percolation measurements, FieldShift derives preliminary values tagged `tier: 'synthetic'`, `isSynthetic: true`, `needsReview: true`:
+  - **Organic Matter (`deriveOrganicMatterFromSoc`):** Van Bemmelen approximation $\text{OM\%} = (\text{soc} / 100) \times 1.724$ ($\text{Low} < 1.0\%$, $\text{Medium} = 1.0\text{–}2.5\%$, $\text{High} > 2.5\%$).
+  - **Preliminary Drainage (`derivePreliminaryDrainage`):** Classified from topsoil texture / clay / sand fractions and refined dynamically when real SRTM `slopePct` arrives (`poor` $\to$ `moderate` when `slopePct > 8%`; `moderate` $\to$ `well` when `slopePct > 15%`).
+- **One-Click DA-BSWM Municipal Baseline & Farmer Override (`src/services/soilGrids.ts`, `src/store/useAppStore.ts`):** Farmers and technicians can switch anytime between SoilGrids telemetry and the labeled DA-BSWM municipal soil reference (`getMunicipalAgriculturalBaseline`), or enter 1-tap parcel overrides (`setSoilOverride`), with complete undo (`restoreSoilTelemetry` / `resetSoilOverride`).
+
+### Stage 1: Strategy 1 Baseline Pinning, Candidate Permutation & Hard Constraints
 
 A 3-season rotation sequence $(S_1 \to S_2 \to S_3)$ corresponds to the Philippine tropical monsoon calendar:
 - **Season 1 ($S_1$):** Wet Season / Habagat (June – October)
 - **Season 2 ($S_2$):** Cool Dry Season / Amihan (November – February)
 - **Season 3 ($S_3$):** Hot Dry Season / Catch Window (March – May)
 
+To make diversification trade-offs concrete (`src/engine/candidateGenerator.ts`), the engine pins **Strategy 1** (the common farmer continuous monocrop + bare-fallow baseline, marked `isBaseline: true` and exempted from agronomic host-conflict hard bans purely for side-by-side comparison):
+- **Lowlands:** *Existing Baseline: Continuous Double Rice $\to$ Bare Fallow* (`rice → rice → fallow`)
+- **Sloping Uplands (`slopePct > 15%` or non-model acid upland `ph < 5.5 && drainage !== 'poor'`):** *Existing Baseline: Continuous Upland Corn $\to$ Bare Fallow* (`corn → corn → fallow`)
+
+Alongside pinned Strategy 1, FieldShift includes canonical adaptive templates (such as **Adaptive Relay: Wet Rice $\to$ Pag-asa Mungbean $\to$ Dry Yellow Corn**, **Commercial Diversification: Wet Rice $\to$ Bulb Onion $\to$ Pre-Rice Mungbean**, and **Upland Soil Armor: Corn $\to$ Mungbean $\to$ Sweet Potato (Kamote)**) plus all generated candidate sequences passing hard constraints:
+
 #### Hard Agronomic Constraints:
 1. **Planting Window Match:** Crop must possess the designated season tag (`crop.plantingWindows.includes(season)`).
 2. **Soil & Drainage Compatibility:** Crop soil texture and drainage tolerance must accommodate the field profile.
-3. **Monoculture Ban:** Identical crop cannot occupy back-to-back seasons ($c_t \ne c_{t-1}$).
-4. **Strict Solanaceae Ban:** Consecutive planting of Solanaceae (Tomato $\to$ Eggplant) is strictly banned to prevent the devastating build-up of *Ralstonia solanacearum* (bacterial wilt) and root-knot nematodes.
-5. **Grass Monoculture Penalty:** Grass $\to$ Grass $\to$ Grass without a legume or broadleaf break is disallowed.
+3. **Monoculture Ban (Non-Baseline Candidates):** Identical crops cannot occupy back-to-back seasons ($c_t \ne c_{t-1}$).
+4. **Strict Solanaceae Ban:** Consecutive planting of Solanaceae (Tomato $\to$ Eggplant) is strictly excluded to prevent bacterial wilt (*Ralstonia solanacearum*) and root-knot nematode escalation.
+5. **Grass Monoculture Guardrail:** Grass $\to$ Grass $\to$ Grass without a legume or broadleaf break is disallowed for diversification candidates.
 6. **Farmer Exclusions:** Excludes any crop toggled off by the user.
 
 ---
 
 ## 3. Multi-Pillar Scoring Model (0–100 per pillar)
 
-Each candidate rotation sequence is evaluated across 5 agronomic and economic pillars:
+Each candidate rotation sequence is evaluated across 5 agronomic and economic pillars (`src/engine/scoring.ts`):
 
 ### A. Soil Health ($S_{\text{soil}}$)
 - **Base Score:** 30 pts.
-- **Nitrogen Fixation:** $+25$ pts for 1 legume (e.g., Mungbean, Peanut, Cowpea); $+35$ pts for $\ge 2$ legumes. Fixes 35–80 kg biological N/ha.
-- **Root Stratification:** $+20$ pts if sequence combines shallow fibrous rooters (Rice) with deep taproots (Cassava, Peanut, Sunn hemp). Penetrates plow pan and aerates soil.
-- **Clay Soil Deep Root Bonus:** $+8$ pts if field is heavy clay and contains a deep-rooting aerator.
-- **Organic Matter Restoration:** $+10$ pts if field has low SOC and includes high residue or legume cover.
-- **Stover / Biomass Contribution:** $+8$ pts per high-residue crop (Corn stover, Legume biomass).
-- **Botanical Family Diversity:** $+15$ pts for 3 distinct families; $+8$ pts for 2 families.
+- **Nitrogen Fixation (`[AGRO-RULE-01-NFIX]`):** $+25$ pts for 1 legume (e.g., Pag-asa Mungbean, Peanut); $+35$ pts for $\ge 2$ legumes (biological N fixation + synthetic N savings).
+- **Root Stratification (`[AGRO-RULE-02-ROOT-STRAT]`):** $+20$ pts across 3 distinct rooting depths (shallow fibrous roots paired with deep taproots); $+12$ pts for 2 depths.
+- **Plow-Pan & Model-Support Boundaries (`[AGRO-RULE-05-MODEL-SUPPORT]`):** $+8$ pts when heavy clay or verified non-model compacted soil (`bulkDensityGcm3 > 1.4`) includes deep/medium roots; $-8$ pts on continuous double-rice compaction. Imported SoilGrids topsoil density (`0–15 cm`) and pixel pH alone do not auto-diagnose a subsoil plow pan or sloping upland without parcel/terrain evidence.
+- **Organic Matter & Biomass (`[AGRO-RULE-05-BIOMASS-MULCH]`):** $+10$ pts when field OM is `low` and rotation includes legumes or high-residue crops; $+8$ pts per high-residue biomass crop.
+- **Botanical Family Diversity & Pest Breaks (`[AGRO-RULE-03-PESTBREAK]`):** $+15$ pts for 3 distinct botanical families, $+8$ pts for 2, $-12$ pts for single family; plus host-carryover penalties: Corn $\to$ Corn ($-22$ pts, Fall Armyworm), Solanaceae $\to$ Solanaceae ($-28$ pts, Bacterial Wilt), Onion $\to$ Onion ($-24$ pts, Purple Blotch), and Rice $\to$ Rice ($-10$ pts).
+- **Upland Canopy Cover & Acid Soil (`[AGRO-RULE-04-EROSION-ACID]`):** On verified sloping uplands ($>15\%$ slope), bare fallow incurs $-24$ pts (RUSLE soil exposure) while legume/cover cropping adds $+14$ pts; bare fallow on acid/high P-fixation soils incurs $-8$ pts.
 
 ### B. Water Resilience ($S_{\text{water}}$)
 - **Base Score:** 40 pts.
-- **Monsoon Adaptation ($S_1$):** If NASA POWER wet season rainfall $> 1000\text{ mm}$, $+25$ pts for high flood tolerance (Rice); $-15$ pts for waterlog-sensitive crops.
-- **Cool Dry Transition ($S_2$):** $+15$ pts for low or medium water demand.
-- **Hot Dry Drought Defense ($S_3$):** $+25$ pts for high drought tolerance; $-20$ pts for drought-sensitive crops; $+15$ pts for low water demand.
+- **Monsoon Adaptation ($S_1$):** If NASA POWER wet season rainfall $> 1000\text{ mm}$, $+25$ pts for high flood tolerance (Rice); $+12$ pts medium; $-15$ pts for waterlog-sensitive crops.
+- **Cool Dry Transition ($S_2$):** $-18$ pts for dry-season paddy rice; $+15$ pts for low/medium water demand; $+8$ pts extra (`[AGRO-RULE-01-NFIX]`) when short-cycle Pag-asa Mungbean saves water vs. paddy rice.
+- **Hot Dry Drought Defense ($S_3$):** $+25$ pts high drought tolerance ($+10$ medium, $-20$ low); $+15$ pts low water demand ($-15$ high); $-12$ pts for sloping upland fallow runoff.
 
 ### C. Climate Shock Buffer ($S_{\text{climate}}$)
-- **Base Score:** 40 pts.
-- **Extreme Heat Tolerance:** If NASA POWER records peak $T_{\max} \ge 34.0^\circ\text{C}$ in Hot Dry months, $+25$ pts for high heat-tolerant crops (Mungbean, Cowpea, Sweet Potato, Cassava); $-20$ pts for heat-sensitive crops.
-- **Excess Rain Typhoon Protection:** $+20$ pts if peak wet season risk is high and $S_1$ has high flood tolerance.
-- **Dry Spell Shield:** $+8$ pts per drought-hardy crop under high dry-spell risk.
+- **Base Score:** 45 pts.
+- **Dry-Season Rice Heat Sterility (`[AGRO-RULE-02-HEAT35]`):** When dry-season rice overlaps Hot Dry $T_{\max} > 35.0^\circ\text{C}$ (April 10 – May 30), applies $-\text{round}(28 + 10 \cdot (T_{\max} - 35.0))$ pts for spikelet sterility risk. Otherwise, if Hot Dry $T_{\max} \ge 34.0^\circ\text{C}$, awards $+22$ pts for high heat tolerance ($+10$ medium, $-20$ low).
+- **Pest Resilience (`[AGRO-RULE-03-PESTBREAK]`):** $+6$ pts for 3-family break; $-10$ pts for host conflict.
+- **Monsoon & Dry-Spell Risk:** $+20$ pts for high wet flood tolerance under high excess-water risk; $+8$ pts per high-drought-tolerance crop under high dry-spell risk.
 
 ### D. Economic Viability ($S_{\text{econ}}$)
 - **Base Score:** 45 pts.
-- **Market Value Tier:** $+14$ pts per high market tier crop (Mungbean, Peanut, Eggplant, Tomato, Rice).
-- **Input Cost Burden:** $-8$ pts per high-input crop; $+8$ pts per low-input crop.
-- **Staple Food Security:** $+10$ pts for presence of staple grain (Rice or Corn).
+- **Market Tier, Input Burden & Fallow:** $+14$ pts per high-market crop; $+8$ pts per low-input / $-8$ pts per high-input crop; $-12$ pts for lost harvest on bare fallow.
+- **Agronomic Cost & Yield Adjustments:** $+8$ pts legume N savings ($+4$ pts Mungbean, `[AGRO-RULE-01-NFIX]`); $-\text{round}(14 + 8 \cdot (T_{\max} - 35.0))$ revenue loss on $>35^\circ\text{C}$ dry-season rice (`[AGRO-RULE-02-HEAT35]`); $-10$ pts pest cost penalty (`[AGRO-RULE-03-PESTBREAK]`); $+10$ pts staple food security (Rice or Corn).
 
 ### E. Labor Feasibility ($S_{\text{labor}}$)
 - **Base Score:** 50 pts.
@@ -106,12 +121,12 @@ Every generated plan is tested across 5 climate conditions:
 
 ---
 
-## 6. Traceable Explainability Engine
+## 6. Traceable Explainability & Local Review Checklist (`src/engine/explainer.ts`)
 
-Each recommendation synthesizes:
-1. **Rule Tags:** Formatted with standardized IDs (e.g., `[AGRO-RULE-01-NFIX]`, `[AGRO-RULE-02-ROOT-STRAT]`, `[AGRO-RULE-03-HYDRO-ALIGN]`).
-2. **Telemetry Citations:** Embeds exact measured values (e.g., *NASA POWER 10-year precipitation of 65mm in March–May*, *Soil Organic Carbon of 1.42%*).
-3. **Farmer-Actionable Mitigations:** Concrete agronomic actions for every identified operational risk (e.g., *apply rice straw mulch to reduce evaporation during late April flowering*).
+Every plan stays framed as provisional advisory decision support and synthesizes:
+1. **Standardized Rule Tags:** `[AGRO-RULE-01-NFIX]` (biological N fixation & water savings), `[AGRO-RULE-02-HEAT35]` (`> 35°C` April 10 – May 30 dry-season rice sterility), `[AGRO-RULE-02-ROOT-STRAT]` (root stratification), `[AGRO-RULE-03-PESTBREAK]` (`Corn → Corn` Fall Armyworm, `Solanaceae → Solanaceae` Bacterial Wilt, `Onion → Onion` Purple Blotch, `Rice → Rice` pest carryover), `[AGRO-RULE-03-HYDRO-ALIGN]` (monsoon hydrology fit), `[AGRO-RULE-04-EROSION-ACID]` (`slopePct > 15%` or `pH < 5.5` canopy cover / lime & plow-pan inspection), `[AGRO-RULE-05-BIOMASS-MULCH]` (organic residue retention), and `[AGRO-RULE-05-MODEL-SUPPORT]` (SoilGrids topsoil prediction / model pH boundaries).
+2. **Telemetry & Provenance Citations:** Embeds the specific NASA POWER rainfall/temperature readings and soil values alongside `source | variable | spatial resolution | date range` and `needsReview` flags.
+3. **Actionable Field Mitigations & `generateLocalReviewChecklist`:** Pairs operational warnings with farmer actions (such as rice-straw mulching or pre-rice mungbean inoculation) and surfaces parcel-level verification prompts (municipal baseline differences, synthetic or cached inputs, grid pixel scale, canal turnouts, plow-pan compaction, and local buyer prices).
 
 ## Land NDVI profile and annual trend
 
