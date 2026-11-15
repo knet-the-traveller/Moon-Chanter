@@ -66,7 +66,11 @@
     "ph": "Soil Reaction (pH)",
     "organicMatter": "Organic-matter class",
     "overridePrompt": "Does your field soil differ? Click to override:",
-    "overrideReset": "Reset to source profile"
+    "overrideReset": "Reset to source profile",
+    "heatRiskLabel": "Heat Risk",
+    "drySpellRiskLabel": "Dry Spell Risk",
+    "shortNasaPower": "NASA POWER",
+    "shortSampleClimate": "Municipal Sample"
   },
   "priorities": {
     "title": "Field History & Farmer Priorities",
@@ -108,7 +112,13 @@
     "compareButton": "Compare Plan",
     "comparing": "Comparing",
     "viewComparison": "View Side-by-Side Comparison",
-    "noPlans": "No rotations matched your constraints. Try clearing crop exclusions."
+    "noPlans": "No rotations matched your constraints. Try clearing crop exclusions.",
+    "pillarBreakdown": "Pillar Breakdown",
+    "pillarSoil": "Soil Health",
+    "pillarWater": "Water Resilience",
+    "pillarClimate": "Climate Shock Buffer",
+    "pillarEconomics": "Economics",
+    "pillarLabor": "Labor"
   },
   "print": {
     "title": "FieldShift Crop Rotation Advisory Plan",
@@ -175,6 +185,14 @@
     "landPrint": "Land and vegetation reference",
     "evidence": "Evidence source context",
     "closeComparison": "Close comparison",
+    "viewCaveats": "View Data Sources, Resolutions & Caveats",
+    "reviewShort": "Verify locally",
+    "soilOriginBundled": "ISRIC SoilGrids 2.0 (250 m) · Bundled Grid",
+    "soilOriginCached": "ISRIC SoilGrids 2.0 (250 m) · Cached Grid",
+    "soilOriginLive": "ISRIC SoilGrids 2.0 (250 m) · Live Grid",
+    "soilOriginMunicipal": "Municipal Soil Baseline (Estimated)",
+    "soilOriginUnavailable": "Unavailable Soil Profile",
+    "soilOriginOverride": "Farmer Override Active",
     "methods": {
       "precipitation": "Daily mean × month length; monthly sums for seasons/year",
       "temperature": "Monthly means; annual mean of monthly values",

@@ -123,13 +123,6 @@ export const App: React.FC = () => {
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back to Conditions</span>
                   </button>
-                  <button
-                    onClick={() => setCurrentStep(4)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1e3a2f] hover:bg-emerald-900 text-amber-300 flex items-center gap-1.5 transition-colors shadow-sm"
-                  >
-                    <span>View Recommendations</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
-                  </button>
                 </div>
               </div>
 
