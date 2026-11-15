@@ -74,11 +74,11 @@ export const en = {
   },
   footer: {
     brandName: 'AniTala',
-    tagline: 'Simple Crop & Soil Guide · Built for Philippine Farmers',
+    tagline: 'Guided by the stars, growing toward a better harvest.',
     features: 'Regional Soil Benchmarks · Seasonal Climate Insights · Crop Rotation Planner',
-    copyright: '© 2026 AniTala',
+    copyright: '© 2026 AniTala · SI-Assisted Build v1.0',
     siNotice:
-      'S.I. Transparency Notice: Visual assets, UI code scaffolding, and crop rotation ranking logic were developed with Synthetic Intelligence (S.I.) assistance using open Earth observation datasets.',
+      'S.I. Transparency Notice: Visual assets, UI scaffolding, and crop rotation ranking logic were developed with Synthetic Intelligence (S.I.) assistance using open Earth observation datasets.',
     siVersion: 'SI-Assisted Build · v1.0',
     dataCredit:
       'Utilizes open telemetry from the NASA POWER API (agroclimatology & meteorology) and NASA GIBS (Global Imagery Browse Services satellite imagery). This open-source decision-support tool was built for the 2026 NASA Space Apps Challenge and is not endorsed by or affiliated with NASA.'

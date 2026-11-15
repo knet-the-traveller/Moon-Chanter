@@ -36,6 +36,7 @@ When real photographs are added, place them in `public/images/landing/` using mo
 
 | Slot ID | Asset Path | Recommended Dimensions | Aspect Ratio | Subject Matter / Description |
 | :--- | :--- | :--- | :--- | :--- |
+| `hero-bg` | `/images/landing/hero-bg.jpg`<br>`hero-bg-desktop.webp`<br>`hero-bg-mobile.webp` | 2400 × 975 px (desktop)<br>900 × 365 px (mobile) | ~2.46:1 | Rolling green terraced fields with pale rising sun. Full-bleed decorative background with `alt=""`, `aria-hidden="true"`, and high fetch priority (`fetchPriority="high"`). Provenance: Pending user confirmation on S.I.-generated status. |
 | `logo` | `/images/landing/logo.png` | 600 × 600 px (rendered 36×36 in header, 28×28 in footer) | 1:1 | AniTala pictorial brand emblem (star, sprout, terraced fields) |
 | `hero` | `/images/landing/hero-rice-terrace.webp` | 800 × 500 px | 16:10 | Tiered agricultural rice terraces or green Philippine fields under clear daylight |
 | `why` | `/images/landing/why-farm.webp` | 800 × 550 px | ~4:3 / 16:11 | Lush, diversified crop rows showing healthy soil and thriving crops |

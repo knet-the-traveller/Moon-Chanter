@@ -126,7 +126,7 @@ export const SearchPill: React.FC<SearchPillProps> = ({ language }) => {
           <button
             type="button"
             onClick={handleFindCrops}
-            className="sm:w-auto w-full px-6 py-3 sm:py-2.5 rounded-2xl sm:rounded-full bg-[#122b1e] hover:bg-[#0c1f15] active:bg-[#06110b] text-white text-sm font-semibold tracking-wide transition-all shadow-md flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#122b1e]"
+            className="sm:w-auto w-full px-6 py-3 sm:py-2.5 rounded-2xl sm:rounded-full bg-[#1D3309] hover:bg-[#152506] active:bg-[#0e1904] text-white text-sm font-semibold tracking-wide transition-all shadow-md flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D3309]"
           >
             <span>{t.search.findCrops}</span>
           </button>

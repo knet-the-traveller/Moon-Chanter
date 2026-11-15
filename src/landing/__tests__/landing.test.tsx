@@ -70,6 +70,25 @@ describe('AniTala Landing Page Suite', () => {
       }
     });
 
+    it('renders full-bleed hero background with responsive WebP picture sources and high fetch priority', () => {
+      const html = renderToStaticMarkup(
+        createElement(AniTalaLanding, {
+          language: 'en',
+          onLanguageChange: () => {}
+        })
+      );
+
+      // Verify <picture> element exists with mobile and desktop webp sources
+      expect(html).toContain('images/landing/hero-bg-mobile.webp');
+      expect(html).toContain('images/landing/hero-bg-desktop.webp');
+      expect(html).toContain('images/landing/hero-bg.jpg');
+
+      // Verify decorative accessibility attributes
+      expect(html).toMatch(/<img[^>]*src="[^"]*hero-bg\.jpg"[^>]*alt=""[^>]*aria-hidden="true"/);
+      // Verify high priority loading (fetchpriority / loading eager)
+      expect(html).toMatch(/loading="eager"/);
+    });
+
     it('contains ZERO occurrences of "GabayAni" in rendered English markup', () => {
       const html = renderToStaticMarkup(
         createElement(AniTalaLanding, {
@@ -287,19 +306,19 @@ describe('AniTala Landing Page Suite', () => {
 
   describe('WCAG 2.1 Contrast Ratio Verification', () => {
     const colorPairs: Array<{ name: string; fg: string; bg: string; minContrast: number }> = [
-      { name: 'Header & Hero CTA (lime on dark forest)', fg: '#122b1e', bg: '#bbf246', minContrast: 7.0 },
-      { name: 'Header White text on dark forest', fg: '#ffffff', bg: '#122b1e', minContrast: 7.0 },
+      { name: 'Header & Hero CTA (lime on dark forest)', fg: '#1D3309', bg: '#bbf246', minContrast: 7.0 },
+      { name: 'Header White text on dark forest', fg: '#ffffff', bg: '#1D3309', minContrast: 7.0 },
       { name: 'Hero H1 White on hero green', fg: '#ffffff', bg: '#132e22', minContrast: 7.0 },
       { name: 'Hero Accent Lime on hero green', fg: '#d6ff62', bg: '#132e22', minContrast: 7.0 },
       { name: 'Why H2 Dark Green on pale bg', fg: '#142f1b', bg: '#f8faf6', minContrast: 7.0 },
       { name: 'Why Eyebrow on pale bg', fg: '#2f5e36', bg: '#f8faf6', minContrast: 4.5 },
-      { name: 'Why Explore Soil Data button text', fg: '#ffffff', bg: '#122b1e', minContrast: 7.0 },
+      { name: 'Why Explore Soil Data button text', fg: '#ffffff', bg: '#1D3309', minContrast: 7.0 },
       { name: 'Steps H2 Dark Green on sage green', fg: '#173516', bg: '#cfdfb5', minContrast: 7.0 },
       { name: 'Steps Eyebrow on sage green', fg: '#23461f', bg: '#cfdfb5', minContrast: 4.5 },
       { name: 'Steps Button White text on olive button', fg: '#ffffff', bg: '#546b45', minContrast: 4.5 },
-      { name: 'Footer White text on dark footer', fg: '#ffffff', bg: '#11261a', minContrast: 7.0 },
-      { name: 'Footer Mint/Green subtext on dark footer', fg: '#a2bda7', bg: '#11261a', minContrast: 7.0 },
-      { name: 'Footer SI notice text on dark footer', fg: '#8ca391', bg: '#11261a', minContrast: 4.5 }
+      { name: 'Footer White text on dark footer', fg: '#ffffff', bg: '#1D3309', minContrast: 7.0 },
+      { name: 'Footer Mint/Green subtext on dark footer', fg: '#a2bda7', bg: '#1D3309', minContrast: 4.5 },
+      { name: 'Footer SI notice text on dark footer', fg: '#8ca391', bg: '#1D3309', minContrast: 4.5 }
     ];
 
     it.each(colorPairs)(

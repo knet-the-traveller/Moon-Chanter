@@ -87,7 +87,7 @@ export const WhySection: React.FC<WhySectionProps> = ({ language }) => {
             <div className="flex items-center gap-4 pt-3">
               <a
                 href="#/app"
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#122b1e] hover:bg-[#0c1f15] active:bg-[#06110b] text-white text-sm font-semibold transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#122b1e]"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1D3309] hover:bg-[#0c1f15] active:bg-[#06110b] text-white text-sm font-semibold transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D3309]"
               >
                 {t.why.exploreSoilData}
               </a>
