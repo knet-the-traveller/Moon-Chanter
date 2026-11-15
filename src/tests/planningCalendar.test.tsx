@@ -2,7 +2,7 @@ import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {PLANNING_MONTHS, PLANNING_CALENDAR_VERSION, planningPeriod} from '../config/planningCalendar';
-import {groupDailySeriesBySeasons, calculateClimateSummary} from '../engine/climate/climateSummary';
+import {groupDailySeriesBySeasons, calculateClimateSummary, summarizeSeasonInstance, explainRisks} from '../engine/climate/climateSummary';
 import {buildObservedClimate} from '../services/observedClimate';
 import {aggregatePlanningClimatology} from '../services/planningClimatology';
 import {climateCacheKey, fetchNasaPowerClimate, type DailySeries} from '../services/nasaPower';
@@ -96,6 +96,35 @@ it('aligns the monthly-only emergency reference when live and bundled acquisitio
   expect(result.seasonalStats).toEqual(aggregatePlanningClimatology(result.monthly));
   expect(result.seasonalStats.wet.precip).toBe(1550);
   expect(result.seasonalStats.dryCool.precip).toBe(129);
+  const rainfall = result.monthly.reduce((sum, row) => sum + row.rainfall, 0);
+  expect(result.meanAnnualPrecipitation).toBe(rainfall);
+  expect(Object.values(result.seasonalStats).reduce((sum, season) => sum + season.precip, 0)).toBe(rainfall);
+  expect(result.meanAnnualTemp).toBe(Number((result.monthly.reduce((sum, row) => sum + row.temp, 0) / 12).toFixed(1)));
+  expect(result.dateRange).toBe('');
+  for (const metadata of Object.values(result.provenance!)) {
+    expect(metadata).toMatchObject({isSample: true, isSynthetic: true, tier: 'synthetic', dateRange: null, methodKey: 'provenance.methods.emergencyClimate'});
+    expect(metadata.citation).toBeUndefined();
+  }
+});
+
+it('honors a caller heat threshold while retaining fixed 34/35 C counters', () => {
+  const season = summarizeSeasonInstance('2020-hotDry', 'hotDry', {
+    dates: ['2020-03-01','2020-03-02','2020-03-03'],
+    rain: [0,0,0], t2m: [25,25,25], t2mMax: [35,37,40]
+  }, 38);
+  expect(season.heatStressDays).toBe(1);
+  expect(season.heatDaysAbove35C).toBe(3);
+  expect(season.heatDaysAbove34C).toBe(3);
+  const series = seriesBetween('2019-01-01', '2022-01-01');
+  const custom = calculateClimateSummary(series, {heatThresholdC: 41});
+  expect(custom.heatThresholdC).toBe(41);
+  expect(custom.seasons.find(season => season.name === 'dry')?.heatStressDays).toBe(0);
+  expect(custom.dryWindows?.coolDry.heatDaysAbove35C).toBeGreaterThan(0);
+  expect(custom.risks.heat).toBe('low');
+  expect(explainRisks(custom).heat).toMatchObject({thresholdC: 41, heatStressDaysPerSeason: 0});
+  expect(explainRisks(custom).heat.explanation).toContain('41°C');
+  const legacy = {...custom, heatThresholdC: undefined};
+  expect(explainRisks(legacy).heat.thresholdC).toBe(35);
 });
 
 it.each(['en','fil'] as const)('renders the three matching climate periods without placeholders in %s', language => {
@@ -106,4 +135,18 @@ it.each(['en','fil'] as const)('renders the three matching climate periods witho
     expect(html).toContain(getTranslation(language, `conditions.${key}`).replace('{months}', planningPeriod(season, language)));
   }
   expect(html).not.toContain('{months}');
+});
+
+it.each(['en','fil'] as const)('keeps the new concise subtitles accurate for synthetic emergency climate in %s', async language => {
+  vi.stubGlobal('process', {...process, versions: {...process.versions, node: undefined}});
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok: false, status: 400}));
+  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  const climate = await fetchNasaPowerClimate(0, 0);
+  useAppStore.setState({climateData: climate, language});
+  const html = renderToStaticMarkup(createElement(ClimateCard));
+  const label = getTranslation(language, 'conditions.shortIllustrativeClimate');
+  expect(html.match(new RegExp(`title="${label}"`, 'g'))).toHaveLength(2);
+  expect(html).not.toContain(`title="${getTranslation(language, 'conditions.shortSampleClimate')}"`);
+  expect(html).not.toContain(`title="${getTranslation(language, 'conditions.shortNasaPower')}"`);
+  expect(html).toContain(climate.meanAnnualPrecipitation.toLocaleString());
 });

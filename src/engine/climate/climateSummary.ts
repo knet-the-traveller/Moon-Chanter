@@ -235,7 +235,7 @@ export function summarizeSeasonInstance(
     meanT2m,
     totalRainfallMm: rainSum,
     maxDrySpellDays: maxDrySpell,
-    heatStressDays: heatDays35, // Consistent with >= 35°C threshold
+    heatStressDays: heatDaysLegacy, // Configured threshold; 35°C by default.
     heatDaysAbove34C: heatDays34,
     heatDaysAbove35C: heatDays35,
     heavyRainDays
@@ -479,6 +479,7 @@ export function calculateClimateSummary(
   return {
     location: series.location,
     calendarVersion: PLANNING_CALENDAR_VERSION,
+    heatThresholdC,
     period: { start: startDate, end: endDate },
     seasons: [wetSummary, drySummary],
     planningSeasons: [
@@ -517,6 +518,7 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
   const wet = summary.seasons.find((s) => s.name === 'wet') ?? summary.seasons[0];
   const dry = summary.seasons.find((s) => s.name === 'dry') ?? summary.seasons[1];
   const criteria = PILOT_CONFIG.thresholds.riskCriteria;
+  const heatThresholdC = summary.heatThresholdC ?? PILOT_CONFIG.thresholds.heatStressTempThresholdC;
 
   const droughtExplanation =
     summary.risks.drought === 'high'
@@ -534,10 +536,10 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
 
   const heatExplanation =
     summary.risks.heat === 'high'
-      ? `High heat stress risk: an average of ${dry.heatStressDays} days per season reach or exceed ${PILOT_CONFIG.thresholds.heatStressTempThresholdC}°C, posing flowering abortion hazards.`
+      ? `High heat stress risk: an average of ${dry.heatStressDays} days per season reach or exceed ${heatThresholdC}°C, posing flowering abortion hazards.`
       : summary.risks.heat === 'med'
-      ? `Moderate heat risk: ${dry.heatStressDays} days/season reach ${PILOT_CONFIG.thresholds.heatStressTempThresholdC}°C.`
-      : `Low heat risk: temperatures rarely breach the ${PILOT_CONFIG.thresholds.heatStressTempThresholdC}°C threshold (${dry.heatStressDays} days/season).`;
+      ? `Moderate heat risk: ${dry.heatStressDays} days/season reach ${heatThresholdC}°C.`
+      : `Low heat risk: temperatures rarely breach the ${heatThresholdC}°C threshold (${dry.heatStressDays} days/season).`;
 
   return {
     drought: {
@@ -555,7 +557,7 @@ export function explainRisks(summary: ClimateSummary): RiskExplanation {
     heat: {
       level: summary.risks.heat,
       heatStressDaysPerSeason: dry.heatStressDays,
-      thresholdC: PILOT_CONFIG.thresholds.heatStressTempThresholdC,
+      thresholdC: heatThresholdC,
       explanation: heatExplanation
     }
   };

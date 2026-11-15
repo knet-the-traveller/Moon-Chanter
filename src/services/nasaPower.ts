@@ -334,8 +334,24 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
     const fallback = getFallbackClimateLegacy();
     fallback.calendarVersion = PLANNING_CALENDAR_VERSION;
     fallback.seasonalStats = aggregatePlanningClimatology(fallback.monthly);
+    // Keep the emergency example internally consistent. It has no acquired
+    // daily observations or verified observation period.
+    fallback.meanAnnualPrecipitation = Number(fallback.monthly.reduce((sum, row) => sum + row.rainfall, 0).toFixed(1));
+    fallback.meanAnnualTemp = Number((fallback.monthly.reduce((sum, row) => sum + row.temp, 0) / fallback.monthly.length).toFixed(1));
+    fallback.source = 'FieldShift illustrative climate reference';
+    fallback.dateRange = '';
     fallback.provenance = buildClimateProvenance(fallback, 'sample', { name: PILOT_CONFIG.location.name,
       lat: PILOT_CONFIG.location.lat, lon: PILOT_CONFIG.location.lon });
+    for (const metadata of Object.values(fallback.provenance)) {
+      metadata.source = fallback.source;
+      metadata.isSynthetic = true;
+      metadata.tier = 'synthetic';
+      metadata.dateRange = null;
+      metadata.citation = undefined;
+      metadata.methodKey = 'provenance.methods.emergencyClimate';
+      metadata.note = 'Synthetic monthly emergency example, not acquired observations. Seasonal/annual rainfall uses monthly sums; temperature uses unweighted monthly means. Heat counts, trends and risk classes are illustrative placeholders requiring local review.';
+      metadata.method = metadata.note;
+    }
     return fallback;
   }
 }

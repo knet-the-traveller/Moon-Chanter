@@ -194,7 +194,7 @@ Use this interactive checklist to visually verify each section and feature of th
     - [ ] **Stable Income & Profitability** ($S_{\text{econ}}$)
     - [ ] **Low Input Costs** ($S_{\text{cost}}$)
     - [ ] **Low Labor Intensity** ($S_{\text{labor}}$)
-    - [ ] **Climate Risk Aversion** ($S_{\text{climate}}$)
+    - [ ] **Climate Shock Buffer** ($S_{\text{climate}}$)
   - [ ] Percentage values update smoothly in real time without UI hitching.
 - [ ] **Crop Exclusion Filter:**
   - [ ] Toggle off any crop you do not wish to cultivate (e.g., deselect *Eggplant*).

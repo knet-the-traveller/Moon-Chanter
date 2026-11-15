@@ -66,7 +66,12 @@
     "ph": "Asido o Alat ng Lupa (pH)",
     "organicMatter": "Antas ng organikong materyal",
     "overridePrompt": "Iba ba ang lupa sa iyong sakahan? Piliin upang baguhin:",
-    "overrideReset": "Ibalik ang datos ng pinagmulan"
+    "overrideReset": "Ibalik ang datos ng pinagmulan",
+    "heatRiskLabel": "Panganib sa Init",
+    "drySpellRiskLabel": "Panganib sa Tagtuyot",
+    "shortNasaPower": "NASA POWER",
+    "shortSampleClimate": "Halimbawa ng Munisipyo",
+    "shortIllustrativeClimate": "Halimbawang datos ng klima"
   },
   "priorities": {
     "title": "Kasaysayan ng Sakahan at mga Hangarin",
@@ -108,7 +113,13 @@
     "compareButton": "Paghambingin ang Plano",
     "comparing": "Ikinukumpara",
     "viewComparison": "Tingnan ang Paghahambing",
-    "noPlans": "Walang nahanap na tugmang plano. Subukang alisin ang mga ibinukod na pananim."
+    "noPlans": "Walang nahanap na tugmang plano. Subukang alisin ang mga ibinukod na pananim.",
+    "pillarBreakdown": "Detalye ng Bawat Kategorya",
+    "pillarSoil": "Kalusugan ng Lupa",
+    "pillarWater": "Tibay sa Tubig",
+    "pillarClimate": "Proteksyon sa Pagbabago ng Panahon",
+    "pillarEconomics": "Kita at Ekonomiya",
+    "pillarLabor": "Gawain at Paggawa"
   },
   "print": {
     "title": "FieldShift Gabay sa Salitang Pananim",
@@ -175,6 +186,14 @@
     "landPrint": "Sanggunian ng lupain at halaman",
     "evidence": "Konteksto ng pinagmulan ng ebidensiya",
     "closeComparison": "Isara ang paghahambing",
+    "viewCaveats": "Tingnan ang Pinagmulan ng Datos, Resolusyon at Paalala",
+    "reviewShort": "Tiyakin sa bukid",
+    "soilOriginBundled": "ISRIC SoilGrids 2.0 (250 m) · Nakahandang Grid",
+    "soilOriginCached": "ISRIC SoilGrids 2.0 (250 m) · Naka-cache na Grid",
+    "soilOriginLive": "ISRIC SoilGrids 2.0 (250 m) · Live na Grid",
+    "soilOriginMunicipal": "Batayang Lupa ng Munisipyo (Tantiya)",
+    "soilOriginUnavailable": "Hindi Magamit ang Datos ng Lupa",
+    "soilOriginOverride": "Aktibo ang Pagbabago ng Magsasaka",
     "methods": {
       "precipitation": "Karaniwang pang-araw-araw × haba ng buwan; pinagsasama para sa panahon/taon",
       "temperature": "Karaniwang buwanan; taunang average ng buwanang halaga",
@@ -192,7 +211,8 @@
       "depthMean": "Pantay na average ng mga tantiyang halaga sa mga lalim na ibinalik",
       "estimate": "Halimbawang tantiya batay sa rehiyon o tekstura",
       "override": "Impormasyong ibinigay ng magsasaka; walang pagpapatunay ng laboratoryo",
-      "missingDefault": "May ipinalit na numerong halaga para sa nawawalang obserbasyon"
+      "missingDefault": "May ipinalit na numerong halaga para sa nawawalang obserbasyon",
+      "emergencyClimate": "Sintetikong buwanang halimbawa para sa emergency, hindi nakuhang obserbasyon. Pinagsasama ang buwanang ulan para sa kabuuan; karaniwang halaga ng buwanang temperatura ang ginagamit. Halimbawa lamang ang bilang ng mainit na araw, trend at risk class at kailangan pang suriin sa lokal na kondisyon."
     },
     "cached": "Naka-cache na datos",
     "municipalSoilSource": "Sangguniang profile ng lupa ng FieldShift",

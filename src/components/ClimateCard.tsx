@@ -44,6 +44,13 @@ export const ClimateCard: React.FC = () => {
   }
 
   const metadata = climateProvenance(climateData);
+  const shortSource = getTranslation(
+    language,
+    metadata.precipitation.isSynthetic || metadata.temperature.isSynthetic
+      ? 'conditions.shortIllustrativeClimate'
+      : climateData.isSampleData ? 'conditions.shortSampleClimate' : 'conditions.shortNasaPower'
+  );
+  const conciseSubtitle = [shortSource, climateData.dateRange].filter(Boolean).join(' · ');
   const chartData = climateData.monthly.map((m) => ({
     name: m.month,
     rainfall: m.rainfall,
@@ -102,6 +109,9 @@ export const ClimateCard: React.FC = () => {
           <div className="text-xl font-black text-blue-950 mt-1">
             {climateData.meanAnnualPrecipitation.toLocaleString()} <span className="text-xs font-normal">mm/yr</span>
           </div>
+          <div className="text-[11px] text-blue-800 mt-0.5 truncate" title={conciseSubtitle}>
+            {conciseSubtitle}
+          </div>
         </div>
 
         {/* Mean Temp */}
@@ -112,6 +122,9 @@ export const ClimateCard: React.FC = () => {
           </div>
           <div className="text-xl font-black text-orange-950 mt-1">
             {climateData.meanAnnualTemp}°C
+          </div>
+          <div className="text-[11px] text-orange-800 mt-0.5 truncate" title={conciseSubtitle}>
+            {conciseSubtitle}
           </div>
         </div>
 
@@ -125,7 +138,7 @@ export const ClimateCard: React.FC = () => {
             ~{climateData.heatStressDaysPerYear} <span className="text-xs font-normal">days/yr</span>
           </div>
           <div className="text-[11px] text-amber-700 mt-0.5">
-            Risk: <span className="font-semibold uppercase">{climateData.heatRisk}</span>
+            {getTranslation(language, 'conditions.heatRiskLabel')}: <span className="font-semibold uppercase">{climateData.heatRisk}</span>
           </div>
         </div>
 
@@ -143,7 +156,7 @@ export const ClimateCard: React.FC = () => {
             {metadata.rainfallTrend.tier === 'unavailable' ? getTranslation(language,'provenance.unavailableValue') : `${climateData.tenYearRainfallTrend} (${climateData.trendDeltaPercent > 0 ? '+' : ''}${climateData.trendDeltaPercent}%)`}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            Dry Spell Risk: <span className="font-semibold uppercase text-stone-700">{climateData.drySpellRisk}</span>
+            {getTranslation(language, 'conditions.drySpellRiskLabel')}: <span className="font-semibold uppercase text-stone-700">{climateData.drySpellRisk}</span>
           </div>
         </div>
       </div>
@@ -198,8 +211,8 @@ export const ClimateCard: React.FC = () => {
         </div>
       </div>
 
-      <details className="mt-4 text-sm text-stone-800">
-        <summary className="cursor-pointer font-semibold">{getTranslation(language,'mvp.sourceDetails')}</summary>
+      <details className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words">
+        <summary className="cursor-pointer py-1 font-semibold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">{getTranslation(language, 'provenance.viewCaveats')}</summary>
         <ul className="mt-2 space-y-2 break-words text-xs">{Object.entries(metadata).map(([key,value])=><li key={key}>{formatProvenance(language,value)}</li>)}</ul>
       </details>
       {/* NASA Variables Citation Footer */}
