@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IMAGE_SLOTS } from '../config/images';
 import type { ImageSlotConfig } from '../types';
 
@@ -11,6 +11,8 @@ interface LandingImageProps {
   priority?: boolean;
 }
 
+const EXTENSIONS = ['.jpg', '.png', '.webp', '.jpeg'];
+
 export const LandingImage: React.FC<LandingImageProps> = ({
   slot,
   src,
@@ -21,18 +23,35 @@ export const LandingImage: React.FC<LandingImageProps> = ({
 }) => {
   const config = IMAGE_SLOTS[slot];
   const isDev = process.env.NODE_ENV === 'development';
+  const [extIndex, setExtIndex] = useState(0);
+  const [fallbackToGradient, setFallbackToGradient] = useState(false);
 
-  if (src) {
+  const activeSrc = src || (config.defaultSrc ? `/images/landing/${slot}${EXTENSIONS[extIndex]}` : undefined);
+
+  const handleError = () => {
+    if (src) {
+      setFallbackToGradient(true);
+      return;
+    }
+    if (extIndex < EXTENSIONS.length - 1) {
+      setExtIndex((prev) => prev + 1);
+    } else {
+      setFallbackToGradient(true);
+    }
+  };
+
+  if (activeSrc && !fallbackToGradient) {
     return (
-      <figure className={`relative overflow-hidden rounded-2xl ${className}`}>
+      <figure className={`relative overflow-hidden ${className}`}>
         <img
-          src={src}
+          src={activeSrc}
           alt={alt}
           width={config.width}
           height={config.height}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           className="w-full h-full object-cover"
+          onError={handleError}
         />
         {credit && (
           <figcaption className="sr-only">

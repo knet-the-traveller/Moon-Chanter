@@ -15,6 +15,7 @@ export interface ImageSlotConfig {
   defaultGradient: string;
   width: number;
   height: number;
+  defaultSrc?: string;
 }
 
 export interface GoalOption {
