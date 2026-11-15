@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { resolveBundledSoil } from '../services/bundledSoilGrids';
 import cropsData from '../data/crops.json';
-import type { Crop, ClimateData, SoilData, FarmerPriorities } from '../types';
+import type { Crop, ClimateData, SoilData, FarmerPriorities, WaterSource } from '../types';
 import { generateCandidateRotations } from '../engine/candidateGenerator';
 import { generateRotationRecommendations } from '../engine/index';
 import { evaluateScenarios } from '../engine/scenarios';
-import { calculateSequenceScores } from '../engine/scoring';
+import { calculateSequenceScores, WATER_ACCESS_RULE_METADATA } from '../engine/scoring';
 import { generatePlanExplanations } from '../engine/explainer';
 
 const crops = cropsData as Crop[];
@@ -501,5 +501,129 @@ describe('Ticket 10 rotation-score compatibility',()=>{
       });
       expect(createHash('sha256').update(JSON.stringify(values)).digest('hex')).toBe(hash);
     }
+  });
+});
+
+describe('Water Access Scoring & Explanations [AGRO-RULE-06-WATER-ACCESS]', () => {
+  const byId = (id: string) => crops.find((c) => c.id === id)!;
+
+  it('omitting waterSource produces identical scores to waterSource = "irrigation_canal" and exports WATER_ACCESS_RULE_METADATA', () => {
+    const validSources: WaterSource[] = ['irrigation_canal', 'rainfed', 'pump_well', 'small_pond'];
+    expect(validSources).toHaveLength(4);
+
+    expect(WATER_ACCESS_RULE_METADATA.ruleId).toBe('AGRO-RULE-06-WATER-ACCESS');
+    expect(WATER_ACCESS_RULE_METADATA.needsReview).toBe(true);
+    expect(typeof WATER_ACCESS_RULE_METADATA.note).toBe('string');
+    expect(WATER_ACCESS_RULE_METADATA.note.length).toBeGreaterThan(10);
+
+    const seq = { s1Crop: byId('rice'), s2Crop: byId('mungbean'), s3Crop: byId('corn') };
+    const defaultScores = calculateSequenceScores(seq, mockClimate, mockSoil, defaultPriorities);
+    const canalScores = calculateSequenceScores(seq, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    expect(defaultScores).toEqual(canalScores);
+
+    const defaultExp = generatePlanExplanations(seq, mockClimate, mockSoil);
+    const canalExp = generatePlanExplanations(seq, mockClimate, mockSoil, 'irrigation_canal');
+    expect(defaultExp).toEqual(canalExp);
+
+    const defaultScenarios = evaluateScenarios(seq, mockClimate, mockSoil, defaultPriorities);
+    const canalScenarios = evaluateScenarios(seq, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    expect(defaultScenarios).toEqual(canalScenarios);
+  });
+
+  it('reduces waterResilience by 20, climateRisk by 10, economics by 6 for dry-cool rice under rainfed and does not credit fallow', () => {
+    const doubleRiceFallow = { s1Crop: byId('rice'), s2Crop: byId('rice'), s3Crop: byId('fallow') };
+    const canalScores = calculateSequenceScores(doubleRiceFallow, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    const rainfedScores = calculateSequenceScores(doubleRiceFallow, mockClimate, mockSoil, defaultPriorities, 'rainfed');
+
+    expect(canalScores.waterResilience - rainfedScores.waterResilience).toBe(20);
+    expect(canalScores.climateRisk - rainfedScores.climateRisk).toBe(10);
+    expect(canalScores.economics - rainfedScores.economics).toBe(6);
+
+    // Verify fallow in s3 received no drought credit under rainfed
+    expect(rainfedScores.waterResilience).toBe(canalScores.waterResilience - 20);
+  });
+
+  it('reduces waterResilience and climateRisk for dry-season medium-water crops with droughtTolerance !== "high"', () => {
+    const riceOnionCorn = { s1Crop: byId('rice'), s2Crop: byId('onion'), s3Crop: byId('corn') };
+    const canal = calculateSequenceScores(riceOnionCorn, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    const rainfed = calculateSequenceScores(riceOnionCorn, mockClimate, mockSoil, defaultPriorities, 'rainfed');
+    const smallPond = calculateSequenceScores(riceOnionCorn, mockClimate, mockSoil, defaultPriorities, 'small_pond');
+
+    // 2 qualifying seasons: s2Crop onion (medium water, low drought) and s3Crop corn (medium water, medium drought)
+    expect(canal.waterResilience - rainfed.waterResilience).toBe(8 * 2);
+    expect(canal.climateRisk - rainfed.climateRisk).toBe(4 * 2);
+    expect(canal.waterResilience - smallPond.waterResilience).toBe(4 * 2);
+  });
+
+  it('increases waterResilience for dry-season drought-hardy low-water crops under rainfed and emits AGRO-RULE-06-WATER-ACCESS reason', () => {
+    const riceMungCrotalaria = { s1Crop: byId('rice'), s2Crop: byId('mungbean'), s3Crop: byId('cover_crotalaria') };
+    const rainfed = calculateSequenceScores(riceMungCrotalaria, mockClimate, mockSoil, defaultPriorities, 'rainfed');
+
+    // Clamped to <= 100
+    expect(rainfed.waterResilience).toBeLessThanOrEqual(100);
+    expect(rainfed.waterResilience).toBe(100);
+
+    // Verify +6 per qualifying dry season (+12 for 2 qualifying seasons) on unclamped sequence
+    const unclampedSeq = { s1Crop: byId('corn'), s2Crop: byId('mungbean'), s3Crop: byId('cover_crotalaria') };
+    const unclampedCanal = calculateSequenceScores(unclampedSeq, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    const unclampedRainfed = calculateSequenceScores(unclampedSeq, mockClimate, mockSoil, defaultPriorities, 'rainfed');
+    expect(unclampedRainfed.waterResilience - unclampedCanal.waterResilience).toBe(6 * 2);
+
+    const exp = generatePlanExplanations(riceMungCrotalaria, mockClimate, mockSoil, 'rainfed');
+    expect(exp.reasons.some((r) => r.ruleId === 'AGRO-RULE-06-WATER-ACCESS')).toBe(true);
+  });
+
+  it('pump_well buffers dry-season rice water penalty with fuel cost and emits rule risk/reason', () => {
+    const doubleRiceFallow = { s1Crop: byId('rice'), s2Crop: byId('rice'), s3Crop: byId('fallow') };
+    const canal = calculateSequenceScores(doubleRiceFallow, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    const pumpWell = calculateSequenceScores(doubleRiceFallow, mockClimate, mockSoil, defaultPriorities, 'pump_well');
+    const rainfed = calculateSequenceScores(doubleRiceFallow, mockClimate, mockSoil, defaultPriorities, 'rainfed');
+
+    expect(canal.waterResilience - pumpWell.waterResilience).toBe(6);
+    expect(canal.waterResilience - rainfed.waterResilience).toBe(20);
+    expect(canal.economics - pumpWell.economics).toBe(6);
+
+    const pumpExp = generatePlanExplanations(doubleRiceFallow, mockClimate, mockSoil, 'pump_well');
+    const hasRuleExplanation =
+      pumpExp.risks.some((r) => r.ruleId === 'AGRO-RULE-06-WATER-ACCESS') ||
+      pumpExp.reasons.some((r) => r.ruleId === 'AGRO-RULE-06-WATER-ACCESS');
+    expect(hasRuleExplanation).toBe(true);
+  });
+
+  it('evaluateScenarios forwards waterSource across all 5 scenarios', () => {
+    const seq = { s1Crop: byId('rice'), s2Crop: byId('onion'), s3Crop: byId('corn') };
+    const canalEval = evaluateScenarios(seq, mockClimate, mockSoil, defaultPriorities, 'irrigation_canal');
+    const rainfedEval = evaluateScenarios(seq, mockClimate, mockSoil, defaultPriorities, 'rainfed');
+
+    const scenarios = ['baseline', 'hotter', 'drier', 'hotterAndDrier', 'wetter'] as const;
+    for (const sc of scenarios) {
+      expect(rainfedEval.scenarioScores[sc]).toBeLessThan(canalEval.scenarioScores[sc]);
+    }
+  });
+
+  it('generateRotationRecommendations accepts and propagates waterSource', () => {
+    const canalPlans = generateRotationRecommendations({
+      allCrops: crops,
+      climate: mockClimate,
+      soil: mockSoil,
+      priorities: defaultPriorities,
+      waterSource: 'irrigation_canal'
+    });
+    const rainfedPlans = generateRotationRecommendations({
+      allCrops: crops,
+      climate: mockClimate,
+      soil: mockSoil,
+      priorities: defaultPriorities,
+      waterSource: 'rainfed'
+    });
+
+    expect(canalPlans.length).toBeGreaterThan(0);
+    expect(rainfedPlans.length).toBeGreaterThan(0);
+    const rainfedHasRule = rainfedPlans.some(
+      (p) =>
+        p.reasons.some((r) => r.ruleId === 'AGRO-RULE-06-WATER-ACCESS') ||
+        p.risks.some((r) => r.ruleId === 'AGRO-RULE-06-WATER-ACCESS')
+    );
+    expect(rainfedHasRule).toBe(true);
   });
 });

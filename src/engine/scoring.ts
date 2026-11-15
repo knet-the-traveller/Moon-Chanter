@@ -1,12 +1,19 @@
 import type { CandidateSequence } from './candidateGenerator';
-import type { ClimateData, FarmerPriorities, PlanScoreBreakdown, SoilData } from '../types';
+import type { ClimateData, FarmerPriorities, PlanScoreBreakdown, SoilData, WaterSource } from '../types';
 import { assertRequiredSoilInputs } from './soilInputs';
+
+export const WATER_ACCESS_RULE_METADATA = {
+  ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+  needsReview: true,
+  note: 'Water access adjustments (irrigation canal, rainfed, shallow tube well / pump, small farm reservoir) modify seasonal water resilience, climate risk, and economic returns based on dry-season crop water demand and drought tolerance; requires local NIA irrigation service validation and field calibration.'
+} as const;
 
 export function calculateSequenceScores(
   seq: CandidateSequence,
   climate: ClimateData,
   soil: SoilData,
-  priorities: FarmerPriorities
+  priorities: FarmerPriorities,
+  waterSource: WaterSource = 'irrigation_canal'
 ): PlanScoreBreakdown {
   assertRequiredSoilInputs(soil);
   const { s1Crop, s2Crop, s3Crop } = seq;
@@ -133,8 +140,6 @@ export function calculateSequenceScores(
     else if (s3Crop.waterDemand === 'high') waterScore -= 15;
   }
 
-  waterScore = Math.min(100, Math.max(10, waterScore));
-
   // 3. CLIMATE RISK SCORE (0 - 100)
   let climateScore = 45;
 
@@ -165,8 +170,6 @@ export function calculateSequenceScores(
     const droughtHardyCount = activeCrops.filter((c) => c.droughtTolerance === 'high').length;
     climateScore += droughtHardyCount * 8;
   }
-
-  climateScore = Math.min(100, Math.max(10, climateScore));
 
   // 4. ECONOMICS SCORE (0 - 100)
   let econScore = 45;
@@ -201,6 +204,42 @@ export function calculateSequenceScores(
   const hasStaple = activeCrops.some((c) => c.id === 'rice' || c.id === 'corn');
   if (hasStaple) econScore += 10;
 
+  // [AGRO-RULE-06-WATER-ACCESS] Water access adjustments across dry seasons (S2, S3)
+  for (const crop of [s2Crop, s3Crop]) {
+    if (crop.family === 'fallow') continue;
+
+    if (waterSource === 'rainfed') {
+      if (crop.waterDemand === 'high') {
+        waterScore -= 20;
+        climateScore -= 10;
+        econScore -= 6;
+      } else if (crop.waterDemand === 'medium' && crop.droughtTolerance !== 'high') {
+        waterScore -= 8;
+        climateScore -= 4;
+      } else if (crop.waterDemand === 'low' && crop.droughtTolerance === 'high') {
+        waterScore += 6;
+      }
+    } else if (waterSource === 'pump_well') {
+      if (crop.waterDemand === 'high') {
+        waterScore -= 6;
+        econScore -= 6;
+      } else if (crop.waterDemand === 'medium' && crop.droughtTolerance !== 'high') {
+        econScore -= 2;
+      }
+    } else if (waterSource === 'small_pond') {
+      if (crop.waterDemand === 'high') {
+        waterScore -= 10;
+        climateScore -= 4;
+      } else if (crop.waterDemand === 'medium' && crop.droughtTolerance !== 'high') {
+        waterScore -= 4;
+      } else if (crop.waterDemand === 'low' && crop.droughtTolerance === 'high') {
+        waterScore += 3;
+      }
+    }
+  }
+
+  waterScore = Math.min(100, Math.max(10, waterScore));
+  climateScore = Math.min(100, Math.max(10, climateScore));
   econScore = Math.min(100, Math.max(10, econScore));
 
   // 5. LABOR FEASIBILITY SCORE (0 - 100)

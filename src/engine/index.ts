@@ -1,4 +1,4 @@
-import type { Crop, ClimateData, SoilData, FarmerPriorities, RotationPlan } from '../types';
+import type { Crop, ClimateData, SoilData, FarmerPriorities, RotationPlan, WaterSource } from '../types';
 import { generateCandidateRotations } from './candidateGenerator';
 import { calculateSequenceScores } from './scoring';
 import { evaluateScenarios } from './scenarios';
@@ -13,6 +13,7 @@ export interface RecommendationEngineParams {
   recentCropId?: string;
   excludedCropIds?: string[];
   maxResults?: number;
+  waterSource?: WaterSource;
 }
 
 export function generateRotationRecommendations(params: RecommendationEngineParams): RotationPlan[] {
@@ -23,7 +24,8 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
     priorities,
     recentCropId,
     excludedCropIds = [],
-    maxResults = 6
+    maxResults = 6,
+    waterSource = 'irrigation_canal'
   } = params;
 
   // 1. Generate eligible candidate sequences
@@ -41,9 +43,9 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
 
   // 2. Score candidates and evaluate scenarios
   const evaluatedPlans = candidates.map((cand, index) => {
-    const scores = calculateSequenceScores(cand, climate, soil, priorities);
-    const scenarioEval = evaluateScenarios(cand, climate, soil, priorities);
-    const explanations = generatePlanExplanations(cand, climate, soil);
+    const scores = calculateSequenceScores(cand, climate, soil, priorities, waterSource);
+    const scenarioEval = evaluateScenarios(cand, climate, soil, priorities, undefined, waterSource);
+    const explanations = generatePlanExplanations(cand, climate, soil, waterSource);
 
     const planId = `plan_${cand.s1Crop.id}_${cand.s2Crop.id}_${cand.s3Crop.id}_${index}`;
 

@@ -126,6 +126,8 @@ export interface Crop {
   needsReview?: boolean;
 }
 
+export type WaterSource = 'irrigation_canal' | 'rainfed' | 'pump_well' | 'small_pond';
+
 export interface FarmerPriorities {
   soilHealth: number; // 0 - 100
   waterResilience: number; // 0 - 100
