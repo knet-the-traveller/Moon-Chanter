@@ -1,15 +1,11 @@
 import type { DailySeries } from '../../services/nasaPower';
 import type { ClimateSummary } from '../../types/contracts';
-import { PILOT_CONFIG } from '../../config/pilot';
+import { CLIMATE_SCENARIO_IDS, scenarioAdjustment } from '../../config/pilot';
 import { calculateClimateSummary } from './climateSummary';
 
-export type ClimateScenarioId = 'baseline' | 'hotter' | 'drier' | 'wetter' | 'hotter_drier';
-
-export interface ScenarioDeltas {
-  hotterTempDeltaC?: number;
-  drierPrecipMultiplier?: number;
-  wetterPrecipMultiplier?: number;
-}
+export type { ScenarioDeltas } from '../../config/pilot';
+import type { ScenarioDeltas, CanonicalClimateScenarioId } from '../../config/pilot';
+export type ClimateScenarioId = CanonicalClimateScenarioId;
 
 /**
  * Pure function: Apply a climate scenario transformation to a DailySeries.
@@ -29,28 +25,7 @@ export function applyScenario(
     return series;
   }
 
-  const hotterDelta = deltas?.hotterTempDeltaC ?? PILOT_CONFIG.scenarios.hotterTempDeltaC;
-  const drierMultiplier = deltas?.drierPrecipMultiplier ?? PILOT_CONFIG.scenarios.drierPrecipMultiplier;
-  const wetterMultiplier = deltas?.wetterPrecipMultiplier ?? PILOT_CONFIG.scenarios.wetterPrecipMultiplier;
-
-  let tempShift = 0;
-  let rainMultiplier = 1.0;
-
-  switch (scenario) {
-    case 'hotter':
-      tempShift = hotterDelta;
-      break;
-    case 'drier':
-      rainMultiplier = drierMultiplier;
-      break;
-    case 'wetter':
-      rainMultiplier = wetterMultiplier;
-      break;
-    case 'hotter_drier':
-      tempShift = hotterDelta;
-      rainMultiplier = drierMultiplier;
-      break;
-  }
+  const { temperatureDeltaC: tempShift, rainfallMultiplier: rainMultiplier } = scenarioAdjustment(scenario, deltas);
 
   const transformedT2m = series.t2m.map((t) => (t !== null ? Number((t + tempShift).toFixed(2)) : null));
   const transformedT2mMax = series.t2mMax.map((tm) => (tm !== null ? Number((tm + tempShift).toFixed(2)) : null));
@@ -76,7 +51,7 @@ export function summarizeAllScenarios(
   series: DailySeries,
   deltas?: ScenarioDeltas
 ): Record<ClimateScenarioId, ClimateSummary> {
-  const scenarioIds: ClimateScenarioId[] = ['baseline', 'hotter', 'drier', 'wetter', 'hotter_drier'];
+  const scenarioIds = CLIMATE_SCENARIO_IDS;
   const results: Partial<Record<ClimateScenarioId, ClimateSummary>> = {};
 
   for (const scId of scenarioIds) {

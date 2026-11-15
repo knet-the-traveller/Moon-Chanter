@@ -1,5 +1,6 @@
 import type { CandidateSequence } from './candidateGenerator';
 import type { ClimateData, FarmerPriorities, ScenarioCondition, SoilData } from '../types';
+import { scenarioAdjustment } from '../config/pilot';
 import { calculateSequenceScores } from './scoring';
 
 export interface ScenarioEvaluation {
@@ -14,6 +15,10 @@ export function evaluateScenarios(
   soil: SoilData,
   priorities: FarmerPriorities
 ): ScenarioEvaluation {
+  const hotterAdjustment = scenarioAdjustment('hotter');
+  const drierAdjustment = scenarioAdjustment('drier');
+  const wetterAdjustment = scenarioAdjustment('wetter');
+
   // 1. Baseline
   const baseScores = calculateSequenceScores(seq, baseClimate, soil, priorities);
   const baseline = baseScores.overall;
@@ -22,9 +27,9 @@ export function evaluateScenarios(
   const hotterClimate: ClimateData = {
     ...baseClimate,
     seasonalStats: {
-      wet: { ...baseClimate.seasonalStats.wet, maxTemp: baseClimate.seasonalStats.wet.maxTemp + 1.5 },
-      dryCool: { ...baseClimate.seasonalStats.dryCool, maxTemp: baseClimate.seasonalStats.dryCool.maxTemp + 1.5 },
-      dryHot: { ...baseClimate.seasonalStats.dryHot, maxTemp: baseClimate.seasonalStats.dryHot.maxTemp + 1.5 }
+      wet: { ...baseClimate.seasonalStats.wet, maxTemp: baseClimate.seasonalStats.wet.maxTemp + hotterAdjustment.temperatureDeltaC },
+      dryCool: { ...baseClimate.seasonalStats.dryCool, maxTemp: baseClimate.seasonalStats.dryCool.maxTemp + hotterAdjustment.temperatureDeltaC },
+      dryHot: { ...baseClimate.seasonalStats.dryHot, maxTemp: baseClimate.seasonalStats.dryHot.maxTemp + hotterAdjustment.temperatureDeltaC }
     },
     heatRisk: 'high',
     heatStressDaysPerYear: baseClimate.heatStressDaysPerYear + 18
@@ -42,11 +47,11 @@ export function evaluateScenarios(
   // 3. Drier (-15% Rainfall)
   const drierClimate: ClimateData = {
     ...baseClimate,
-    meanAnnualPrecipitation: Math.round(baseClimate.meanAnnualPrecipitation * 0.85),
+    meanAnnualPrecipitation: Math.round(baseClimate.meanAnnualPrecipitation * drierAdjustment.rainfallMultiplier),
     seasonalStats: {
-      wet: { ...baseClimate.seasonalStats.wet, precip: Math.round(baseClimate.seasonalStats.wet.precip * 0.85) },
-      dryCool: { ...baseClimate.seasonalStats.dryCool, precip: Math.round(baseClimate.seasonalStats.dryCool.precip * 0.85) },
-      dryHot: { ...baseClimate.seasonalStats.dryHot, precip: Math.round(baseClimate.seasonalStats.dryHot.precip * 0.85) }
+      wet: { ...baseClimate.seasonalStats.wet, precip: Math.round(baseClimate.seasonalStats.wet.precip * drierAdjustment.rainfallMultiplier) },
+      dryCool: { ...baseClimate.seasonalStats.dryCool, precip: Math.round(baseClimate.seasonalStats.dryCool.precip * drierAdjustment.rainfallMultiplier) },
+      dryHot: { ...baseClimate.seasonalStats.dryHot, precip: Math.round(baseClimate.seasonalStats.dryHot.precip * drierAdjustment.rainfallMultiplier) }
     },
     drySpellRisk: 'high'
   };
@@ -69,11 +74,11 @@ export function evaluateScenarios(
   // 5. Wetter (+15% Intense Rainfall & Flash Flood Risk)
   const wetterClimate: ClimateData = {
     ...baseClimate,
-    meanAnnualPrecipitation: Math.round(baseClimate.meanAnnualPrecipitation * 1.15),
+    meanAnnualPrecipitation: Math.round(baseClimate.meanAnnualPrecipitation * wetterAdjustment.rainfallMultiplier),
     seasonalStats: {
-      wet: { ...baseClimate.seasonalStats.wet, precip: Math.round(baseClimate.seasonalStats.wet.precip * 1.15) },
-      dryCool: { ...baseClimate.seasonalStats.dryCool, precip: Math.round(baseClimate.seasonalStats.dryCool.precip * 1.15) },
-      dryHot: { ...baseClimate.seasonalStats.dryHot, precip: Math.round(baseClimate.seasonalStats.dryHot.precip * 1.15) }
+      wet: { ...baseClimate.seasonalStats.wet, precip: Math.round(baseClimate.seasonalStats.wet.precip * wetterAdjustment.rainfallMultiplier) },
+      dryCool: { ...baseClimate.seasonalStats.dryCool, precip: Math.round(baseClimate.seasonalStats.dryCool.precip * wetterAdjustment.rainfallMultiplier) },
+      dryHot: { ...baseClimate.seasonalStats.dryHot, precip: Math.round(baseClimate.seasonalStats.dryHot.precip * wetterAdjustment.rainfallMultiplier) }
     },
     excessWaterRisk: 'high'
   };

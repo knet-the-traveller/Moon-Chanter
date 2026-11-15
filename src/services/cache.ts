@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /**
  * Resilient Cache Service with IndexedDB, localStorage, and In-Memory tiers.
  * Guaranteed to never throw into callers.
@@ -14,6 +16,13 @@ const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 30; // Legacy default; telemetry ca
 const DB_NAME = 'FieldShiftCacheDB';
 const STORE_NAME = 'climateCache';
 const DB_VERSION = 1;
+const DB_OPEN_TIMEOUT_MS = 2000;
+const CacheRecordSchema = z.object({timestamp:z.number().nonnegative(),ttlMs:z.number().positive(),data:z.unknown()});
+function validRecord(input:unknown,now:number):input is CacheRecord<unknown> {
+  const result=CacheRecordSchema.safeParse(input);
+  return result.success && Object.hasOwn(result.data,'data') && result.data.timestamp<=now
+    && now-result.data.timestamp<=result.data.ttlMs;
+}
 
 export class CacheService {
   private static prefix = 'fieldshift_cache_';
@@ -29,14 +38,22 @@ export class CacheService {
       }
       return await new Promise<IDBDatabase | null>((resolve) => {
         const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+        let settled = false;
+        const finish = (db:IDBDatabase|null) => {
+          if(settled){db?.close();return;}
+          settled=true;clearTimeout(timeout);resolve(db);
+        };
+        const timeout=setTimeout(()=>finish(null),DB_OPEN_TIMEOUT_MS);
         request.onupgradeneeded = () => {
+          if(settled){request.transaction?.abort();return;}
           const db = request.result;
           if (!db.objectStoreNames.contains(STORE_NAME)) {
             db.createObjectStore(STORE_NAME, { keyPath: 'key' });
           }
         };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => resolve(null);
+        request.onsuccess = () => finish(request.result);
+        request.onerror = () => finish(null);
+        request.onblocked = () => finish(null);
       });
     } catch {
       return null;
@@ -55,7 +72,7 @@ export class CacheService {
       // 1. Check in-memory store
       const memRecord = this.memoryStore.get(fullKey) as CacheRecord<T> | undefined;
       if (memRecord) {
-        if (now - memRecord.timestamp > memRecord.ttlMs) {
+        if (!validRecord(memRecord,now)) {
           this.memoryStore.delete(fullKey);
         } else {
           return memRecord.data;
@@ -65,33 +82,35 @@ export class CacheService {
       // 2. Check IndexedDB if available
       const db = await this.getDb();
       if (db) {
-        const idbRecord = await new Promise<CacheRecord<T> | null>((resolve) => {
-          try {
-            const tx = db.transaction(STORE_NAME, 'readonly');
-            const store = tx.objectStore(STORE_NAME);
-            const req = store.get(fullKey);
-            req.onsuccess = () => resolve(req.result ? req.result.payload : null);
-            req.onerror = () => resolve(null);
-          } catch {
-            resolve(null);
-          }
-        });
-
-        if (idbRecord) {
-          if (now - idbRecord.timestamp > idbRecord.ttlMs) {
-            // Delete expired record in background
+        try {
+          const idbRecord = await new Promise<CacheRecord<T> | null>((resolve) => {
             try {
-              const tx = db.transaction(STORE_NAME, 'readwrite');
-              tx.objectStore(STORE_NAME).delete(fullKey);
+              const tx = db.transaction(STORE_NAME, 'readonly');
+              const store = tx.objectStore(STORE_NAME);
+              const req = store.get(fullKey);
+              req.onsuccess = () => resolve(req.result ? req.result.payload : null);
+              req.onerror = () => resolve(null);
             } catch {
-              // ignore
+              resolve(null);
             }
-          } else {
-            // Cache in memory for quick subsequent access
-            this.memoryStore.set(fullKey, idbRecord);
-            return idbRecord.data;
+          });
+
+          if (idbRecord) {
+            if (!validRecord(idbRecord,Date.now())) {
+              // Delete expired record in background
+              try {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).delete(fullKey);
+              } catch {
+                // ignore
+              }
+            } else {
+              // Cache in memory for quick subsequent access
+              this.memoryStore.set(fullKey, idbRecord);
+              return idbRecord.data;
+            }
           }
-        }
+        } finally {db.close();}
       }
 
       // 3. Check localStorage fallback
@@ -99,7 +118,7 @@ export class CacheService {
         const itemStr = window.localStorage.getItem(fullKey);
         if (itemStr) {
           const localRecord: CacheRecord<T> = JSON.parse(itemStr);
-          if (now - localRecord.timestamp > localRecord.ttlMs) {
+          if (!validRecord(localRecord,Date.now())) {
             window.localStorage.removeItem(fullKey);
           } else {
             this.memoryStore.set(fullKey, localRecord);
@@ -133,17 +152,20 @@ export class CacheService {
       // 2. Store in IndexedDB
       const db = await this.getDb();
       if (db) {
-        await new Promise<void>((resolve) => {
-          try {
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
-            store.put({ key: fullKey, payload: record });
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => resolve();
-          } catch {
-            resolve();
-          }
-        });
+        try {
+          await new Promise<void>((resolve) => {
+            try {
+              const tx = db.transaction(STORE_NAME, 'readwrite');
+              const store = tx.objectStore(STORE_NAME);
+              store.put({ key: fullKey, payload: record });
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => resolve();
+              tx.onabort = () => resolve();
+            } catch {
+              resolve();
+            }
+          });
+        } finally {db.close();}
       }
 
       // 3. Store in localStorage as additional fallback
@@ -165,7 +187,7 @@ export class CacheService {
 
       const memRecord = this.memoryStore.get(fullKey) as CacheRecord<T> | undefined;
       if (memRecord) {
-        if (now - memRecord.timestamp <= memRecord.ttlMs) {
+        if (validRecord(memRecord,now)) {
           return memRecord.data;
         }
         this.memoryStore.delete(fullKey);
@@ -175,7 +197,7 @@ export class CacheService {
         const itemStr = window.localStorage.getItem(fullKey);
         if (itemStr) {
           const localRecord: CacheRecord<T> = JSON.parse(itemStr);
-          if (now - localRecord.timestamp <= localRecord.ttlMs) {
+          if (validRecord(localRecord,now)) {
             this.memoryStore.set(fullKey, localRecord);
             return localRecord.data;
           }
@@ -207,8 +229,10 @@ export class CacheService {
 
       const db = await this.getDb();
       if (db) {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).clear();
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).clear();
+        } finally {db.close();}
       }
     } catch {
       // ignore

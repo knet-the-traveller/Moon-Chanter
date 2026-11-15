@@ -247,3 +247,36 @@ describe('GPS selection ordering', () => {
     expect(useAppStore.getState().gpsError).toBe('map.gpsFailure');
   });
 });
+
+describe('Ticket 11 independent terrain/soil arrival',()=>{
+  it.each(['land-first','soil-first'] as const)('retains real slope and pending field overrides when %s',async order=>{
+    const {resolveRealLand}=await import('../services/realLandData');
+    const land=resolveRealLand(b.lat,b.lon)!;
+    const pendingLand=deferred<LandSummary>();
+    const pendingSoil=deferred<SoilData>();
+    vi.mocked(fetchLandSummary).mockReturnValueOnce(pendingLand.promise);
+    vi.mocked(fetchSoilGridsData).mockReturnValueOnce(pendingSoil.promise);
+    const request=useAppStore.getState().selectPilotPreset(b);
+    useAppStore.getState().setSoilOverride({ph:7.1});
+    const base={...municipal.soil,slopePct:99};
+    if(order==='land-first'){
+      pendingLand.resolve(land);
+      await vi.waitFor(()=>expect(useAppStore.getState().isLoadingLand).toBe(false));
+      expect(useAppStore.getState().soilData).toBeNull();
+      pendingSoil.resolve(base);
+    }else{
+      pendingSoil.resolve(base);
+      await vi.waitFor(()=>expect(useAppStore.getState().isLoadingTelemetry).toBe(false));
+      expect(useAppStore.getState().isLoadingLand).toBe(true);
+      pendingLand.resolve(land);
+    }
+    await request;
+    const state=useAppStore.getState();
+    expect(state.soilData?.slopePct).toBe(land.slopePct);
+    expect(state.soilData?.provenance?.slopePct).toEqual(land.provenance.slopePct);
+    expect(state.soilOverride).toEqual({ph:7.1});
+    expect(state.soilData?.ph).toBe(municipal.soil.ph);
+    expect(state.recommendedPlans.length).toBeGreaterThan(0);
+    expect(state.isLoadingLand||state.isLoadingTelemetry).toBe(false);
+  });
+});
