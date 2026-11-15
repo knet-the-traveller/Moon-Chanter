@@ -51,7 +51,10 @@
     "overlay": "Satellite Overlay",
     "expandMap": "Expand Map",
     "minimizeMap": "Minimize Map",
-    "searchTownPlaceholder": "Search municipality or province..."
+    "searchTownPlaceholder": "Search municipality or province...",
+    "ndviLowFallow": "Low / Fallow",
+    "ndviModerate": "Moderate",
+    "ndviHighVigor": "High Vigor"
   },
   "conditions": {
     "climateTitle": "NASA Climate & Moisture Context",

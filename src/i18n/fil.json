@@ -51,7 +51,10 @@
     "overlay": "Patong na Larawan ng Satelayt",
     "expandMap": "Palakihin ang Mapa",
     "minimizeMap": "Paliitin ang Mapa",
-    "searchTownPlaceholder": "Maghanap ng munisipyo o lalawigan..."
+    "searchTownPlaceholder": "Maghanap ng munisipyo o lalawigan...",
+    "ndviLowFallow": "Mababa / Tiwangwang",
+    "ndviModerate": "Katamtaman",
+    "ndviHighVigor": "Malagong Halaman"
   },
   "conditions": {
     "climateTitle": "Klima at Ulan Ayon sa NASA",

@@ -160,6 +160,15 @@ export const MapPicker: React.FC = () => {
     }
   }, [selectedLocation]);
 
+  // Invalidate map size when toggling between standard and expanded full-viewport views
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const timer = setTimeout(() => {
+      mapInstanceRef.current?.invalidateSize();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [isMapExpanded]);
+
   // Switch Tile Layer (GIBS True Color, NDVI, OSM)
   const handleLayerSwitch = (layerKey: string) => {
     if (!mapInstanceRef.current) return;
@@ -530,15 +539,15 @@ export const MapPicker: React.FC = () => {
                 <span className="font-bold">NDVI:</span>
                 <span className="flex items-center gap-1.5">
                   <i className="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block" />
-                  Low / Fallow
+                  {getTranslation(language, 'map.ndviLowFallow')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <i className="w-2.5 h-2.5 rounded-full bg-[#A7BD40] inline-block" />
-                  Moderate
+                  {getTranslation(language, 'map.ndviModerate')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <i className="w-2.5 h-2.5 rounded-full bg-[#1D6F42] inline-block" />
-                  High Vigor
+                  {getTranslation(language, 'map.ndviHighVigor')}
                 </span>
               </div>
             )}

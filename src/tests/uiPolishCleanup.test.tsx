@@ -244,6 +244,14 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     const expandedMapHtml = renderToStaticMarkup(createElement(MapPicker));
     expect(expandedMapHtml).toContain(getTranslation('en', 'map.minimizeMap'));
 
+    // Localized NDVI legend strings parity
+    expect(getTranslation('en', 'map.ndviLowFallow')).toBe('Low / Fallow');
+    expect(getTranslation('fil', 'map.ndviLowFallow')).toBe('Mababa / Tiwangwang');
+    expect(getTranslation('en', 'map.ndviModerate')).toBe('Moderate');
+    expect(getTranslation('fil', 'map.ndviModerate')).toBe('Katamtaman');
+    expect(getTranslation('en', 'map.ndviHighVigor')).toBe('High Vigor');
+    expect(getTranslation('fil', 'map.ndviHighVigor')).toBe('Malagong Halaman');
+
     // 2. Step 2 WaterSourceCard and FieldNotesCard
     useAppStore.setState({
       currentStep: 2,
