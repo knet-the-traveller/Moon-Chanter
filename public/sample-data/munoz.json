@@ -1,60 +1,16 @@
 {
   "location": {
+    "lat": 15.71715,
+    "lon": 120.90643,
     "id": "munoz",
     "name": "Science City of Muñoz",
     "province": "Nueva Ecija",
-    "region": "Central Luzon (Region III)",
-    "lat": 15.71715,
-    "lon": 120.90643,
     "elevationMeters": 58,
+    "region": "Central Luzon (Region III)",
     "description": {
       "en": "Central Luzon's agricultural technology capital and national rice granary. Heavy clay-loam plains with pronounced monsoon wet season and dry early months.",
       "fil": "Kabisera ng teknolohiyang agrikultural sa Gitnang Luzon at imbakan ng bigas ng bansa. Malawak na kapatagan na may malinaw na tag-ulan at tag-init."
     }
-  },
-  "climate": {
-    "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
-    "variableList": ["T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "ALLSKY_SFC_SW_DWN", "RH2M"],
-    "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
-    "isSampleData": true,
-    "meanAnnualPrecipitation": 1845,
-    "meanAnnualTemp": 27.6,
-    "seasonalStats": {
-      "wet": { "precip": 1410, "avgTemp": 27.8, "maxTemp": 32.4 },
-      "dryCool": { "precip": 95, "avgTemp": 25.6, "maxTemp": 30.8 },
-      "dryHot": { "precip": 340, "avgTemp": 29.4, "maxTemp": 35.6 }
-    },
-    "monthly": [
-      { "month": "Jan", "monthNum": 1, "temp": 25.1, "tempMax": 30.5, "tempMin": 19.8, "rainfall": 12, "solarRadiation": 16.4, "humidity": 74 },
-      { "month": "Feb", "monthNum": 2, "temp": 26.0, "tempMax": 31.8, "tempMin": 20.2, "rainfall": 15, "solarRadiation": 18.9, "humidity": 71 },
-      { "month": "Mar", "monthNum": 3, "temp": 27.9, "tempMax": 34.2, "tempMin": 21.6, "rainfall": 28, "solarRadiation": 21.2, "humidity": 68 },
-      { "month": "Apr", "monthNum": 4, "temp": 29.8, "tempMax": 36.1, "tempMin": 23.5, "rainfall": 65, "solarRadiation": 22.8, "humidity": 66 },
-      { "month": "May", "monthNum": 5, "temp": 29.5, "tempMax": 34.8, "tempMin": 24.2, "rainfall": 210, "solarRadiation": 20.5, "humidity": 75 },
-      { "month": "Jun", "monthNum": 6, "temp": 28.6, "tempMax": 33.1, "tempMin": 24.1, "rainfall": 285, "solarRadiation": 17.6, "humidity": 82 },
-      { "month": "Jul", "monthNum": 7, "temp": 27.9, "tempMax": 32.0, "tempMin": 23.8, "rainfall": 365, "solarRadiation": 15.8, "humidity": 85 },
-      { "month": "Aug", "monthNum": 8, "temp": 27.5, "tempMax": 31.4, "tempMin": 23.6, "rainfall": 395, "solarRadiation": 15.2, "humidity": 87 },
-      { "month": "Sep", "monthNum": 9, "temp": 27.8, "tempMax": 32.1, "tempMin": 23.5, "rainfall": 310, "solarRadiation": 16.5, "humidity": 86 },
-      { "month": "Oct", "monthNum": 10, "temp": 27.9, "tempMax": 32.4, "tempMin": 23.3, "rainfall": 195, "solarRadiation": 17.2, "humidity": 83 },
-      { "month": "Nov", "monthNum": 11, "temp": 26.8, "tempMax": 31.6, "tempMin": 22.0, "rainfall": 78, "solarRadiation": 16.8, "humidity": 79 },
-      { "month": "Dec", "monthNum": 12, "temp": 25.5, "tempMax": 30.6, "tempMin": 20.4, "rainfall": 24, "solarRadiation": 15.9, "humidity": 76 }
-    ],
-    "heatStressDaysPerYear": 42,
-    "drySpellRisk": "high",
-    "excessWaterRisk": "high",
-    "heatRisk": "high",
-    "tenYearRainfallTrend": "decreasing",
-    "trendDeltaPercent": -4.8
-  },
-  "soil": {
-    "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean)",
-    "texture": "clay_loam",
-    "drainage": "moderate",
-    "organicMatter": "medium",
-    "ph": 6.3,
-    "isEstimate": false,
-    "rawClayPercent": 36.5,
-    "rawSandPercent": 28.2,
-    "rawSocDgPerKg": 142
   },
   "land": {
     "slopePct": 1.8,
@@ -86,6 +42,7 @@
       }
     },
     "landCover": "cropland",
+    "landCoverVerified": false,
     "meta": {
       "source": "Illustrative municipal land scenario",
       "variable": "terrain, NDVI, RUSLE factors",
@@ -98,5 +55,218 @@
       "retrievedOn": null,
       "createdOn": "2026-11-14"
     }
+  },
+  "sensors": {
+    "smapSoilMoisture": {
+      "value": null,
+      "unit": "m3/m3",
+      "period": null,
+      "baseline": null,
+      "source": "NASA SMAP L3 Radiometer Global Daily 9 km (SPL3SMP_E v006)",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Requires Earthdata Bearer token; coarse 9 km spatial resolution requires technician disaggregation."
+    },
+    "extremeRainDays": {
+      "value": 8.9,
+      "unit": "days/year >= 50 mm",
+      "period": "2014-01-01 to 2023-12-31",
+      "baseline": 8.9,
+      "source": "NASA POWER daily point (PRECTOTCORR >= 50 mm)",
+      "retrievedAt": "2026-11-15T08:55:54.107Z",
+      "status": "measured",
+      "reason": "Computed from 10-year daily series via scripts/build-municipal-fixtures.ts. Note: coarse 0.5 deg grid understates convective point-level rain extremes."
+    },
+    "ecostressEsi": {
+      "value": null,
+      "unit": "ESI z-score",
+      "period": null,
+      "baseline": null,
+      "source": "ECOSTRESS Evaporative Stress Index PT-JPL 70 m (ECO4ESI v002)",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Requires Earthdata AppEEARS token; orbital revisit gaps over Philippines during monsoon cloud cover."
+    },
+    "srtmSlope": {
+      "value": null,
+      "unit": "%",
+      "period": null,
+      "baseline": null,
+      "source": "NASA SRTMGL1 v003 30 m",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Requires DEM tile raster analysis via scripts/build-municipal-fixtures.ts."
+    }
+  },
+  "climate": {
+    "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
+    "variableList": [
+      "T2M",
+      "T2M_MAX",
+      "T2M_MIN",
+      "PRECTOTCORR",
+      "ALLSKY_SFC_SW_DWN",
+      "RH2M"
+    ],
+    "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
+    "isSampleData": true,
+    "meanAnnualPrecipitation": 1845,
+    "meanAnnualTemp": 27.6,
+    "seasonalStats": {
+      "wet": {
+        "precip": 1410,
+        "avgTemp": 27.8,
+        "maxTemp": 32.4
+      },
+      "dryCool": {
+        "precip": 95,
+        "avgTemp": 25.6,
+        "maxTemp": 30.8
+      },
+      "dryHot": {
+        "precip": 340,
+        "avgTemp": 29.4,
+        "maxTemp": 35.6
+      }
+    },
+    "monthly": [
+      {
+        "month": "Jan",
+        "monthNum": 1,
+        "temp": 25.1,
+        "tempMax": 30.5,
+        "tempMin": 19.8,
+        "rainfall": 12,
+        "solarRadiation": 16.4,
+        "humidity": 74
+      },
+      {
+        "month": "Feb",
+        "monthNum": 2,
+        "temp": 26,
+        "tempMax": 31.8,
+        "tempMin": 20.2,
+        "rainfall": 15,
+        "solarRadiation": 18.9,
+        "humidity": 71
+      },
+      {
+        "month": "Mar",
+        "monthNum": 3,
+        "temp": 27.9,
+        "tempMax": 34.2,
+        "tempMin": 21.6,
+        "rainfall": 28,
+        "solarRadiation": 21.2,
+        "humidity": 68
+      },
+      {
+        "month": "Apr",
+        "monthNum": 4,
+        "temp": 29.8,
+        "tempMax": 36.1,
+        "tempMin": 23.5,
+        "rainfall": 65,
+        "solarRadiation": 22.8,
+        "humidity": 66
+      },
+      {
+        "month": "May",
+        "monthNum": 5,
+        "temp": 29.5,
+        "tempMax": 34.8,
+        "tempMin": 24.2,
+        "rainfall": 210,
+        "solarRadiation": 20.5,
+        "humidity": 75
+      },
+      {
+        "month": "Jun",
+        "monthNum": 6,
+        "temp": 28.6,
+        "tempMax": 33.1,
+        "tempMin": 24.1,
+        "rainfall": 285,
+        "solarRadiation": 17.6,
+        "humidity": 82
+      },
+      {
+        "month": "Jul",
+        "monthNum": 7,
+        "temp": 27.9,
+        "tempMax": 32,
+        "tempMin": 23.8,
+        "rainfall": 365,
+        "solarRadiation": 15.8,
+        "humidity": 85
+      },
+      {
+        "month": "Aug",
+        "monthNum": 8,
+        "temp": 27.5,
+        "tempMax": 31.4,
+        "tempMin": 23.6,
+        "rainfall": 395,
+        "solarRadiation": 15.2,
+        "humidity": 87
+      },
+      {
+        "month": "Sep",
+        "monthNum": 9,
+        "temp": 27.8,
+        "tempMax": 32.1,
+        "tempMin": 23.5,
+        "rainfall": 310,
+        "solarRadiation": 16.5,
+        "humidity": 86
+      },
+      {
+        "month": "Oct",
+        "monthNum": 10,
+        "temp": 27.9,
+        "tempMax": 32.4,
+        "tempMin": 23.3,
+        "rainfall": 195,
+        "solarRadiation": 17.2,
+        "humidity": 83
+      },
+      {
+        "month": "Nov",
+        "monthNum": 11,
+        "temp": 26.8,
+        "tempMax": 31.6,
+        "tempMin": 22,
+        "rainfall": 78,
+        "solarRadiation": 16.8,
+        "humidity": 79
+      },
+      {
+        "month": "Dec",
+        "monthNum": 12,
+        "temp": 25.5,
+        "tempMax": 30.6,
+        "tempMin": 20.4,
+        "rainfall": 24,
+        "solarRadiation": 15.9,
+        "humidity": 76
+      }
+    ],
+    "heatStressDaysPerYear": 42,
+    "drySpellRisk": "high",
+    "excessWaterRisk": "high",
+    "heatRisk": "high",
+    "tenYearRainfallTrend": "decreasing",
+    "trendDeltaPercent": -4.8
+  },
+  "soil": {
+    "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean)",
+    "texture": "clay_loam",
+    "drainage": "moderate",
+    "organicMatter": "medium",
+    "ph": 6.3,
+    "isEstimate": false,
+    "rawClayPercent": 36.5,
+    "rawSandPercent": 28.2,
+    "rawSocDgPerKg": 142
   }
 }
