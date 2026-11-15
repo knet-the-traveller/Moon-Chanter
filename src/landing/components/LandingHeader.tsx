@@ -52,7 +52,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               AniTala
             </span>
             <span className="text-[10px] tracking-wide text-white/70 font-normal">
-              Simple Crop &amp; Soil Guide
+              Guided by the stars, growing toward a better harvest.
             </span>
           </div>
         </a>

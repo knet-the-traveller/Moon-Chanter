@@ -47,9 +47,9 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
         />
       </picture>
 
-      {/* Dark overlay gradient: strong on mobile/left for text legibility, easing toward the pale sun on right */}
+      {/* Subtle overlay gradient: preserves natural vibrant green hills and contour lines while maintaining high contrast */}
       <div
-        className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-b from-[#0b1f15]/95 via-[#0d2318]/90 to-[#0e271b]/95 md:bg-gradient-to-r md:from-[#0b1f15]/95 md:via-[#0d2318]/85 md:to-[#0e271b]/25"
+        className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-b from-black/25 via-transparent to-black/20 md:bg-gradient-to-r md:from-black/30 md:via-black/10 md:to-transparent"
         aria-hidden="true"
       />
 
@@ -105,6 +105,19 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* SI-Generated Image watermark badge at bottom right as shown in reference */}
+      <div className="absolute bottom-12 right-6 lg:right-12 z-10 hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-black/40 backdrop-blur-xs text-[10px] font-medium text-white/80 border border-white/15 select-none">
+        <svg
+          className="w-3 h-3 text-[#d6ff62] shrink-0"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+        </svg>
+        <span>SI-Generated Image</span>
       </div>
     </section>
   );
