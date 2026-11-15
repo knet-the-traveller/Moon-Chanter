@@ -62,6 +62,7 @@ export function applyScenario(
     ...series,
     t2m: transformedT2m,
     t2mMax: transformedT2mMax,
+    ...(series.t2mMin ? { t2mMin: series.t2mMin.map(t => t === null ? null : Number((t + tempShift).toFixed(2))) } : {}),
     prectotcorr: transformedPrecip,
     source: `${series.source} [Scenario: ${scenario}]`
   };

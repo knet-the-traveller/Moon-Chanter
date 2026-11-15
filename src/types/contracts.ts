@@ -48,7 +48,7 @@ export interface MetricProvenance {
   isSynthetic: boolean;
   needsReview: boolean;
   note: string;
-  tier?: 'live' | 'cached-live' | 'sample' | 'synthetic' | 'farmer' | 'unavailable';
+  tier?: 'live' | 'cached-live' | 'bundled-model' | 'sample' | 'synthetic' | 'farmer' | 'unavailable';
   unit?: string;
   depth?: string | null;
   method?: string;
@@ -66,17 +66,18 @@ export type SoilMetric = 'texture' | 'drainage' | 'organicMatter' | 'ph' | 'rawC
   | 'rawSandPercent' | 'rawSocDgPerKg' | 'bulkDensityGcm3' | 'phosphorusFixationRisk' | 'slopePct';
 
 export interface LandSummary {
-  elevationM: number; // Finite elevation in meters.
-  slopePct: number; // Finite, nonnegative percent slope.
-  floodProne: boolean;
+  elevationM: number | null; // Finite elevation in meters.
+  slopePct: number | null; // Finite, nonnegative percent slope.
+  floodProne: boolean | null;
   bareFieldMonths: number[]; // Sorted, unique integers 1–12.
-  rusleErosionRiskTonsHaYr: number; // Finite, nonnegative metric tonnes/ha/year.
+  rusleErosionRiskTonsHaYr: number | null; // Finite, nonnegative metric tonnes/ha/year.
   ndvi: {
-    seasonalMean: number[]; // Exactly 12 finite values in [-1, 1], January–December.
+    seasonalMean: (number | null)[]; // Exactly 12 finite values in [-1, 1], January–December.
     trend: number; // NDVI change/year; zero when unavailable.
     source: string;
     trendAvailable: boolean;
     trendUnavailableReason: string | null;
+    evidence?: { accepted: number; total: number; monthlyCounts: number[]; annualYears: number[]; qualityPolicy: string };
   };
   landCover?: string;
   isSample: boolean;

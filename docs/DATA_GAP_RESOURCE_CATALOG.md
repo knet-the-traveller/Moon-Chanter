@@ -1,6 +1,6 @@
 # FieldShift data-gap resource catalog
 
-Research checked: 15 November 2026. This is a source-selection document, not evidence that these datasets are integrated or that pilot-area extracts have been validated. Product and access pages were checked; no raster archives or account-protected downloads were acquired. Priorities and proposed uses below are implementation recommendations.
+Research checked: 15 November 2026. This is a source-selection document, not evidence that these datasets are integrated or that pilot-area extracts have been validated. The initial research checked product/access pages without acquiring raster archives. The subsequent [SoilGrids pilot milestone](SOILGRIDS_PILOT_MILESTONE.md) acquires a separate, versioned SOIL-01 raster package; other catalog entries remain source selections. Priorities and proposed uses below are implementation recommendations.
 
 ## Selection and access
 
@@ -63,4 +63,4 @@ Adopt its distinction between supported, unresolved and excluded evidence and it
 
 For every imported package record source URL/DOI, version, license and attribution, actual observation period, actual retrieval time, coordinates/bounds, grid and effective scale, depth, units/scaling, nodata convention, QA/valid-observation counts, uncertainty, processing method/version, checksum and review status. Validate external and packaged data with Zod, retain reproducible extraction scripts, and keep credentials outside distributed artifacts. Use existing seven-day JSON cache behavior for applicable live requests; label offline extracts by their observation period rather than claiming that cache freshness makes observations current.
 
-Implementation acceptance must include numerical spot checks against provider values, unit/depth tests, empty/partial/no-coverage responses, cloud/nodata filtering, stale caches, and all four pilot locations. These are future checks; none is claimed completed by this catalog.
+Implementation acceptance must include numerical spot checks against provider values, unit/depth tests, empty/partial/no-coverage responses, cloud/nodata filtering, stale caches, and all four pilot locations. Milestone 2 now has an implemented review stop: see [REAL_SOURCE_INTEGRATION_MILESTONE.md](REAL_SOURCE_INTEGRATION_MILESTONE.md) for exact coverage, observed verification, remaining gaps and touched files. Milestone 3 remains pending.

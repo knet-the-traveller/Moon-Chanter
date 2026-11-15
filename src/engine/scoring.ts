@@ -13,9 +13,10 @@ export function calculateSequenceScores(
   const crops = [s1Crop, s2Crop, s3Crop];
   const activeCrops = crops.filter((c) => c.family !== 'fallow');
   const hasFallow = activeCrops.length < crops.length;
+  // [AGRO-RULE-05-MODEL-SUPPORT] Imported pH does not establish terrain.
   const isSlopingUpland =
     (soil.slopePct !== undefined && soil.slopePct > 15) ||
-    (soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
+    (!soil.modelEvidence && soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
   const isAcidicOrPFixed = soil.ph < 5.5 || soil.phosphorusFixationRisk === 'high';
   const hasDrySeasonRice = s2Crop.id === 'rice' || s3Crop.id === 'rice';
   const hasHeatSterility = hasDrySeasonRice && climate.seasonalStats.dryHot.maxTemp > 35.0;
@@ -33,8 +34,9 @@ export function calculateSequenceScores(
   if (rootDepths.size >= 3) soilScore += 20;
   else if (rootDepths.size === 2) soilScore += 12;
 
+  // [AGRO-RULE-05-MODEL-SUPPORT] Imported 0–15 cm density cannot diagnose a subsoil plow pan.
   // Deep root bonus in clay or compacted soils (> 1.4 g/cm3 plow-pan)
-  const isCompacted = soil.bulkDensityGcm3 !== undefined && soil.bulkDensityGcm3 > 1.4;
+  const isCompacted = !soil.modelEvidence && soil.bulkDensityGcm3 !== undefined && soil.bulkDensityGcm3 > 1.4;
   if ((soil.texture === 'clay' || isCompacted) && (rootDepths.has('deep') || rootDepths.has('medium'))) {
     soilScore += 8;
   }

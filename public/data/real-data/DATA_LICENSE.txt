@@ -1,0 +1,33 @@
+FieldShift scientific pilot extracts — attribution and reuse notice
+
+NASA MODIS/Terra Vegetation Indices, MOD13Q1.061:
+Didan, K. (2021). MODIS/Terra Vegetation Indices 16-Day L3 Global 250m SIN Grid
+V061. NASA LP DAAC. https://doi.org/10.5067/MODIS/MOD13Q1.061
+Accessed November 15, 2026 through AppEEARS 3.137. CSV values are already scaled.
+The accompanying source archive retains the supplied CSV, product metadata,
+granule list and README; request-public.json contains public extraction parameters
+only. Account identifiers from the original request export are excluded.
+Adaptations: quality screening, calendar-month aggregation and coverage checks.
+
+NASA/USGS SRTM GL1 V003:
+NASA Shuttle Radar Topography Mission Global 1 arc second V003.
+https://doi.org/10.5067/MEaSUREs/SRTM/SRTMGL1.003
+Acquired November 15, 2026 from the public Open Topo Data sampling API:
+https://www.opentopodata.org/datasets/srtm/
+Nearest-neighbor native posts retained; percent slopes derived with a Horn 3x3
+operator and local WGS84 horizontal distances. Observation: February 2000.
+
+NASA POWER:
+NASA Langley Research Center POWER Project, funded through NASA Earth Science.
+https://power.larc.nasa.gov/docs/services/
+Public daily point API responses acquired November 15, 2026, baseline 2014–2023.
+Adaptations: complete-year climatologies, annual heat counts, preliminary threshold
+screens and descriptive OLS rainfall trends. These are regional gridded estimates.
+
+NASA Earth science data are openly available for public reuse under NASA's Earth
+Science Data and Information Policy:
+https://www.earthdata.nasa.gov/engage/open-data-services-software/data-and-information-policy
+This notice credits the original providers; it does not imply NASA/USGS/ISRIC
+endorsement, certify agronomic suitability, or replace scientific review. NASA
+logos and trademarks are not licensed as application assets by data availability.
+ISRIC SoilGrids data have a separate CC BY 4.0 notice in ../soilgrids/DATA_LICENSE.txt.

@@ -225,13 +225,14 @@ export const MapPicker: React.FC = () => {
   const months = landSummary?.bareFieldMonths.map((month) =>
     new Intl.DateTimeFormat(language === 'fil' ? 'fil-PH' : 'en-PH', { month: 'short', timeZone: 'UTC' })
       .format(new Date(Date.UTC(2000, month - 1, 1)))).join(', ');
+  const unavailable = t('provenance.unavailableValue');
   const metrics: Array<{ key: LandMetric; label: string; value: string }> = landSummary ? [
-    { key: 'elevationM', label: t('land.elevation'), value: `${landSummary.elevationM} m` },
-    { key: 'slopePct', label: t('land.slope'), value: `${landSummary.slopePct}%` },
-    { key: 'floodProne', label: t('land.flood'), value: t(landSummary.floodProne ? 'land.flagged' : 'land.unflagged') },
-    { key: 'bareFieldMonths', label: t('land.bareMonths'), value: months || t('land.noneDetected') },
-    { key: 'rusleErosionRiskTonsHaYr', label: t('land.erosion'), value: `${landSummary.rusleErosionRiskTonsHaYr.toFixed(1)} ${t('land.erosionUnit')}` },
-    { key: 'ndvi.seasonalMean', label: t('land.monthlyNdvi'), value: landSummary.ndvi.seasonalMean.map((value) => value.toFixed(2)).join(', ') },
+    { key: 'elevationM', label: t('land.elevation'), value: landSummary.elevationM === null ? unavailable : `${landSummary.elevationM} m` },
+    { key: 'slopePct', label: t('land.slope'), value: landSummary.slopePct === null ? unavailable : `${landSummary.slopePct}%` },
+    { key: 'floodProne', label: t('land.flood'), value: landSummary.floodProne === null ? unavailable : t(landSummary.floodProne ? 'land.flagged' : 'land.unflagged') },
+    { key: 'bareFieldMonths', label: t('land.bareMonths'), value: landSummary.provenance.bareFieldMonths.tier === 'unavailable' ? unavailable : months || t('land.noneDetected') },
+    { key: 'rusleErosionRiskTonsHaYr', label: t('land.erosion'), value: landSummary.rusleErosionRiskTonsHaYr === null ? unavailable : `${landSummary.rusleErosionRiskTonsHaYr.toFixed(1)} ${t('land.erosionUnit')}` },
+    { key: 'ndvi.seasonalMean', label: t('land.monthlyNdvi'), value: landSummary.ndvi.seasonalMean.map((value) => value === null ? unavailable : value.toFixed(2)).join(', ') },
     { key: 'ndvi.trend', label: t('land.ndviTrend'), value: landSummary.ndvi.trendAvailable
       ? `${landSummary.ndvi.trend.toFixed(3)} ${t('land.trendUnit')}` : t('land.insufficientTrendData') }
   ] : [];
@@ -386,12 +387,15 @@ export const MapPicker: React.FC = () => {
         {landSummary && (
           <>
             <p role="status" className="mt-2 text-sm font-bold text-amber-950">
-              {t(Object.values(landSummary.provenance).some((entry) => entry.isSynthetic) ? 'land.syntheticNotice' : 'land.sampleNotice')}
+              {t(!landSummary.isSample ? 'land.realNotice' : Object.values(landSummary.provenance).some((entry) => entry.isSynthetic) ? 'land.syntheticNotice' : 'land.sampleNotice')}
             </p>
-            <p className="mt-1 text-sm text-stone-800">{t('land.proxy')
+            <p className="mt-1 text-sm text-stone-800">{t(landSummary.isSample ? 'land.proxy' : 'land.gridReference')
               .replace('{hub}', () => landSummary.sampleHub.name)
               .replace('{distance}', () => landSummary.sampleHub.distanceKm.toFixed(1))}</p>
-            <p className="mt-1 text-sm text-stone-700">{t('land.limitations')}</p>
+            <p className="mt-1 text-sm text-stone-700">{t(landSummary.isSample ? 'land.limitations' : 'land.realLimitations')}</p>
+            {landSummary.ndvi.evidence && <p className="mt-2 text-sm text-stone-700">
+              {t('land.ndviCoverage').replace('{accepted}', String(landSummary.ndvi.evidence.accepted)).replace('{total}', String(landSummary.ndvi.evidence.total))}
+            </p>}
             <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {metrics.map((metric) => {
                 const provenance = landSummary.provenance[metric.key];
@@ -442,7 +446,7 @@ export const MapPicker: React.FC = () => {
             <span className="text-xs font-normal text-stone-500">· {selectedLocation.region}</span>
           </div>
           <div className="text-xs text-stone-500 mt-0.5 font-mono">
-            {selectedLocation.lat.toFixed(4)}°N, {selectedLocation.lon.toFixed(4)}°E · {landSummary ? `${t('land.elevation')}: ~${landSummary.elevationM} m` : t('land.unknownElevation')}
+            {selectedLocation.lat.toFixed(4)}°N, {selectedLocation.lon.toFixed(4)}°E · {landSummary?.elevationM != null ? `${t('land.elevation')}: ~${landSummary.elevationM} m` : t('land.unknownElevation')}
           </div>
         </div>
 

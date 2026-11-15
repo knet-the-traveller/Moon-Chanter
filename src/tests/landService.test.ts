@@ -1,3 +1,4 @@
+vi.mock('../services/realLandData', () => ({ resolveRealLand: () => null }));
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MunicipalLandFixtureSchema } from '../types/landFixture';

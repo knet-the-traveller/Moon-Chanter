@@ -1,5 +1,6 @@
 export type { LandSummary, LandMetric, MetricProvenance, ClimateMetric, SoilMetric } from './contracts';
 import type { ClimateMetric, SoilMetric, MetricProvenance } from './contracts';
+import type { SoilModelEvidence } from './soilGridsPackage';
 
 export type Language = 'en' | 'fil';
 
@@ -29,6 +30,8 @@ export type OrganicMatterLevel = 'low' | 'medium' | 'high' | 'unknown';
 export type PhosphorusFixationRisk = 'low' | 'moderate' | 'high';
 
 export interface SoilData {
+  /** Native-cell model evidence, distinct from municipal examples and field readings. */
+  modelEvidence?: SoilModelEvidence;
   provenance?: Partial<Record<SoilMetric, MetricProvenance>>;
   source: string;
   texture: SoilTexture | null;
@@ -53,7 +56,7 @@ export interface MonthlyClimatePoint {
   monthNum: number; // 1-12
   temp: number; // T2M (°C)
   tempMax: number; // T2M_MAX (°C)
-  tempMin: number; // T2M_MIN (°C)
+  tempMin: number | null; // T2M_MIN (°C)
   rainfall: number; // PRECTOTCORR (mm/month)
   solarRadiation: number; // ALLSKY_SFC_SW_DWN (MJ/m^2/day)
   humidity: number; // RH2M (%)

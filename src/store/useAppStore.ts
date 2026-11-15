@@ -15,6 +15,7 @@ import cropsData from '../data/crops.json';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
 import { fetchSoilGridsData, applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
+import { withTerrainEvidence } from '../services/realLandData';
 import { fetchLandSummary } from '../services/landSummary';
 import { CoordinatesSchema } from '../types/landFixture';
 import { getTranslation } from '../i18n';
@@ -251,9 +252,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!isCurrent()) return;
       set({
         landSummary: summary,
+        soilData: get().soilData ? withTerrainEvidence(get().soilData!,summary) : null,
         isLoadingLand: false,
-        selectedLocation: { ...get().selectedLocation, elevationMeters: summary.elevationM }
+        selectedLocation: { ...get().selectedLocation, ...(summary.elevationM === null ? {} : { elevationMeters: summary.elevationM }) }
       });
+      get().computeRecommendations();
     }).catch(() => {
       if (isCurrent()) set({ isLoadingLand: false, landError: 'land.unavailable' });
     });
@@ -265,7 +268,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const failed = climate.status === 'rejected' || soil.status === 'rejected';
       set({
         climateData: climate.status === 'fulfilled' ? climate.value : null,
-        soilData: soil.status === 'fulfilled' ? soil.value : null,
+        soilData: soil.status === 'fulfilled' ? withTerrainEvidence(soil.value,get().landSummary) : null,
         isLoadingTelemetry: false,
         telemetryError: failed ? 'land.telemetryUnavailable' : null
       });

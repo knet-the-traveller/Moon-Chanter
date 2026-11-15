@@ -31,6 +31,16 @@ describe('Climate Scenarios Sensitivity Transformations', () => {
     expect(transformed.prectotcorr).toEqual(syntheticSeries.prectotcorr);
   });
 
+  it('shifts actual daily minima in hotter scenarios, preserves nulls, and leaves the baseline immutable',()=>{
+    const series={...syntheticSeries,t2mMin:[20,null,22]};
+    expect(applyScenario(series,'hotter').t2mMin).toEqual([21.5,null,23.5]);
+    expect(applyScenario(series,'hotter_drier').t2mMin).toEqual([21.5,null,23.5]);
+    expect(applyScenario(series,'drier').t2mMin).toEqual([20,null,22]);
+    expect(applyScenario(series,'wetter').t2mMin).toEqual([20,null,22]);
+    expect(series.t2mMin).toEqual([20,null,22]);
+    expect(applyScenario(syntheticSeries,'hotter').t2mMin).toBeUndefined();
+  });
+
   it('multiplies rainfall by 0.85 under drier scenario while keeping temperatures unchanged', () => {
     const transformed = applyScenario(syntheticSeries, 'drier', { drierPrecipMultiplier: 0.85 });
     expect(transformed.t2m).toEqual(syntheticSeries.t2m);

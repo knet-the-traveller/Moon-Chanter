@@ -56,15 +56,15 @@
     "liveBadge": "Kasalukuyang Datos mula sa Satelayt",
     "annualPrecip": "Kabuuang Ulan bawat Taon",
     "annualTemp": "Karaniwang Temperatura",
-    "heatStressDays": "Mga Araw ng Matinding Init (>34°C)",
-    "rainfallTrend": "Bilis ng Pagbabago sa Ulan (10 Taon)",
+    "heatStressDays": "Mga araw na umabot sa ≥35°C",
+    "rainfallTrend": "Trend ng ulan (% bawat dekada)",
     "wetSeason": "Tag-ulan (Hunyo–Nobyembre)",
     "dryCoolSeason": "Malamig na Tag-araw (Disyembre–Pebrero)",
     "dryHotSeason": "Mainit na Tag-araw (Marso–Mayo)",
     "soilTexture": "Tekstura ng Lupa",
     "drainage": "Daloy ng Tubig sa Lupa",
     "ph": "Asido o Alat ng Lupa (pH)",
-    "organicMatter": "Organikong Sustansya (SOC)",
+    "organicMatter": "Antas ng organikong materyal",
     "overridePrompt": "Iba ba ang lupa sa iyong sakahan? Piliin upang baguhin:",
     "overrideReset": "Ibalik ang datos ng pinagmulan"
   },
@@ -143,7 +143,15 @@
     "insufficientTrendData": "Kulang ang taunang obserbasyon",
     "unknownResolution": "Walang tiyak na resolusyon",
     "unknownPeriod": "Walang tiyak na panahon ng obserbasyon",
-    "unknownElevation": "Walang datos ng taas"
+    "unknownElevation": "Walang datos ng taas",
+    "realNotice": "Mga tantiyang raster · Kailangan ng lokal na pagpapatunay",
+    "gridReference": "SRTM pilot grid: {hub}; ginagamit ang napiling native cell.",
+    "realLimitations": "Mula sa SRTM noong Pebrero 2000 ang elevation at slope. May kasaysayan ng siyentipikong NDVI lamang sa mga nakuhang reference point, ayon sa kalidad ng datos. Hindi pa matukoy ang panganib ng baha at erosion nang walang sapat na beripikadong datos.",
+    "nativeElevation": "Pinakamalapit na native SRTM post; hindi ito pagsukat sa bukid",
+    "hornSlope": "Horn 3 × 3 slope na may WGS84 metric spacing; percent gradient",
+    "qualityNdvi": "Naiskala na ang MOD13Q1.061; mahigpit na QA para sa lupa; kailangan ng ≥3 tinanggap na composite mula sa ≥2 taon para sa buwanang mean. Ginagamit ang buwan ng simula ng composite; hindi pinupunan ang puwang dahil sa ulap.",
+    "qualityNdviTrend": "Kailangan ng limang taunang profile para sa OLS trend, bawat isa ay may lahat ng 12 buwan at ≥16 tinanggap na composite. Hindi magagamit kung kulang ang datos.",
+    "ndviCoverage": "Pagsusuri ng kalidad ng NDVI: {accepted} sa {total} composite ang tinanggap (2020–2024). Hindi isinama ang may ulap, tubig at iba pang hindi pasado; hindi pinupunan ang nawawalang buwan."
   },
   "provenance": {
     "title": "Pinagmulan at limitasyon ng datos",
@@ -187,7 +195,20 @@
       "missingDefault": "May ipinalit na numerong halaga para sa nawawalang obserbasyon"
     },
     "cached": "Naka-cache na datos",
-    "municipalSoilSource": "Sangguniang profile ng lupa ng FieldShift"
+    "municipalSoilSource": "Sangguniang profile ng lupa ng FieldShift",
+    "bundled-model": "Nakahandang siyentipikong datos",
+    "version": "Bersiyon",
+    "observedMethods": {
+      "precipitation": "Mean ng kabuuang ulan mula sa kumpletong taon; hindi isinasama ang taon kapag may nawawalang araw ng ulan, at hindi pinapalitan ng zero.",
+      "temperature": "Mean ng pang-araw-araw na temperatura mula sa tinanggap na kumpletong taon.",
+      "maximumTemperature": "Pinakamataas na arawang maximum sa bawat buwan sa saklaw ng datos; sukdulan ang pana-panahong halaga, hindi karaniwang init ng buwan.",
+      "minimumTemperature": "Aktuwal na T2M_MIN na inaverage ayon sa buwan; hindi pinupunan ang nawawalang minimum.",
+      "solarRadiation": "Mean ng pang-araw-araw na solar radiation sa bawat buwan, na may hindi bababa sa 80% datos; walang pamalit na numerong halaga.",
+      "humidity": "Mean ng pang-araw-araw na humidity sa bawat buwan, na may hindi bababa sa 80% datos; walang pamalit na numerong halaga.",
+      "heatStressDays": "Mean ng taunang bilang ng araw na may Tmax ≥35°C sa kumpletong taon. Kailangang suriin ang threshold para sa lokal na pananim.",
+      "rainfallTrend": "OLS mula sa tinanggap na kumpletong taunang ulan at aktuwal na taon, bilang % bawat dekada. Paglalarawan lamang; hindi forecast o patunay ng statistical significance.",
+      "risk": "Paunang pagsusuri ng ulan, tagal ng walang ulan, at init sa kumpletong Hun–Nob at Dis–May na panahon. Kailangang ikalibre ang mga threshold sa lokal na kondisyon. Hindi sapat ang ulan upang matukoy ang panganib ng baha sa bukid."
+    }
   },
   "localReview": {
     "title": "Mga Kakulangan sa Impormasyon at Checklist para sa Lokal na Pagsusuri",
@@ -216,5 +237,33 @@
     "loading": "Kinukuha ang datos ng bukid. Lalabas ang mga mungkahi matapos suriin ang mga available na input.",
     "missingTelemetry": "Hindi available ang datos ng klima o lupa. Bumalik sa Lokasyon ng Bukid at piliin muli ang lokasyon upang subukang muli.",
     "noPrintablePlan": "Wala pang payong maaaring i-print."
+  },
+  "soilModel": {
+    "title": "Datos ng modelong SoilGrids · mga cell na 250 m",
+    "coverage": "Lugar na may nakahandang datos: {grid}; napiling cell {cell}. Ang saklaw ay grid na 2.25 × 2.25 km sa paligid ng pilot point, hindi ang buong munisipalidad. Mananatiling hindi available ang mga pixel na walang datos.",
+    "limits": "Mga pagtataya ito ng modelo ng lupa mula sa nakaraang datos, hindi live na pagsukat. Tiyakin nang hiwalay ang drainage at organikong materyal. Hindi pinatutunayan ng bulk density ng ibabaw na lupa ang pagsiksik ng ilalim na lupa.",
+    "retrieved": "Kinuha ang raster noong {date}; hindi ito petsa ng obserbasyon",
+    "showPredictions": "Tingnan ang datos ng modelo at kawalan ng katiyakan",
+    "uncertainty": "Ang Q05 at Q95 ay ika-5 at ika-95 percentile ng modelo para sa bawat lalim. Ipinapakita nila ang kawalan ng katiyakan ng pagtataya, hindi ang katumpakan ng pagsusuri sa bukid. Walang pinagsamang uncertainty interval para sa 0–15 cm.",
+    "original": "Orihinal na halaga ng modelo bago ang sariling input ng magsasaka",
+    "property": "Katangian",
+    "depth": "Lalim",
+    "mean": "Karaniwang halaga",
+    "phh2o": "pH sa tubig",
+    "clay": "Luwad",
+    "sand": "Buhangin",
+    "silt": "Banlik",
+    "soc": "Organikong carbon sa lupa",
+    "bdod": "Bulk density",
+    "weightedMean": "Ginagamit sa profile ang (mean ng 0–5 cm × 5 + mean ng 5–15 cm × 10) ÷ 15. Kailangan ang parehong lalim. Ang uri ng lupa ay batay sa kasalukuyang lokal na threshold at kailangan pang tiyakin.",
+    "notInferred": "Kulang o hindi suportadong katangian ng bukid; walang ipinagpalagay na halaga",
+    "download": "I-download ang mga raster subset at pinagmulan ng datos",
+    "drainagePrompt": "Drainage ng bukid (tiyakin sa lokal na tekniko)",
+    "poor": "Mahina",
+    "moderate": "Katamtaman",
+    "well": "Maayos ang drainage",
+    "organicMatterPrompt": "Antas ng organikong materyal sa bukid",
+    "depthMean": "Tantiyang 0–15 cm; mean ng bawat lalim na may timbang na 5:10",
+    "noPredictions": "Walang available na pagtataya ng lupa para sa cell na ito. Tiyakin ang tunay na lokasyon ng bukid o ilagay sa ibaba ang nasuring datos mula sa bukid. Hindi ipinapalit ang datos ng kalapit na cell."
   }
 }

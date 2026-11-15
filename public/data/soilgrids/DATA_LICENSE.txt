@@ -1,0 +1,18 @@
+SoilGrids 2.0 native-cell pilot extracts — soilgrids-pilots-v1
+
+Data provider: ISRIC — World Soil Information.
+License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+Provider terms: https://docs.isric.org/globaldata/soilgrids/SoilGrids_faqs_02.html
+Dataset citation: Poggio et al. (2021), SoilGrids 2.0: producing soil information
+for the globe with quantified spatial uncertainty. https://doi.org/10.5194/soil-7-217-2021
+
+FieldShift clipped native 250 m cells around four Philippine pilot points,
+retained per-depth mean/Q05/Q95 predictions, and encoded source nodata as null
+in the JSON extract. The raster archive retains the source nodata value -32768.
+These adaptations are not endorsed by ISRIC. Retrieval times and source URLs
+are in manifest.json; retrieval is not the date of soil observation. No field
+sampling, measured drainage, organic-matter conversion, or compaction diagnosis
+is supplied by this extract. Model estimates require local verification.
+
+This data license is separate from the application's code license.

@@ -9,6 +9,8 @@ import type {
 } from '../types';
 import { LocalCacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import { getNearestSampleSlug } from './nasaPower';
+import { SoilModelEvidenceSchema } from '../types/soilGridsPackage';
+import { resolveBundledSoil } from './bundledSoilGrids';
 import { CoordinatesSchema } from '../types/landFixture';
 
 const SoilTextureSchema = z.enum([
@@ -24,6 +26,7 @@ const OrganicMatterLevelSchema = z.enum(['low', 'medium', 'high', 'unknown']);
 const PhosphorusFixationRiskSchema = z.enum(['low', 'moderate', 'high']);
 
 const SoilDataSchema = z.object({
+  modelEvidence: SoilModelEvidenceSchema.optional(),
   source: z.string(),
   provenance: ProvenanceRecordSchema.optional(),
   texture: SoilTextureSchema.nullable(),
@@ -132,11 +135,15 @@ function hasSourceReadings(profile: SoilData): boolean {
     profile.rawSocDgPerKg, profile.bulkDensityGcm3].some(value => value !== undefined);
 }
 const SoilCacheSchema = z.object({ schemaVersion: z.literal(2), profile: SoilDataSchema })
+  .refine(({ profile }) => !profile.modelEvidence && !Object.values(profile.provenance ?? {}).some(metadata => metadata.tier === 'bundled-model'),
+    'Bundled profiles must be resolved by native coverage, never by a live-query cache key')
   .refine(({ profile }) => hasSourceReadings(profile), 'Cached profile has no usable source readings');
 export const soilCacheKey = (lat: number, lon: number) => `soilgrids_v2_${lat.toFixed(4)}_${lon.toFixed(4)}`;
 
 export async function fetchSoilGridsData(lat: number, lon: number): Promise<SoilData> {
   CoordinatesSchema.parse({ lat, lon });
+  const bundled = resolveBundledSoil(lat, lon);
+  if (bundled) return bundled;
   const cacheKey = soilCacheKey(lat, lon);
   const cached = SoilCacheSchema.safeParse(await LocalCacheService.get<unknown>(cacheKey));
   if (cached.success) {
