@@ -4,7 +4,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchSoilGridsData,
   derivePhosphorusFixationRisk,
-  applyFarmerSoilOverride
+  applyFarmerSoilOverride,
+  deriveOrganicMatterFromSoc,
+  derivePreliminaryDrainage
 } from '../services/soilGrids';
 import { LocalCacheService } from '../services/cache';
 import type { SoilProfile } from '../types/contracts';
@@ -128,5 +130,53 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
     expect(overridden.ph).toBe(6.4);
     expect(overridden.bulkDensityGcm3).toBe(1.44);
     expect(overridden.phosphorusFixationRisk).toBe('low');
+  });
+
+  it('derives organicMatter via Van Bemmelen SOC * 1.724 boundaries and rejects invalid values', () => {
+    expect(deriveOrganicMatterFromSoc(0)).toBe('low');
+    expect(deriveOrganicMatterFromSoc(58)).toBe('low'); // 0.58% * 1.724 = 0.9999%
+    expect(deriveOrganicMatterFromSoc(59)).toBe('medium'); // 0.59% * 1.724 = 1.017%
+    expect(deriveOrganicMatterFromSoc(145)).toBe('medium'); // 1.45% * 1.724 = 2.4998%
+    expect(deriveOrganicMatterFromSoc(146)).toBe('high'); // 1.46% * 1.724 = 2.517%
+    expect(deriveOrganicMatterFromSoc(undefined)).toBe('unknown');
+    expect(deriveOrganicMatterFromSoc(Number.NaN)).toBe('unknown');
+    expect(deriveOrganicMatterFromSoc(-1)).toBe('unknown');
+  });
+
+  it('derives preliminary drainage from texture and SRTM slopePct across exact boundaries', () => {
+    expect(derivePreliminaryDrainage({ texture: null, slopePct: 12 })).toBeNull();
+    expect(derivePreliminaryDrainage({ texture: 'clay', clayPct: 40, slopePct: 8 })).toBe('poor');
+    expect(derivePreliminaryDrainage({ texture: 'clay', clayPct: 40, slopePct: 8.01 })).toBe('moderate');
+    expect(derivePreliminaryDrainage({ texture: 'clay_loam', clayPct: 32, slopePct: 15 })).toBe('moderate');
+    expect(derivePreliminaryDrainage({ texture: 'clay_loam', clayPct: 32, slopePct: 15.01 })).toBe('well');
+    expect(derivePreliminaryDrainage({ texture: 'sandy_loam', sandPct: 60, slopePct: 0 })).toBe('well');
+  });
+
+  it('marks live derived organicMatter and drainage as synthetic estimates needing review', async () => {
+    const lowSocPayload = {
+      properties: {
+        layers: [
+          { name: 'clay', depths: [{ label: '0-5cm', values: { mean: 400 } }, { label: '5-15cm', values: { mean: 400 } }] },
+          { name: 'sand', depths: [{ label: '0-5cm', values: { mean: 220 } }, { label: '5-15cm', values: { mean: 220 } }] },
+          { name: 'silt', depths: [{ label: '0-5cm', values: { mean: 380 } }, { label: '5-15cm', values: { mean: 380 } }] },
+          { name: 'phh2o', depths: [{ label: '0-5cm', values: { mean: 62 } }, { label: '5-15cm', values: { mean: 62 } }] },
+          { name: 'soc', depths: [{ label: '0-5cm', values: { mean: 50 } }, { label: '5-15cm', values: { mean: 50 } }] }
+        ]
+      }
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => lowSocPayload
+    });
+
+    const profile = await fetchSoilGridsData(15.802, 120.952);
+    expect(profile.organicMatter).toBe('low');
+    expect(profile.drainage).toBe('poor');
+    expect(profile.provenance?.organicMatter?.tier).toBe('synthetic');
+    expect(profile.provenance?.organicMatter?.isSynthetic).toBe(true);
+    expect(profile.provenance?.drainage?.tier).toBe('synthetic');
+    expect(profile.provenance?.drainage?.needsReview).toBe(true);
   });
 });

@@ -12,6 +12,9 @@ import { getNearestSampleSlug } from './nasaPower';
 import { SoilModelEvidenceSchema } from '../types/soilGridsPackage';
 import { resolveBundledSoil } from './bundledSoilGrids';
 import { CoordinatesSchema } from '../types/landFixture';
+import { deriveOrganicMatterFromSoc, derivePreliminaryDrainage } from './soilDerivation';
+
+export { deriveOrganicMatterFromSoc, derivePreliminaryDrainage };
 
 const SoilTextureSchema = z.enum([
   'clay',
@@ -193,16 +196,15 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
     const convertedPh = phVal === undefined ? 0 : Number((phVal / 10).toFixed(1));
     const ph = convertedPh > 0 ? convertedPh : null;
     let texture: SoilTexture | null = null;
-    let drainage: DrainageClass | null = null;
     if (clayPct !== undefined && sandPct !== undefined && siltPct !== undefined && clayPct + sandPct + siltPct > 0) {
-      if (clayPct >= 38) { texture = 'clay'; drainage = 'poor'; }
-      else if (clayPct >= 26) { texture = 'clay_loam'; drainage = 'moderate'; }
-      else if (sandPct >= 55) { texture = 'sandy_loam'; drainage = 'well'; }
-      else if (siltPct >= 50) { texture = 'silt_loam'; drainage = 'moderate'; }
-      else { texture = 'loam'; drainage = 'well'; }
+      if (clayPct >= 38) texture = 'clay';
+      else if (clayPct >= 26) texture = 'clay_loam';
+      else if (sandPct >= 55) texture = 'sandy_loam';
+      else if (siltPct >= 50) texture = 'silt_loam';
+      else texture = 'loam';
     }
-    const organicMatter: OrganicMatterLevel = socVal === undefined ? 'unknown'
-      : socVal >= 180 ? 'high' : socVal < 100 ? 'low' : 'medium';
+    const drainage = derivePreliminaryDrainage({ texture, clayPct, sandPct });
+    const organicMatter = deriveOrganicMatterFromSoc(socVal);
     const convertedDensity = bdodVal === undefined ? 0 : Number((bdodVal / 100).toFixed(2));
     const bulkDensityGcm3 = convertedDensity > 0 ? convertedDensity : undefined;
     const soilResult: SoilData = {
