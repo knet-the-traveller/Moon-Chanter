@@ -88,8 +88,13 @@ export const LandingImage: React.FC<LandingImageProps> = ({
 
       {/* Show development slot placeholder label only in dev mode */}
       {isDev && (
-        <div className="absolute top-3 left-3 px-2.5 py-1 rounded bg-black/40 backdrop-blur-md text-[10px] font-mono tracking-wider text-white border border-white/20 select-none">
-          ⛶ {config.devLabel}
+        <div className="absolute top-3 left-3 px-2.5 py-1 rounded bg-black/40 backdrop-blur-md text-[10px] font-mono tracking-wider text-white border border-white/20 select-none flex items-center gap-1.5">
+          <svg className="w-3 h-3 text-white/80 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          <span>{config.devLabel}</span>
         </div>
       )}
     </div>

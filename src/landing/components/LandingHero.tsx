@@ -65,7 +65,14 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
           <div className="lg:col-span-7 flex flex-col items-start space-y-5">
             {/* Pill Badge */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[#d6ff62] text-xs font-semibold tracking-wider uppercase">
-              <span aria-hidden="true">✦</span>
+              <svg
+                className="w-3.5 h-3.5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+              </svg>
               <span>{t.hero.badge}</span>
             </div>
 
@@ -94,7 +101,14 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
                 onClick={scrollToSteps}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 text-white text-sm md:text-base font-medium border border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#132e22] focus:ring-white"
               >
-                <span className="text-xs" aria-hidden="true">▶</span>
+                <svg
+                  className="w-4 h-4 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
                 <span>{t.hero.seeHowItWorks}</span>
               </button>
             </div>

@@ -23,7 +23,7 @@ export const tl: LandingTranslations & { needsReview: true } = {
     description:
       'Itugma ang lokal na lupa, lagay ng panahon mula sa satelayt, at iyong mga layunin sa bukid upang makabuo ng matatag at kapaki-pakinabang na salit-pananim — sa tatlong simpleng hakbang.',
     startPlanning: 'Simulan ang Pagpaplano →',
-    seeHowItWorks: 'Tingnan Paano Gumagana',
+    seeHowItWorks: 'Tingnan Paano Gumagana →',
     imageAlt: 'Hagdan-hagdang palayan at lupang sakahan sa ilalim ng maaliwalas na kalangitan'
   },
   search: {
@@ -81,7 +81,7 @@ export const tl: LandingTranslations & { needsReview: true } = {
     features: 'Panrehiyong Batayan ng Lupa · Papanahong Kaalaman sa Klima · Tagaplano ng Salitang Pananim',
     copyright: '© 2026 AniTala',
     siNotice:
-      '✦ S.I. Transparency Notice: Visual assets, UI code scaffolding, at crop rotation ranking logic ay binuo sa tulong ng Synthetic Intelligence (S.I.) gamit ang bukas na datos ng Earth observation.',
+      'S.I. Transparency Notice: Visual assets, UI code scaffolding, at crop rotation ranking logic ay binuo sa tulong ng Synthetic Intelligence (S.I.) gamit ang bukas na datos ng Earth observation.',
     siVersion: 'SI-Assisted Build · v1.0',
     dataCredit:
       'Gumagamit ng bukas na telemetriya mula sa NASA POWER API (agroklimatolohiya at meteorolohiya) at NASA GIBS (imaheng satelayt mula sa Global Imagery Browse Services). Ang proyektong ito ay nilikha para sa 2026 NASA Space Apps Challenge at hindi inindorso o kaanib ng NASA.'
