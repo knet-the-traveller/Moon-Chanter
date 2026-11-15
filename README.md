@@ -2,7 +2,7 @@
 
 > **NASA Space Apps Challenge 2026**  
 > **Challenge:** [Field Shift: Adapting Farms with NASA Data](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)  
-> **Team:** Moon Chanter ([TEAM NAMES])  
+> **Team:** Moon Chanter
 > **Live Demo:** [https://anitala.vercel.app](https://anitala.vercel.app)  
 > **Repository:** [https://github.com/knet-the-traveller/Moon-Chanter.git](https://github.com/knet-the-traveller/Moon-Chanter.git)
 
