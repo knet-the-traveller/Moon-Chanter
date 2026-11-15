@@ -3,11 +3,13 @@ vi.mock('../services/bundledSoilGrids', () => ({ resolveBundledSoil: () => null 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchSoilGridsData,
+  getMunicipalAgriculturalBaseline,
   derivePhosphorusFixationRisk,
   applyFarmerSoilOverride,
   deriveOrganicMatterFromSoc,
   derivePreliminaryDrainage
 } from '../services/soilGrids';
+import { hasRequiredSoilInputs } from '../engine/soilInputs';
 import { LocalCacheService } from '../services/cache';
 import type { SoilProfile } from '../types/contracts';
 
@@ -178,5 +180,28 @@ describe('SoilGrids Service & SoilProfile Extensions', () => {
     expect(profile.provenance?.organicMatter?.isSynthetic).toBe(true);
     expect(profile.provenance?.drainage?.tier).toBe('synthetic');
     expect(profile.provenance?.drainage?.needsReview).toBe(true);
+  });
+
+  it('returns a complete, provenanced municipal baseline across all four pilot regions and validates coordinates', async () => {
+    await expect(getMunicipalAgriculturalBaseline(95, 120)).rejects.toThrow();
+
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('offline'));
+    const pilots = [
+      { lat: 15.714, lon: 120.906, expectedSource: 'Science City of Muñoz' },
+      { lat: 16.975, lon: 121.810, expectedSource: 'Ilagan' },
+      { lat: 10.946, lon: 122.633, expectedSource: 'Pototan' },
+      { lat: 8.156, lon: 125.127, expectedSource: 'Malaybalay' }
+    ];
+
+    for (const pilot of pilots) {
+      const soil = await getMunicipalAgriculturalBaseline(pilot.lat, pilot.lon);
+      expect(soil.source).toContain(pilot.expectedSource);
+      expect(soil.isEstimate).toBe(true);
+      expect(soil.needsReview).toBe(true);
+      expect(hasRequiredSoilInputs(soil)).toBe(true);
+      expect(soil.provenance?.ph?.tier).toBe('sample');
+      expect(soil.provenance?.drainage?.tier).toBe('sample');
+      expect(soil.provenance?.organicMatter?.tier).toBe('sample');
+    }
   });
 });

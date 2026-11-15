@@ -225,12 +225,7 @@ export async function fetchSoilGridsData(lat: number, lon: number): Promise<Soil
     return profile;
   } catch (err) {
     console.warn('SoilGrids query unavailable. Using a labeled municipal example.', err);
-    const fallback = await getFallbackSoil(lat, lon);
-    const name = isBukidnonCoordinates(lat, lon) ? 'Malaybalay, Bukidnon'
-      : getNearestSampleSlug(lat, lon) === 'ilagan' ? 'City of Ilagan'
-      : getNearestSampleSlug(lat, lon) === 'pototan' ? 'Pototan' : 'Science City of Muñoz';
-    fallback.provenance ??= buildSoilProvenance(fallback, false, { name }, false);
-    return fallback;
+    return getMunicipalAgriculturalBaseline(lat, lon);
   } finally {
     clearTimeout(timeoutId);
   }
@@ -242,10 +237,22 @@ function isBukidnonCoordinates(lat: number, lon: number): boolean {
   return dBukidnon < dPototan && dBukidnon < 2.5;
 }
 
-async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
+function finalizeMunicipalBaseline(soil: SoilData, locationName: string): SoilData {
+  soil.provenance ??= buildSoilProvenance(soil, false, { name: locationName }, false);
+  return SoilDataSchema.parse(soil);
+}
+
+/**
+ * Resolves the labeled municipal DA-BSWM / regional agricultural baseline soil profile
+ * for coordinates across Philippine regions, validating inputs with Zod and attaching
+ * complete sample provenance on both fixture-fetched and embedded offline paths.
+ */
+export async function getMunicipalAgriculturalBaseline(lat: number, lon: number): Promise<SoilData> {
+  CoordinatesSchema.parse({ lat, lon });
+
   // Check Malaybalay Bukidnon upland highland Ultisol benchmark first
   if (isBukidnonCoordinates(lat, lon)) {
-    return {
+    return finalizeMunicipalBaseline({
       source: 'FieldShift municipal soil example (Malaybalay, Bukidnon)',
       texture: 'clay_loam',
       drainage: 'well',
@@ -261,7 +268,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       needsReview: true,
       reviewNote:
         'Synthetic regional upland Ultisol benchmark (pH 4.7, slopePct 18%, bd 1.28 g/cm3); verify exact parcel pH, Bray-2 P, and slope with local MAO/BSWM field test.'
-    };
+    }, 'Malaybalay, Bukidnon');
   }
 
   const sampleName = getNearestSampleSlug(lat, lon);
@@ -310,7 +317,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
           reviewNote: baseSoil.reviewNote ?? (usedExtras ? extras.note : undefined)
         };
         result.provenance = buildSoilProvenance(result, false, parsed.data.location, false);
-        return result;
+        return SoilDataSchema.parse(result);
       }
     }
   } catch {
@@ -320,7 +327,7 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
   }
 
   if (sampleName === 'ilagan') {
-    return {
+    return finalizeMunicipalBaseline({
       source: 'FieldShift municipal soil example (City of Ilagan, Isabela)',
       texture: 'loam',
       drainage: 'well',
@@ -335,11 +342,11 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       slopePct: extras.slopePct,
       needsReview: true,
       reviewNote: extras.note
-    };
+    }, 'City of Ilagan, Isabela');
   }
 
   if (sampleName === 'pototan') {
-    return {
+    return finalizeMunicipalBaseline({
       source: 'FieldShift municipal soil example (Pototan, Iloilo)',
       texture: 'clay_loam',
       drainage: 'moderate',
@@ -354,10 +361,10 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
       slopePct: extras.slopePct,
       needsReview: true,
       reviewNote: extras.note
-    };
+    }, 'Pototan, Iloilo');
   }
 
-  return {
+  return finalizeMunicipalBaseline({
     source: 'FieldShift municipal soil example (Science City of Muñoz)',
     texture: 'clay_loam',
     drainage: 'moderate',
@@ -372,5 +379,5 @@ async function getFallbackSoil(lat: number, lon: number): Promise<SoilData> {
     slopePct: extras.slopePct,
     needsReview: true,
     reviewNote: extras.note
-  };
+  }, 'Science City of Muñoz');
 }

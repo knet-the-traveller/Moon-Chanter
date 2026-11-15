@@ -43,6 +43,10 @@ const SoilPhInput: React.FC<{ ph: number | null; language: Language; onApply: (p
 export const SoilCard: React.FC = () => {
   const {
     soilData,
+    telemetrySoilData,
+    isMunicipalBaselineActive,
+    applyMunicipalBaseline,
+    restoreSoilTelemetry,
     soilOverride,
     setSoilOverride,
     resetSoilOverride,
@@ -126,6 +130,36 @@ export const SoilCard: React.FC = () => {
       {!hasRequiredSoilInputs(effectiveSoil) && <p role="status" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
         {getTranslation(language, 'dataQuality.missingSoil')}
       </p>}
+
+      {(isMunicipalBaselineActive || Boolean(soilData.modelEvidence) || !hasRequiredSoilInputs(effectiveSoil) || soilData.provenance?.ph?.tier === 'unavailable') && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-900">
+          {isMunicipalBaselineActive ? (
+            <>
+              <span className="font-semibold text-amber-900">
+                {getTranslation(language, 'dataQuality.usingMunicipalBaseline')}
+              </span>
+              {telemetrySoilData && (
+                <button
+                  type="button"
+                  onClick={restoreSoilTelemetry}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-400 bg-white px-3 py-2 text-xs font-semibold text-stone-900 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-emerald-800"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  {getTranslation(language, 'dataQuality.restoreSoilTelemetry')}
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { void applyMunicipalBaseline(); }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-800 bg-emerald-800 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-emerald-800"
+            >
+              {getTranslation(language, 'dataQuality.useMunicipalBaseline')}
+            </button>
+          )}
+        </div>
+      )}
 
       {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} />}
 

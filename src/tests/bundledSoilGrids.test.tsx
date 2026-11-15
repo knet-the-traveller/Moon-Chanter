@@ -14,6 +14,13 @@ import { useAppStore } from '../store/useAppStore';
 import { SoilModelDetails } from '../components/SoilModelDetails';
 import { getTranslation, translations } from '../i18n';
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
+import { withTerrainEvidence } from '../services/realLandData';
+import { buildSampleLandSummary } from '../services/landSummary';
+import { fetchNasaPowerClimate } from '../services/nasaPower';
+import { MunicipalLandFixtureSchema } from '../types/landFixture';
+import { generateRotationRecommendations } from '../engine';
+import cropsData from '../data/crops.json';
+import type { ClimateData, Crop, FarmerPriorities } from '../types';
 
 vi.mock('../store/useAppStore', async importOriginal => {
   const original = await importOriginal<typeof import('../store/useAppStore')>();
@@ -250,16 +257,62 @@ describe('native SoilGrids pilot package', () => {
     const html = renderToStaticMarkup(createElement(SoilCard));
     expect(html).toContain(getTranslation(language, 'soilModel.drainagePrompt'));
     expect(html).toContain(getTranslation(language, 'soilModel.organicMatterPrompt'));
+    expect(html).toContain(
+      getTranslation(language, 'soilModel.nearestValidCell')
+        .replace('{requestedCell}', '41')
+        .replace('{usedCell}', '32')
+        .replace('{meters}', '250')
+    );
+    expect(html).toContain(getTranslation(language, 'dataQuality.useMunicipalBaseline'));
     expect(html).not.toContain(getTranslation(language, 'dataQuality.missingSoil'));
     useAppStore.getState().setSoilOverride({ drainage: 'moderate' });
     expect(useAppStore.getState().soilOverride).toMatchObject({ drainage: 'moderate' });
     expect(applyFarmerSoilOverride(soil, useAppStore.getState().soilOverride).ph).toBe(6.4);
   });
-  it('keeps translation keys/placeholders aligned and the four immutable sample fixtures separate', () => {
-    expect(Object.keys(translations.en.soilModel).sort()).toEqual(Object.keys(translations.fil.soilModel).sort());
-    for (const [key, text] of Object.entries(translations.en.soilModel)) {
-      const other = translations.fil.soilModel[key as keyof typeof translations.fil.soilModel];
-      expect(text.match(/\{\w+\}/g)).toEqual(other.match(/\{\w+\}/g));
+  it('unblocks full rotation generation including Strategy 1 baseline for all four pilot presets with zero manual overrides', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const slugMap = { munoz: 'munoz', ilagan: 'ilagan', pototan: 'pototan', bukidnon: 'malaybalay' } as const;
+    const fixtures = ['munoz', 'ilagan', 'pototan', 'malaybalay'].map(slug =>
+      MunicipalLandFixtureSchema.parse(JSON.parse(readFileSync(`public/sample-data/${slug}.json`, 'utf8')))
+    );
+    const defaultPriorities: FarmerPriorities = {
+      soilHealth: 80,
+      waterResilience: 75,
+      stableIncome: 70,
+      lowInputCost: 65,
+      lowLabor: 50,
+      climateRisk: 75
+    };
+    for (const pilot of PILOT_LOCATIONS) {
+      const slug = slugMap[pilot.id as keyof typeof slugMap];
+      const rawFixture = JSON.parse(readFileSync(`public/sample-data/${slug}.json`, 'utf8')) as { climate?: ClimateData };
+      const climate = rawFixture.climate ?? await fetchNasaPowerClimate(pilot.lat, pilot.lon);
+      const bundledSoil = resolveBundledSoil(pilot.lat, pilot.lon)!;
+      const land = buildSampleLandSummary(pilot.lat, pilot.lon, fixtures);
+      const effectiveSoil = withTerrainEvidence(bundledSoil, land);
+      expect(hasRequiredSoilInputs(effectiveSoil)).toBe(true);
+      const plans = generateRotationRecommendations({
+        allCrops: cropsData as Crop[],
+        climate,
+        soil: effectiveSoil,
+        priorities: defaultPriorities,
+        recentCropId: 'rice'
+      });
+      expect(plans.length).toBeGreaterThan(0);
+      expect(plans.some(plan => plan.isBaseline)).toBe(true);
+    }
+  });
+  it('keeps translation keys/placeholders aligned across soilModel, dataQuality, and provenance.methods and preserves sample fixtures', () => {
+    for (const [enObj, filObj] of [
+      [translations.en.soilModel, translations.fil.soilModel],
+      [translations.en.dataQuality, translations.fil.dataQuality],
+      [translations.en.provenance.methods, translations.fil.provenance.methods]
+    ] as const) {
+      expect(Object.keys(enObj).sort()).toEqual(Object.keys(filObj).sort());
+      for (const [key, text] of Object.entries(enObj)) {
+        const other = (filObj as Record<string, string>)[key];
+        expect((text.match(/\{\w+\}/g) ?? []).sort()).toEqual((other.match(/\{\w+\}/g) ?? []).sort());
+      }
     }
     const fixture = JSON.parse(readFileSync('public/sample-data/munoz.json', 'utf8'));
     expect(fixture.soil.modelEvidence).toBeUndefined();

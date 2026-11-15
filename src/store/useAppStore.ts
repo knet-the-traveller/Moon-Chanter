@@ -13,7 +13,12 @@ import type {
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import cropsData from '../data/crops.json';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
-import { fetchSoilGridsData, applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
+import {
+  fetchSoilGridsData,
+  getMunicipalAgriculturalBaseline,
+  applyFarmerSoilOverride,
+  parseFarmerSoilOverride
+} from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
 import { withTerrainEvidence } from '../services/realLandData';
 import { fetchLandSummary } from '../services/landSummary';
@@ -48,6 +53,8 @@ interface AppState {
   telemetryError: string | null;
   climateData: ClimateData | null;
   soilData: SoilData | null;
+  telemetrySoilData: SoilData | null;
+  isMunicipalBaselineActive: boolean;
   landSummary: LandSummary | null;
   isLoadingLand: boolean;
   landError: string | null;
@@ -76,6 +83,8 @@ interface AppState {
   selectPilotPreset: (pilot: PilotLocation) => Promise<void>;
   setCustomCoordinates: (lat: number, lon: number, customName?: string) => Promise<void>;
   fetchTelemetry: (lat: number, lon: number) => Promise<void>;
+  applyMunicipalBaseline: () => Promise<void>;
+  restoreSoilTelemetry: () => void;
   setSoilOverride: (override: Partial<SoilData>) => void;
   resetSoilOverride: () => void;
   setRecentCropId: (cropId: string | null) => void;
@@ -108,6 +117,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   telemetryError: null,
   climateData: null,
   soilData: null,
+  telemetrySoilData: null,
+  isMunicipalBaselineActive: false,
   landSummary: null,
   isLoadingLand: false,
   landError: null,
@@ -162,6 +173,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       comparedPlanIds: [],
       climateData: null,
       soilData: null,
+      telemetrySoilData: null,
+      isMunicipalBaselineActive: false,
       landSummary: null,
       recommendedPlans: [],
       advisoryIssuedAt: null,
@@ -242,6 +255,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       landError: null,
       climateData: null,
       soilData: null,
+      telemetrySoilData: null,
+      isMunicipalBaselineActive: false,
       landSummary: null,
       recommendedPlans: [],
       advisoryIssuedAt: null
@@ -250,11 +265,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const land = fetchLandSummary(lat, lon, controller.signal).then((summary) => {
       if (!isCurrent()) return;
+      const currentState = get();
+      const updatedTelemetrySoil = currentState.telemetrySoilData
+        ? withTerrainEvidence(currentState.telemetrySoilData, summary)
+        : null;
+      const updatedActiveSoil = currentState.isMunicipalBaselineActive
+        ? currentState.soilData
+        : (currentState.soilData ? withTerrainEvidence(currentState.soilData, summary) : null);
       set({
         landSummary: summary,
-        soilData: get().soilData ? withTerrainEvidence(get().soilData!,summary) : null,
+        telemetrySoilData: updatedTelemetrySoil,
+        soilData: updatedActiveSoil,
         isLoadingLand: false,
-        selectedLocation: { ...get().selectedLocation, ...(summary.elevationM === null ? {} : { elevationMeters: summary.elevationM }) }
+        selectedLocation: { ...currentState.selectedLocation, ...(summary.elevationM === null ? {} : { elevationMeters: summary.elevationM }) }
       });
       get().computeRecommendations();
     }).catch(() => {
@@ -266,9 +289,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     ]).then(([climate, soil]) => {
       if (!isCurrent()) return;
       const failed = climate.status === 'rejected' || soil.status === 'rejected';
+      const resolvedTelemetrySoil = soil.status === 'fulfilled'
+        ? withTerrainEvidence(soil.value, get().landSummary)
+        : null;
       set({
         climateData: climate.status === 'fulfilled' ? climate.value : null,
-        soilData: soil.status === 'fulfilled' ? withTerrainEvidence(soil.value,get().landSummary) : null,
+        telemetrySoilData: resolvedTelemetrySoil,
+        soilData: get().isMunicipalBaselineActive ? get().soilData : resolvedTelemetrySoil,
         isLoadingTelemetry: false,
         telemetryError: failed ? 'land.telemetryUnavailable' : null
       });
@@ -277,6 +304,37 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     await Promise.all([land, telemetry]);
     if (isCurrent()) landController = null;
+  },
+
+  applyMunicipalBaseline: async () => {
+    const requestId = telemetryRequestId;
+    const { selectedLocation, telemetrySoilData, soilData, isMunicipalBaselineActive } = get();
+    try {
+      const baseline = await getMunicipalAgriculturalBaseline(selectedLocation.lat, selectedLocation.lon);
+      if (requestId !== telemetryRequestId) return;
+      set({
+        telemetrySoilData: telemetrySoilData ?? (isMunicipalBaselineActive ? null : soilData),
+        soilData: baseline,
+        soilOverride: null,
+        isMunicipalBaselineActive: true,
+        telemetryError: null
+      });
+      get().computeRecommendations();
+    } catch {
+      if (requestId !== telemetryRequestId) return;
+      set({ telemetryError: 'land.telemetryUnavailable' });
+    }
+  },
+
+  restoreSoilTelemetry: () => {
+    const { telemetrySoilData } = get();
+    if (!telemetrySoilData) return;
+    set({
+      soilData: telemetrySoilData,
+      soilOverride: null,
+      isMunicipalBaselineActive: false
+    });
+    get().computeRecommendations();
   },
 
   setSoilOverride: (override) => {

@@ -11,6 +11,14 @@ export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEv
   return <section className="mt-4 space-y-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-950" aria-label={t('title')}>
     <p className="font-semibold">{t('title')}</p>
     <p>{t('coverage').replace('{grid}', evidence.gridName).replace('{cell}', String(evidence.cellIndex + 1))}</p>
+    {evidence.requestedCellIndex !== undefined && (
+      <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">
+        {t('nearestValidCell')
+          .replace('{requestedCell}', String(evidence.requestedCellIndex + 1))
+          .replace('{usedCell}', String(evidence.cellIndex + 1))
+          .replace('{meters}', String(evidence.offsetDistanceMeters ?? 250))}
+      </p>
+    )}
     {!hasPredictions && <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">{t('noPredictions')}</p>}
     <p>{t('limits')}</p>
     <p className="text-xs">{t('retrieved').replace('{date}', evidence.retrievedAt.replace('T', ' ').replace('Z', ' UTC'))} · CC BY 4.0 · ISRIC</p>
