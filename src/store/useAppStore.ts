@@ -1,3 +1,4 @@
+import { resolvePlanningSoil } from '../services/planningSoil';
 import { create } from 'zustand';
 import type {
   Language,
@@ -13,7 +14,7 @@ import type {
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import cropsData from '../data/crops.json';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
-import { fetchSoilGridsData, applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
+import { fetchSoilGridsData, parseFarmerSoilOverride } from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
 import { withTerrainEvidence } from '../services/realLandData';
 import { fetchLandSummary } from '../services/landSummary';
@@ -54,6 +55,8 @@ interface AppState {
   isLocatingGps: boolean;
   gpsError: string | null;
   soilOverride: Partial<SoilData> | null;
+  useDemoAssumptions:boolean;
+  setDemoAssumptions:(enabled:boolean)=>void;
 
   // Farmer Inputs & History
   recentCropId: string | null;
@@ -114,6 +117,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLocatingGps: false,
   gpsError: null,
   soilOverride: null,
+  useDemoAssumptions:true,
+  setDemoAssumptions:(enabled)=>{set({useDemoAssumptions:enabled});get().computeRecommendations();},
 
   recentCropId: 'rice', // Common baseline in Philippines
   excludedCropIds: [],
@@ -316,14 +321,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   computeRecommendations: () => {
-    const { climateData, soilData, soilOverride, priorities, recentCropId, excludedCropIds } = get();
+    const { useDemoAssumptions, climateData, soilData, soilOverride, priorities, recentCropId, excludedCropIds } = get();
 
     if (!climateData || !soilData) {
       set({ recommendedPlans: [], advisoryIssuedAt: null, comparedPlanIds: [] });
       return;
     }
 
-    const effectiveSoil: SoilData = applyFarmerSoilOverride(soilData, soilOverride);
+    const effectiveSoil: SoilData = resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions);
 
     const plans = generateRotationRecommendations({
       allCrops,

@@ -462,7 +462,7 @@ describe('AGRO-RULE-05-MODEL-SUPPORT: imported soil predictions', () => {
 
 describe('Ticket 10 rotation-score compatibility',()=>{
   it('retains pre-refactor scenario scores for all 90 valid municipal candidates',async()=>{
-    const {readFileSync}=await import('node:fs');
+    const legacy=(await import('./fixtures/scenarioLegacy.json')).default;
     const {createHash}=await import('node:crypto');
     const expected={
       munoz:'79948cadf4600e7aa3bcc1981c0e1e32a23adab706e3d4fd374f0a6cb0c191b2',
@@ -470,10 +470,17 @@ describe('Ticket 10 rotation-score compatibility',()=>{
       pototan:'4d9dcf7e3b8b3dae55a0162c73acb068d886710c1097f5ad78c260712e22f04b'
     };
     for(const [slug,hash] of Object.entries(expected)){
-      const fixture=JSON.parse(readFileSync(`public/sample-data/${slug}.json`,'utf8')) as {soil:SoilData;climate:ClimateData};
+      const fixture=legacy[slug as keyof typeof legacy] as {soil:SoilData;climate:ClimateData};
       const candidates=generateCandidateRotations({allCrops:crops,soil:fixture.soil});
       expect(candidates).toHaveLength(30);
-      const values=candidates.map(c=>evaluateScenarios(c,fixture.climate,fixture.soil,defaultPriorities));
+      const values=candidates.map(c=>{
+        const result=evaluateScenarios(c,fixture.climate,fixture.soil,defaultPriorities);
+        const {baseline,hotter,drier,hotterAndDrier,wetter}=result.scenarioScores;
+        // Upstream adds aliases; compare the original public result shape.
+        expect(result.scenarioScores.compound).toBe(hotterAndDrier);
+        expect(result.scenarioScores.hotter_drier).toBe(hotterAndDrier);
+        return {scenarioScores:{baseline,hotter,drier,hotterAndDrier,wetter},robustness:result.robustness,maxDegradation:result.maxDegradation};
+      });
       expect(createHash('sha256').update(JSON.stringify(values)).digest('hex')).toBe(hash);
     }
   });

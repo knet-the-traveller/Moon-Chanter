@@ -14,7 +14,7 @@ export const StepProgress: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-b border-stone-200/80 sticky top-16 z-30">
+    <div className="bg-white/80 backdrop-blur-sm border-b border-stone-200/80 relative sm:sticky sm:top-16 z-30 min-w-0 max-w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between py-2.5 overflow-x-auto no-scrollbar gap-2 sm:gap-4">
           {steps.map((step) => {

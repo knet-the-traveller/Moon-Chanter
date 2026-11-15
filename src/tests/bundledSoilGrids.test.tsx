@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import rawPackage from '../data/soilgrids/pilots-v1.json';
 import { SoilGridsPackageSchema, SoilModelEvidenceSchema, SOIL_PROPERTIES, SOIL_DEPTHS } from '../types/soilGridsPackage';
 import { resolveBundledSoil, soilCellFootprint } from '../services/bundledSoilGrids';
@@ -20,6 +20,7 @@ vi.mock('../store/useAppStore', async importOriginal => {
   return { useAppStore: Object.assign(() => original.useAppStore.getState(), original.useAppStore) };
 });
 
+beforeEach(()=>useAppStore.setState({...useAppStore.getInitialState(),useDemoAssumptions:false},true));
 const data = SoilGridsPackageSchema.parse(rawPackage);
 const gridCenter = (grid: typeof data.grids[number], index: number) => {
   const footprint = soilCellFootprint(grid, index);

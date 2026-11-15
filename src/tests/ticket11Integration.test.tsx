@@ -29,7 +29,7 @@ const offline=()=>vi.fn(async(input:string|URL|Request)=>{
  throw new Error(`Unexpected local request: ${url}`);
 });
 beforeEach(async()=>{
- useAppStore.setState(initial,true);
+ useAppStore.setState({...initial,useDemoAssumptions:false},true);
  await CacheService.clear();
  vi.stubGlobal('fetch',offline());
 });

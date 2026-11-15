@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import raw from '../data/real-data/ndvi-v1.json';
 import type { LandSummary, MetricProvenance } from '../types';
 import { calculateLinearRegressionSlope } from '../engine/climate/climateSummary';
@@ -55,16 +56,19 @@ export function summarizeScientificNdvi(observations:NdviObservation[]):LandSumm
   evidence:{accepted:valid.length,total:rows.length,monthlyCounts,annualYears:annual.map(y=>y.year),qualityPolicy:'conservative-land-v1'}};
 }
 
-/** Exact acquired coordinates only: the CSV does not include a verified native
- * pixel polygon, so nearby farms must not silently borrow the point extraction. */
+/** Original extraction points and exact named pilot presets only. Relocated
+ * presets disclose the original reference point; arbitrary nearby farms do not
+ * borrow an extraction because no native pixel polygon has been verified. */
 export function resolveBundledNdvi(lat:number,lon:number):{ndvi:LandSummary['ndvi'];provenance:MetricProvenance}|null{
  if(!parsed.success)return null;
- const point=parsed.data.points.find(p=>Math.abs(p.lat-lat)<1e-8&&Math.abs(p.lon-lon)<1e-8);
+ const preset=PILOT_LOCATIONS.find(p=>Math.abs(p.lat-lat)<1e-8&&Math.abs(p.lon-lon)<1e-8);
+ const point=parsed.data.points.find(p=>Math.abs(p.lat-lat)<1e-8&&Math.abs(p.lon-lon)<1e-8)??(preset?parsed.data.points.find(p=>p.id===preset.id):undefined);
  if(!point)return null;
  const ndvi=summarizeScientificNdvi(point.observations);
  return {ndvi,provenance:{source:parsed.data.source,variable:'MOD13Q1 NDVI + VI_Quality + pixel_reliability',
   spatialResolution:'250 m nominal MODIS sinusoidal pixel',dateRange:parsed.data.requestedPeriod,
   isSample:false,isSynthetic:false,needsReview:true,tier:ndvi.evidence!.accepted>0?'bundled-model':'unavailable',unit:'NDVI',
+  sampleLocation:Math.abs(point.lat-lat)<=1e-8&&Math.abs(point.lon-lon)<=1e-8?undefined:{name:`${preset?.name??point.id} NDVI reference point`,lat:point.lat,lon:point.lon},
   productVersion:'061',citation:parsed.data.citation,retrievedAt:null,methodKey:'land.qualityNdvi',
   method:`Accepted ${ndvi.evidence!.accepted}/${ndvi.evidence!.total} composites; ${point.tile}, line ${point.line}, sample ${point.sample}.`,
   note:'AppEEARS values are already scaled. Composite start dates group observations by month; observation day within each 16-day composite is unavailable. Conservative QA can leave cloudy or water-mixed pixels empty. No gap filling or bare-field inference. Download time was not provided.'}};

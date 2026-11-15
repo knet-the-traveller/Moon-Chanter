@@ -54,7 +54,14 @@ export function resolveRealLand(lat:number,lon:number,data=terrain):LandSummary|
    provenance['ndvi.seasonalMean']={...vegetation.provenance,tier:vegetation.ndvi.seasonalMean.some(v=>v!==null)?'bundled-model':'unavailable'};
    provenance['ndvi.trend']={...vegetation.provenance,variable:'QA-filtered annual NDVI → OLS slope',unit:'NDVI/year',tier:vegetation.ndvi.trendAvailable?'bundled-model':'unavailable',methodKey:'land.qualityNdviTrend'};
   }
-  return {elevationM:elevation,slopePct:slope,floodProne:null,bareFieldMonths:[],rusleErosionRiskTonsHaYr:null,
+  const monthly=vegetation?.ndvi.seasonalMean??Array.from({length:12},()=>null);
+  const observedMonths=monthly.flatMap((v,i)=>v===null?[]:[i+1]);
+  const bare=monthly.flatMap((v,i)=>i<6&&v!==null&&v<0.25?[i+1]:[]);
+  provenance.floodProne={...provenance.slopePct,variable:'SRTM elevation + slope → preliminary lowland screen',unit:'class',methodKey:'mvp.lowlandMethod',tier:elevation===null||slope===null?'unavailable':'bundled-model'};
+  provenance.bareFieldMonths={...(vegetation?.provenance??unknownProvenance('NASA MOD13Q1.061','NDVI')),
+   variable:'QA-filtered NDVI <0.25 · January–June',methodKey:'mvp.bareMethod',tier:observedMonths.some(m=>m<=6)?'bundled-model':'unavailable'};
+  return {elevationM:elevation,slopePct:slope,floodProne:elevation===null||slope===null?null:elevation<30&&slope<=3,bareFieldMonths:bare,
+   screening:{erosionConcern:slope===null?null:slope>15?'steep':slope<=3?'gentle':'sloping',observedMonths,missingMonths:monthly.flatMap((v,i)=>v===null?[i+1]:[])},rusleErosionRiskTonsHaYr:null,
    ndvi:vegetation?.ndvi??{seasonalMean:Array.from({length:12},()=>null),trend:0,source:'Scientific NDVI not acquired',trendAvailable:false,trendUnavailableReason:'Quality-controlled scientific NDVI observations are required.'},
    isSample:false,needsReview:true,reviewNotes:[provenance.elevationM.note,'Flood susceptibility, bare soil and quantitative erosion are not established by elevation alone.'],
    sampleHub:{id:grid.id,name:PILOT_LOCATIONS.find(p=>p.id===grid.id)?.name??grid.id,lat:grid.lat,lon:grid.lon,distanceKm:0},provenance};

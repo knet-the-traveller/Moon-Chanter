@@ -94,7 +94,7 @@ export function resolveBundledSoil(
             cellIndex: index,
             reason: 'nodata_cell'
           };
-          const note = ` Default coordinates fell on an unmeasured cell (cell ${index + 1}); data resolved from nearest valid agricultural cell (cell ${nearest.index + 1}, ${nearest.distanceKm} km away).`;
+          const note = ` Default coordinates fell on an unmeasured cell (cell ${index + 1}); data resolved from nearby model reference cell (cell ${nearest.index + 1}, ${nearest.distanceKm} km away).`;
           profile.reviewNote = (profile.reviewNote || '') + note;
           return profile;
         }

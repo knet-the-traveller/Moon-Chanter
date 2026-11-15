@@ -1,3 +1,4 @@
+import { exampleProfile } from '../services/demoVegetation';
 import { formatProvenance } from '../data/provenance';
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
@@ -21,7 +22,7 @@ function fieldPopup(name: string, province: string): HTMLElement {
 }
 
 export const MapPicker: React.FC = () => {
-  const {
+  const { useDemoAssumptions,
     selectedLocation,
     selectPilotPreset,
     setCustomCoordinates,
@@ -229,13 +230,17 @@ export const MapPicker: React.FC = () => {
   const metrics: Array<{ key: LandMetric; label: string; value: string }> = landSummary ? [
     { key: 'elevationM', label: t('land.elevation'), value: landSummary.elevationM === null ? unavailable : `${landSummary.elevationM} m` },
     { key: 'slopePct', label: t('land.slope'), value: landSummary.slopePct === null ? unavailable : `${landSummary.slopePct}%` },
-    { key: 'floodProne', label: t('land.flood'), value: landSummary.floodProne === null ? unavailable : t(landSummary.floodProne ? 'land.flagged' : 'land.unflagged') },
-    { key: 'bareFieldMonths', label: t('land.bareMonths'), value: landSummary.provenance.bareFieldMonths.tier === 'unavailable' ? unavailable : months || t('land.noneDetected') },
-    { key: 'rusleErosionRiskTonsHaYr', label: t('land.erosion'), value: landSummary.rusleErosionRiskTonsHaYr === null ? unavailable : `${landSummary.rusleErosionRiskTonsHaYr.toFixed(1)} ${t('land.erosionUnit')}` },
-    { key: 'ndvi.seasonalMean', label: t('land.monthlyNdvi'), value: landSummary.ndvi.seasonalMean.map((value) => value === null ? unavailable : value.toFixed(2)).join(', ') },
+    { key: 'floodProne', label: t('land.flood'), value: landSummary.floodProne === null ? unavailable : t(landSummary.floodProne ? 'mvp.lowlandFlag' : 'mvp.lowlandOutside') },
+    { key: 'bareFieldMonths', label: t('land.bareMonths'), value: landSummary.provenance.bareFieldMonths.tier === 'unavailable' ? t('mvp.noLandNdvi') : months || t('mvp.noLowGreenness') },
+    { key: 'rusleErosionRiskTonsHaYr', label: t(landSummary.screening ? 'mvp.erosionTitle' : 'land.erosion'), value: landSummary.screening?.erosionConcern ? t(`mvp.erosion.${landSummary.screening.erosionConcern}`) : landSummary.rusleErosionRiskTonsHaYr === null ? unavailable : `${landSummary.rusleErosionRiskTonsHaYr.toFixed(1)} ${t('land.erosionUnit')}` },
+    { key: 'ndvi.seasonalMean', label: t('land.monthlyNdvi'), value: landSummary.ndvi.seasonalMean.every(v=>v===null) ? t('mvp.noLandNdvi') : landSummary.ndvi.seasonalMean.map((value) => value === null ? t('mvp.gap') : value.toFixed(2)).join(', ') },
     { key: 'ndvi.trend', label: t('land.ndviTrend'), value: landSummary.ndvi.trendAvailable
       ? `${landSummary.ndvi.trend.toFixed(3)} ${t('land.trendUnit')}` : t('land.insufficientTrendData') }
   ] : [];
+
+  const metricProvenance=(key:LandMetric)=>key==='rusleErosionRiskTonsHaYr'&&landSummary?.screening
+    ? {...landSummary.provenance.slopePct,variable:'SRTM slope → qualitative erosion concern',unit:'class',methodKey:'mvp.erosionMethod'}
+    : landSummary!.provenance[key];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
@@ -397,17 +402,30 @@ export const MapPicker: React.FC = () => {
               {t('land.ndviCoverage').replace('{accepted}', String(landSummary.ndvi.evidence.accepted)).replace('{total}', String(landSummary.ndvi.evidence.total))}
             </p>}
             <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {metrics.map((metric) => {
-                const provenance = landSummary.provenance[metric.key];
+              {metrics.filter(metric=>metric.key!=='ndvi.trend').map((metric) => {
+                const provenance = metricProvenance(metric.key);
                 return (
                   <div key={metric.key} className="min-w-0 rounded-lg border border-stone-200 bg-stone-50 p-3">
                     <dt className="text-sm font-semibold text-stone-700">{metric.label}</dt>
                     <dd className="mt-1 break-words text-sm font-bold text-stone-950">{metric.value}</dd>
-                    <dd className="mt-2 break-words text-xs text-stone-700">{formatProvenance(language, { ...provenance, sampleLocation: { name: landSummary.sampleHub.name } })}</dd>
+                    <dd className="mt-2 break-words text-xs text-stone-700">{provenance.source} · {t('provenance.review')}</dd>
                   </div>
                 );
               })}
             </dl>
+            {useDemoAssumptions && landSummary.ndvi.seasonalMean.every(v=>v===null) && <details className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+              <summary className="cursor-pointer font-semibold">{t('mvp.exampleNdvi')}</summary>
+              <p className="mt-2">{t('mvp.exampleNdviHelp')}</p>
+              <p className="mt-1">{exampleProfile(landSummary.sampleHub.id).join(', ')}</p>
+            </details>}
+            {landSummary.screening && <p className="mt-3 text-sm text-stone-700">{t('mvp.screenLimit')}</p>}
+            <details className="mt-4 text-sm text-stone-800">
+              <summary className="cursor-pointer font-semibold">{t('mvp.landDetails')}</summary>
+              <p className="mt-2 font-semibold">{t('land.ndviTrend')}: {landSummary.ndvi.trendAvailable?landSummary.ndvi.trend:t('land.insufficientTrendData')}</p>
+              <ul className="mt-2 space-y-2 break-words text-xs">
+                {metrics.map(metric=><li key={metric.key}>{formatProvenance(language,{...metricProvenance(metric.key),sampleLocation:metricProvenance(metric.key).sampleLocation??{name:landSummary.sampleHub.name}})}</li>)}
+              </ul>
+            </details>
           </>
         )}
       </section>

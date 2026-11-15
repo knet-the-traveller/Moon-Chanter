@@ -1,8 +1,8 @@
+import { resolvePlanningSoil, hasDemoSoil } from '../services/planningSoil';
 import { contextProvenance, formatProvenance, formatLocalReview, hasProvisionalEvidence } from '../data/provenance';
 import { generateLocalReviewChecklist } from '../engine/explainer';
 import type { PlanDataContext } from '../data/provenance';
 import type { Language } from '../types';
-import { applyFarmerSoilOverride } from '../services/soilGrids';
 import React, { useState } from 'react';
 import type { RotationPlan } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -23,7 +23,7 @@ import {
 export const PlanDataEvidence: React.FC<{ context: PlanDataContext; language: Language; forPrint?: boolean }> = ({ context, language, forPrint }) => (
   <>
     {hasProvisionalEvidence(context) && <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950 print:break-inside-avoid">
-      {getTranslation(language, 'dataQuality.provisionalDetail')}
+      {getTranslation(language, hasDemoSoil(context.soil)?'mvp.printNotice':'dataQuality.provisionalDetail')}
     </p>}
     <details open={forPrint || undefined} className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words print:break-inside-auto">
       <summary className="cursor-pointer font-bold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
@@ -61,11 +61,11 @@ export const LocalReviewChecklist: React.FC<{ plan: RotationPlan; context: PlanD
 };
 
 export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
-  const { language, activeScenario, comparedPlanIds, togglePlanComparison, climateData, soilData, soilOverride, landSummary } = useAppStore();
+  const { useDemoAssumptions, language, activeScenario, comparedPlanIds, togglePlanComparison, climateData, soilData, soilOverride, landSummary } = useAppStore();
   const [isWhyExpanded, setIsWhyExpanded] = useState(false);
   const [isRisksExpanded, setIsRisksExpanded] = useState(false);
 
-  const context: PlanDataContext = { climate: climateData, soil: soilData ? applyFarmerSoilOverride(soilData, soilOverride) : null, land: landSummary };
+  const context: PlanDataContext = { climate: climateData, soil: soilData ? resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions) : null, land: landSummary };
   const isComparing = comparedPlanIds.includes(plan.id);
   const currentScenarioScore = plan.scenarioScores[activeScenario];
   const baselineScore = plan.scenarioScores.baseline;

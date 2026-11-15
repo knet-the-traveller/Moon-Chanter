@@ -1,13 +1,14 @@
+import { resolvePlanningSoil, hasDemoSoil } from '../services/planningSoil';
 import { PlanDataEvidence, LocalReviewChecklist } from './RotationCard';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { applyFarmerSoilOverride } from '../services/soilGrids';
 import { getTranslation } from '../i18n';
 import { hasProvisionalEvidence } from '../data/provenance';
 import { MapPin, Database } from 'lucide-react';
 
 export const PrintablePlan: React.FC = () => {
   const {
+    useDemoAssumptions,
     selectedLocation,
     climateData,
     soilData,
@@ -19,7 +20,7 @@ export const PrintablePlan: React.FC = () => {
   } = useAppStore();
 
   const topPlan = recommendedPlans[0];
-  const resolvedSoil = soilData ? applyFarmerSoilOverride(soilData, soilOverride) : null;
+  const resolvedSoil = soilData ? resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions) : null;
   const effectiveSoil = resolvedSoil ?? soilOverride ?? {};
   const context = { climate: climateData, soil: resolvedSoil, land: landSummary };
 
@@ -54,6 +55,7 @@ export const PrintablePlan: React.FC = () => {
         </div>
       </div>
 
+      {hasDemoSoil(resolvedSoil) && <p className="mb-4 rounded-lg border border-stone-500 p-3 text-sm font-bold text-stone-950 print:break-inside-avoid">{getTranslation(language,'mvp.printNotice')}</p>}
       {/* Farm Location & Baseline Context */}
       <div className="grid grid-cols-2 gap-4 mb-6 p-4 rounded-xl bg-stone-50 border border-stone-200 text-xs">
         <div>

@@ -182,17 +182,17 @@ export const PILOT_CONFIG: PilotConfig = {
  * public camel-case combined ID through explicit compatibility adapters. */
 export const CLIMATE_SCENARIO_IDS = ['baseline', 'hotter', 'drier', 'wetter', 'hotter_drier'] as const;
 export type CanonicalClimateScenarioId = typeof CLIMATE_SCENARIO_IDS[number];
-export type CompatibleScenarioId = CanonicalClimateScenarioId | 'hotterAndDrier';
+export type CompatibleScenarioId = CanonicalClimateScenarioId | 'hotterAndDrier' | 'compound';
 export interface ScenarioDeltas {
   hotterTempDeltaC?: number;
   drierPrecipMultiplier?: number;
   wetterPrecipMultiplier?: number;
 }
 export function toClimateScenarioId(id: CompatibleScenarioId): CanonicalClimateScenarioId {
-  return id === 'hotterAndDrier' ? 'hotter_drier' : id;
+  return id === 'hotterAndDrier' || id === 'compound' ? 'hotter_drier' : id;
 }
 export function toRotationScenarioId(id: CompatibleScenarioId): import('../types').ScenarioCondition {
-  return id === 'hotter_drier' ? 'hotterAndDrier' : id;
+  return id === 'hotter_drier' || id === 'compound' ? 'hotterAndDrier' : id;
 }
 export function scenarioAdjustment(id: CompatibleScenarioId, deltas?: ScenarioDeltas): {temperatureDeltaC:number;rainfallMultiplier:number} {
   const canonical = toClimateScenarioId(id);

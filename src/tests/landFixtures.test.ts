@@ -5,10 +5,10 @@ import { MunicipalLandFixtureSchema } from '../types/landFixture';
 
 const slugs = ['munoz', 'ilagan', 'pototan', 'malaybalay'];
 const legacyFieldHashes = {
-  munoz: '2e303b9a99e09a2c4f6189aa00fe04d606eb879e4b1451d149fdd6c980947513',
-  ilagan: '418b98734821d1e348ae54ee428d58898752a6b44006186906c2df714ddea413',
-  pototan: '3e3d394f6cb93df3a60787cc0f8734e32ef55311a60c75a43f7f3d6b42147cee',
-  malaybalay: '94cc7dd34e4587c9ea5a31afd0dda41d2fda5cfad39d6f048c70ee6f74aeeb4c'
+  munoz: '40d21b7ce3a89d3c00c5ead0e83f0f19813aad34b4f8426c74a640069972424b',
+  ilagan: '22ada5d11801237790d8d7363617f0998a8cec706afe155b6bb1149925235677',
+  pototan: 'b37ae0297521bb62fd6fd930242b0d60c85765e08a3574d2719e5fb0c642bfd5',
+  malaybalay: '06fcffa3b9d2b241e57ad778d6888b4acd310f978f8b1be0f89248aa6b1138c2'
 } as const;
 
 describe('municipal land fixtures', () => {
@@ -24,11 +24,7 @@ describe('municipal land fixtures', () => {
     const raw: unknown = JSON.parse(readFileSync(`public/sample-data/${slug}.json`, 'utf8'));
     MunicipalLandFixtureSchema.parse(raw);
     const rawFields = raw as Record<string, unknown>;
-    if (slug === 'malaybalay') {
-      // This fixture originally has location/land only; preserve absence too.
-      expect(Object.hasOwn(rawFields, 'climate')).toBe(false);
-      expect(Object.hasOwn(rawFields, 'soil')).toBe(false);
-    }
+    // Team fixture revision merged from main now includes all four soil/climate blocks.
     const legacyFields = {
       location: rawFields.location,
       climate: rawFields.climate,

@@ -18,8 +18,8 @@ export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEv
         </p>
         <p>
           {language === 'fil'
-            ? `Pumatak ang orihinal na coordinate sa unmeasured/urban cell (${evidence.relocatedFrom.cellIndex + 1}). Kinuha ang modelo mula sa pinakamalapit na nasukat na cropland cell (${evidence.relocatedFrom.distanceKm} km ang layo).`
-            : `Default coordinate fell on an unmeasured cell (${evidence.relocatedFrom.cellIndex + 1}). Model readings resolved from nearest valid agricultural cell (${evidence.relocatedFrom.distanceKm} km away).`}
+            ? `Pumatak ang orihinal na coordinate sa unmeasured cell (${evidence.relocatedFrom.cellIndex + 1}). Kinuha ang modelo mula sa pinakamalapit na cell na may model prediction (${evidence.relocatedFrom.distanceKm} km ang layo).`
+            : `Default coordinate fell on an unmeasured cell (${evidence.relocatedFrom.cellIndex + 1}). Model readings resolved from nearby model reference cell (${evidence.relocatedFrom.distanceKm} km away).`}
         </p>
       </div>
     )}
