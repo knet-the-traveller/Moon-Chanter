@@ -1,6 +1,6 @@
-# 🌾 FieldShift Local Testing & Visual Run Guide
+# 🌾 AniTala Local Testing & Visual Run Guide
 
-A comprehensive, step-by-step guide to launch, visually test, and interactively verify **FieldShift** locally on your machine.
+A comprehensive, step-by-step guide to launch, visually test, and interactively verify **AniTala** locally on your machine.
 
 This guide focuses on **visual, in-browser, and mobile-simulation testing**—empowering developers, agricultural technicians, and evaluators to interact with the map, NASA satellite layers, telemetry charts, priority sliders, and printable advisory plans directly instead of relying solely on headless terminal tests.
 
@@ -28,7 +28,7 @@ This guide focuses on **visual, in-browser, and mobile-simulation testing**—em
 ## 1. Prerequisites & One-Time Setup
 
 ### A. Node.js & Package Manager
-FieldShift runs on modern **Node.js (v18 or higher; v20 / v22 LTS recommended)**.
+AniTala runs on modern **Node.js (v18 or higher; v20 / v22 LTS recommended)**.
 
 1. **Verify your Node.js and npm versions:**
    ```bash
@@ -42,7 +42,7 @@ FieldShift runs on modern **Node.js (v18 or higher; v20 / v22 LTS recommended)**
    ```
 
 ### B. Environment Configuration
-FieldShift includes client-safe environment variables pre-configured in `.env.example`.
+AniTala includes client-safe environment variables pre-configured in `.env.example`.
 
 1. Create your local `.env` file:
    * **Windows (PowerShell):**
@@ -53,9 +53,9 @@ FieldShift includes client-safe environment variables pre-configured in `.env.ex
      ```bash
      cp .env.example .env
      ```
-2. Confirm the default pilot coordinates in `.env`:
+2. Set the public application name in your local `.env` and confirm the example coordinates below. The checked-in `.env.example` retains its legacy name:
    ```ini
-   VITE_APP_NAME="FieldShift"
+   VITE_APP_NAME="AniTala"
    VITE_APP_DESCRIPTION="Adapting Farms with NASA Data - Crop Rotation Decision Support"
    VITE_DEFAULT_LAT=15.714
    VITE_DEFAULT_LON=120.906
@@ -96,7 +96,7 @@ Choose the method that best matches your testing goal:
 ---
 
 ### Method C: Mobile Field & Sunlight Simulation
-*FieldShift is designed for smallholder farmers and agricultural technicians operating mobile phones (360px+ viewport widths) under high outdoor sunlight.*
+*AniTala is designed for smallholder farmers and agricultural technicians operating mobile phones (360px+ viewport widths) under high outdoor sunlight.*
 
 1. Launch the app using **Method A** (`npm run dev`) and open Google Chrome, Microsoft Edge, or Brave.
 2. Press `F12` (or `Ctrl + Shift + I` on Windows/Linux, `Cmd + Option + I` on macOS) to open **Developer Tools**.
@@ -120,7 +120,7 @@ While the `npm run dev` server is running in your terminal, press any of these k
 * Press **`h`** to display all available Vite CLI shortcuts.
 
 ### Simulating Offline Field Resilience
-FieldShift implements a **7-day persistent `localStorage` cache** and pre-bundled offline datasets in `/public/sample-data/` (*Muñoz, Ilagan, Pototan*) to function in rural areas with poor connectivity:
+AniTala implements a **7-day persistent `localStorage` cache** and pre-bundled offline datasets in `/public/sample-data/` (*Muñoz, Ilagan, Pototan*) to function in rural areas with poor connectivity:
 
 1. Open DevTools (`F12`) and switch to the **Network** tab.
 2. In the **Throttling** dropdown (default: *No throttling*), select **Offline** or **Slow 3G**.
@@ -253,7 +253,7 @@ Use this interactive checklist to visually verify each section and feature of th
 - [ ] Click the **"Print Field Plan"** button in the header (or press `Ctrl + P` / `Cmd + P`).
 - [ ] In the browser print preview dialog:
   - [ ] Confirm screen navigation bars, map picker, and interactive sliders are **hidden** via `@media print`.
-  - [ ] Single-page **"FieldShift · Farm Advisory Sheet"** renders cleanly.
+  - [ ] AniTala's single-page **Farm Advisory Sheet** renders cleanly. Its heading currently retains legacy branding; this documentation update does not change the printable component.
   - [ ] Farm coordinates, advisory reference ID (`FS-xx.xx-xxxx`), date, soil profile, and 3-season crop diagram format neatly within standard A4 / Letter boundaries.
   - [ ] Farmer note-taking / extension worker signature section appears at the bottom.
 
@@ -308,7 +308,7 @@ True Color selects the previous completed UTC day from NASA GIBS NOAA-20/VIIRS. 
 
 Reload the application after updating. Soil cache keys now use `soilgrids_v2_<latitude to 4 decimals>_<longitude to 4 decimals>` and a validated `{ schemaVersion: 2, profile }` payload. Legacy keys are ignored rather than migrated because they can contain numeric substitutes. Applicable successful API profiles retain the seven-day TTL. No climate cache, baseline tag, sample fixture or crop value is changed by this milestone.
 
-- [ ] At each pilot location, confirm that unavailable SoilGrids service access produces a clearly named **FieldShift municipal soil example** with sample provenance. It is a demonstration profile, not newly downloaded soil data.
+- [ ] At each pilot location, confirm that unavailable SoilGrids service access produces a clearly labeled **municipal soil example** with sample provenance. The source attribution retains its legacy name. It is a demonstration profile, not newly downloaded soil data.
 - [ ] In Rotation Plans, confirm **Provisional plan** replaces the climate-robust badge while evidence is missing, sample/synthetic, or awaiting review. Scores remain comparisons of the supplied inputs, not confidence percentages.
 - [ ] Compare plans and preview print output. Confirm the provisional explanation is visible in both; print must not restore an unconditional robust classification.
 - [ ] Open How Scoring Works. Confirm the scenario explanation describes sensitivity comparisons and does not claim scientific certification.

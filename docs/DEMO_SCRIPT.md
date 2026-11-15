@@ -1,8 +1,8 @@
-# FieldShift: 3-Minute Demo Script
+# AniTala: 3-Minute Demo Script
 
 > **2026 NASA Space Apps Challenge:** "Field Shift: Adapting Farms with NASA Data"  
 > **Team:** Moon Chanter  
-> **App:** FieldShift  
+> **App:** AniTala
 
 ---
 
@@ -13,7 +13,7 @@
 >
 > *While NASA collects billions of gigabytes of Earth observation data, almost none of it reaches the smallholder farmer in an actionable way. Farmers and local agricultural extension workers don't need raw satellite files—they need decision support: **'What should I plant next season that keeps my soil healthy and survives if it doesn't rain?'**
 >
-> *This is **FieldShift**—built by team Moon Chanter."*
+> *This is **AniTala**—built by team Moon Chanter."*
 
 ---
 
@@ -53,4 +53,4 @@
      - Show how all labels, soil disclosures, agronomic reasons, and local review items switch seamlessly into clear agricultural Tagalog (*"Pagpapalit-palit ng Pananim"*, *"Kalusugan ng Lupa"*).
 3. **Closing & Print View:**
    - Click **"Print Plan Sheet"** (`Ctrl+P`) to reveal the single-page printable advisory sheet, ready for municipal extension workers and farmers to verify and take into the field.
-   - *"FieldShift turns open NASA Earth observations and local soil science into transparent, smallholder-ready decision support. Thank you!"*
+   - *"AniTala turns open NASA Earth observations and local soil science into transparent, smallholder-ready decision support. Thank you!"*
