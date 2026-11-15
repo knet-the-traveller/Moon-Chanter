@@ -1,6 +1,6 @@
 import { fetchDailySeries } from '../src/services/nasaPower.js';
 import { calculateClimateSummary, explainRisks } from '../src/engine/climate/climateSummary.js';
-import { summarizeAllScenarios, ClimateScenarioId } from '../src/engine/climate/scenarios.js';
+import { summarizeAllScenarios, type ClimateScenarioId } from '../src/engine/scenarios.js';
 import { PILOT_CONFIG } from '../src/config/pilot.js';
 
 async function runClimateDemo() {

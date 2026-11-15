@@ -67,6 +67,13 @@ export interface PilotConfig {
     hotterTempDeltaC: number;      // e.g. +1.5 °C added to T2M and T2M_MAX
     drierPrecipMultiplier: number; // e.g. 0.85 (15% reduction)
     wetterPrecipMultiplier: number; // e.g. 1.15 (15% increase)
+    scoringPenalties: {
+      heatStressDaysPerYearDelta: number;
+      hotterCrops: { low: number; medium: number; high: number };
+      drierCrops: { droughtHigh: number; droughtLow: number; highWaterDemand: number };
+      wetterCrops: { floodLow: number; floodHigh: number };
+      compound: { hotterWeight: number; drierWeight: number };
+    };
   };
   api: {
     baseUrl: string;
@@ -129,7 +136,14 @@ export const PILOT_CONFIG: PilotConfig = {
   scenarios: {
     hotterTempDeltaC: 1.5,
     drierPrecipMultiplier: 0.85,
-    wetterPrecipMultiplier: 1.15
+    wetterPrecipMultiplier: 1.15,
+    scoringPenalties: {
+      heatStressDaysPerYearDelta: 18,
+      hotterCrops: { low: -9, medium: -3, high: 2 },
+      drierCrops: { droughtHigh: 3, droughtLow: -10, highWaterDemand: -8 },
+      wetterCrops: { floodLow: -16, floodHigh: 6 },
+      compound: { hotterWeight: 0.8, drierWeight: 0.85 }
+    }
   },
   api: {
     baseUrl: 'https://power.larc.nasa.gov/api/temporal/daily/point',
