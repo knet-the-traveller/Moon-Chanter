@@ -9,7 +9,7 @@ import { getTranslation } from '../i18n';
 import type { SoilData, SoilTexture, OrganicMatterLevel, Language } from '../types';
 import { Layers, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
 
-export function resolveSoilOriginBadgeKey(
+function resolveSoilOriginBadgeKey(
   soilData: SoilData,
   isMunicipalBaselineActive: boolean,
   isOverridden: boolean,

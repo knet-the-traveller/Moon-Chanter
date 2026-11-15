@@ -85,36 +85,45 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
   });
 
   it('maps SoilCard header badge accurately across bundled, cached, live, municipal, and farmer override states', async () => {
-    const { SoilCard, resolveSoilOriginBadgeKey } = await import('../components/SoilCard');
+    const { SoilCard } = await import('../components/SoilCard');
+    const { buildSoilProvenance, cachedProvenance } = await import('../data/provenance');
     await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
     const bundledSoil = useAppStore.getState().soilData!;
-    expect(resolveSoilOriginBadgeKey(bundledSoil, false, false)).toBe('provenance.soilOriginBundled');
     expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
       getTranslation('en', 'provenance.soilOriginBundled')
     );
 
-    const cachedSoil = {
-      ...bundledSoil,
-      modelEvidence: undefined,
-      provenance: {
-        ...bundledSoil.provenance!,
-        ph: { ...bundledSoil.provenance!.ph, tier: 'cached-live' as const, cached: true }
-      }
-    };
-    expect(resolveSoilOriginBadgeKey(cachedSoil, false, false)).toBe('provenance.soilOriginCached');
+    const liveProvenance = buildSoilProvenance(bundledSoil, true);
+    useAppStore.setState({
+      soilData: {
+        ...bundledSoil,
+        modelEvidence: undefined,
+        provenance: cachedProvenance(liveProvenance)
+      },
+      isMunicipalBaselineActive: false
+    });
+    expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
+      getTranslation('en', 'provenance.soilOriginCached')
+    );
 
-    const liveSoil = {
-      ...bundledSoil,
-      modelEvidence: undefined,
-      provenance: {
-        ...bundledSoil.provenance!,
-        ph: { ...bundledSoil.provenance!.ph, tier: 'live' as const, cached: false }
-      }
-    };
-    expect(resolveSoilOriginBadgeKey(liveSoil, false, false)).toBe('provenance.soilOriginLive');
+    useAppStore.setState({
+      soilData: {
+        ...bundledSoil,
+        modelEvidence: undefined,
+        provenance: liveProvenance
+      },
+      isMunicipalBaselineActive: false
+    });
+    expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
+      getTranslation('en', 'provenance.soilOriginLive')
+    );
 
-    expect(resolveSoilOriginBadgeKey({ ...bundledSoil, isEstimate: true }, true, false)).toBe(
-      'provenance.soilOriginMunicipal'
+    useAppStore.setState({
+      soilData: { ...bundledSoil, modelEvidence: undefined, isEstimate: true },
+      isMunicipalBaselineActive: true
+    });
+    expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
+      getTranslation('en', 'provenance.soilOriginMunicipal')
     );
 
     useAppStore.getState().setSoilOverride({ drainage: 'poor' });
