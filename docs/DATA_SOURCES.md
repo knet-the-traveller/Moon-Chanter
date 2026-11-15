@@ -82,27 +82,69 @@ GET https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,T2M_MAX,
 
 ## 2. Derived Climate Summary & Methodology
 
-### A. Seasonal Boundaries
-- **Wet Season:** June 1 to November 30 (Months 6–11).
-- **Dry Season:** December 1 to May 31 (Months 12, 1–5).
-  - *Year Boundary Handling:* December of year $Y$ is grouped together with January through May of year $Y+1$ into a single cross-year dry season cycle (e.g. `2014-2015-dry`).
+### A. Seasonal Boundaries & Sub-Windows (Non-Overlapping Calendar)
+- **Wet Season:** June 1 to October 31 (Months 6–10, 5 months).
+- **Dry Season (Aggregate):** November 1 to May 31 (Months 11, 12, 1–5, 7 months).
+  - *Year Boundary Handling:* November and December of year $Y$ are grouped together with January through May of year $Y+1$ into a single cross-year dry season cycle (e.g. `2014-2015-dry`).
+  - **`coolDry` Sub-Window:** November 1 to January 31 (Months 11, 12, 1, 3 months). Captures post-monsoon residual soil moisture for relay pulses and root crops.
+  - **`hotDry` Sub-Window:** February 1 to May 31 (Months 2–5, 4 months). Evaluates terminal drought vulnerability, extreme daytime heat, and irrigation canal deficits.
+- **Window Verification (`windowsVerified`):**
+  - Science City of Muñoz: `true` (PAGASA Type I Luzon climate schedule).
+  - City of Ilagan: `true` (Cagayan Valley Type II/III transition schedule).
+  - Pototan: `false` (Western Visayas Panay schedule pending local verification).
+  - Malaybalay City: `false` (Highland Bukidnon Type III/IV has no pronounced dry season; pending local DA review).
 
-### B. Summary Indicators
+### B. Summary Indicators & Dual Heat Thresholds
 1. **Mean Seasonal Temperature (`meanTempC`):** Arithmetic mean of valid `T2M` readings.
-2. **Cumulative Seasonal Rainfall (`totalPrecipMm`):** Sum of valid `PRECTOTCORR` readings.
-3. **Maximum Consecutive Dry Days (`maxConsecutiveDryDays`):** Longest run of consecutive calendar days where $\text{PRECTOTCORR} < 1.0\text{ mm}$.
-4. **Heat Stress Days (`heatStressDays`):** Count of days where $T_{\max} \ge 35.0^\circ\text{C}$.
+2. **Cumulative Seasonal Rainfall (`rainfallMm`):** Mean seasonal rainfall total across complete years.
+3. **Rainfall Variability (`rainfallVariability`):** Coefficient of variation ($CV = \sigma / \mu$) of seasonal rainfall totals.
+4. **Maximum Consecutive Dry Days (`dryspellDaysAvg`):** Average across years of the longest consecutive run of days with $\text{PRECTOTCORR} < 1.0\text{ mm}$.
+5. **Dual Heat Stress Thresholds:**
+   - `heatDaysAbove34C`: Mean days per season with $T_{\max} \ge 34.0^\circ\text{C}$ (early warning vegetative/flowering hazard).
+   - `heatDaysAbove35C`: Mean days per season with $T_{\max} \ge 35.0^\circ\text{C}$ (critical rice spikelet sterility and pollen abortion hazard; legacy alias `heatStressDays`).
+   - Invariant enforced across all calculations: $\text{heatDaysAbove35C} \le \text{heatDaysAbove34C}$.
+6. **Heavy Rain Frequency (`heavyRainDays`):** Mean wet-season days with daily $\text{PRECTOTCORR} \ge 50.0\text{ mm}$.
 
-### C. Climate Scenario Transformations & Methodological Limitation
-The engine evaluates 5 sensitivity scenarios (`src/engine/climate/scenarios.ts`):
+### C. Continuous Risk Scores (0–100) & Categorical Classifications
+Alongside categorical labels (`low`, `med`, `high`), the engine outputs continuous $0\text{–}100$ scores (`riskScores`) ensuring sensitivity scenario responses are visible even when a broad bucket label remains stable:
+- **Drought Score ($0\text{–}100$):** Derived from dry-season rainfall deficit ($< 550\text{ mm}$) and dry spell duration ($> 10\text{ days}$).
+- **Flood Score ($0\text{–}100$):** Derived from heavy rainfall frequency ($\ge 50\text{ mm/day}$) and wet-season rainfall variability ($CV$).
+- **Heat Score ($0\text{–}100$):** Derived from heat-stress days ($\ge 35^\circ\text{C}$) in the dry/hot season.
+
+### D. Climate Scenario Transformations & Methodological Limitation
+The engine evaluates 5 sensitivity scenarios (`src/engine/scenarios.ts`):
 - `baseline`: Unmodified NASA POWER series.
 - `hotter`: $+1.5^\circ\text{C}$ added to `T2M` and `T2M_MAX`.
 - `drier`: Daily `PRECTOTCORR` multiplied by $0.85$ (15% reduction).
 - `wetter`: Daily `PRECTOTCORR` multiplied by $1.15$ (15% increase).
-- `hotter_drier`: Compound shock ($+1.5^\circ\text{C}$ and $0.85\times$ rainfall).
+- `compound` / `hotter_drier`: Compound stress ($+1.5^\circ\text{C}$ and $0.85\times$ rainfall).
 
-> **Important Limitation Notice:**
-> Scaling daily rainfall by a constant factor alters seasonal totals and threshold crossings, but preserves rainfall occurrence frequency and the underlying dry-spell sequence lengths. Consequently, dry-spell durations under scenarios are sensitivity approximations, not dynamical weather forecasts. These are what-if sensitivity tests, not forecasts.
+> **Important Methodological Limitation Notice:**
+> Scaling daily rainfall by a constant multiplier (0.85 or 1.15) alters cumulative totals and threshold crossings, but preserves rainfall occurrence timing and dry-spell sequence structure. Consequently, dry-spell durations under scenarios are sensitivity approximations, not dynamical weather forecasts.
+
+---
+
+## 3. Multi-Sensor Municipal Fixtures & Acquisition Script
+
+Municipal presets (`public/sample-data/{munoz,ilagan,pototan,malaybalay}.json`) hold structured, multi-sensor metadata designed to accept high-level satellite observations.
+
+### A. Honest Sensor Status & Provenance Standards
+- **Zero Example/Synthetic Data Policy:** Sensor fields start strictly as `null` with `"status": "unavailable"` until directly retrieved or computed by `scripts/build-municipal-fixtures.ts`.
+- **SMAP Soil Moisture (`smapSoilMoisture`):** Documented as **SPL3SMP_E v006** (9 km enhanced radiometer grid), distinguishing it from coarse 36 km SPL3SMP.
+- **Extreme Rain Frequency (`extremeRainDays`):** Labeled as **NASA POWER daily point (PRECTOTCORR >= 50 mm)**. The documentation explicitly notes that the $0.5^\circ \times 0.625^\circ$ grid understates convective point-level rain extremes compared to high-resolution radar or point gauge measurements.
+- **ECOSTRESS ESI (`ecostressEsi`):** ECO4ESI v002 70 m Evaporative Stress Index.
+- **SRTM Slope (`srtmSlope`):** NASA SRTMGL1 v003 30 m DEM raster slope.
+
+### B. Build Script (`scripts/build-municipal-fixtures.ts`)
+- CLI Flags: accepts `--municipality <munoz|ilagan|pototan|malaybalay|all>` and `--sensors <smap|power|ecostress|srtm|all>`.
+- Token Security: reads `EARTHDATA_TOKEN` or `NASA_EARTHDATA_TOKEN` from the environment or local `.env` securely without printing or leaking into logs.
+- Safe Execution: Idempotent and preserves existing keys and municipal provenance.
+
+### C. Malaybalay City Soil & Team Baselines Separation
+In `public/sample-data/malaybalay.json`:
+- **SoilGrids Data (`soil` block):** Contains relocated cell 41 readings (pH 5.5, Clay 39.6%, Sand 24.1%, SOC 282 dg/kg, BD 1.25 g/cm³).
+- **Team Baselines (`teamBaselines` block):** Kept in a strictly separate, unmerged section (pH 4.5–4.8, P-fixation 104–170 mg P/100g, slope > 18%, RUSLE 246.5–363 t/ha/yr).
+- The discrepancy between the SoilGrids machine-learning model prediction (pH 5.5) and the strongly acidic team baseline (pH 4.5–4.8) is flagged as requiring local DA-PhilFIDA / BSWM soil test kit verification. Neither dataset is merged or averaged into the other.
 
 ---
 

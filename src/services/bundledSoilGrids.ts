@@ -34,6 +34,11 @@ export function soilCellFootprint(grid: SoilGridsPackage['grids'][number], index
     .map((index): Position => [...grid.nodes[index]]);
 }
 
+export interface ResolveBundledSoilOptions {
+  fallbackToNearest?: boolean;
+  maxDistanceKm?: number;
+}
+
 function depthWeightedMean(
   data: SoilGridsPackage,
   grid: SoilGridsPackage['grids'][number],
@@ -48,6 +53,17 @@ function depthWeightedMean(
     : (top * 5 + lower * 10) / 15 / data.properties[property].divisor;
 }
 
+export function isCellComplete(grid: SoilGridsPackage['grids'][number], cellIndex: number): boolean {
+  for (const property of SOIL_PROPERTIES) {
+    for (const depth of SOIL_DEPTHS) {
+      if (grid.readings[property][depth].mean[cellIndex] === null) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 function isCompleteAgriculturalCell(
   data: SoilGridsPackage,
   grid: SoilGridsPackage['grids'][number],
@@ -59,6 +75,32 @@ function isCompleteAgriculturalCell(
   const silt = depthWeightedMean(data, grid, 'silt', index);
   const soc = depthWeightedMean(data, grid, 'soc', index);
   return ph !== undefined && clay !== undefined && sand !== undefined && silt !== undefined && soc !== undefined && clay + sand + silt > 0;
+}
+
+function centroidDistanceKm(footprint: Position[], lat: number, lon: number): number {
+  const cLat = (footprint[0][1] + footprint[1][1] + footprint[2][1] + footprint[3][1]) / 4;
+  const cLon = (footprint[0][0] + footprint[1][0] + footprint[2][0] + footprint[3][0]) / 4;
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  return Number(Math.hypot((cLat - lat) * 111.32, (cLon - lon) * 111.32 * cosLat).toFixed(2));
+}
+
+export function findNearestValidCell(
+  grid: SoilGridsPackage['grids'][number],
+  lat: number,
+  lon: number,
+  maxDistanceKm = 1.5
+): { index: number; footprint: Position[]; distanceKm: number } | null {
+  let best: { index: number; footprint: Position[]; distanceKm: number } | null = null;
+
+  for (let idx = 0; idx < grid.rows * grid.cols; idx++) {
+    if (!isCellComplete(grid, idx)) continue;
+    const fp = soilCellFootprint(grid, idx);
+    const distKm = centroidDistanceKm(fp, lat, lon);
+    if (distKm <= maxDistanceKm && (!best || distKm < best.distanceKm)) {
+      best = { index: idx, footprint: fp, distanceKm: distKm };
+    }
+  }
+  return best;
 }
 
 function findNearestValidCellIndex(
@@ -87,11 +129,18 @@ function findNearestValidCellIndex(
 
 /**
  * Resolves packaged SoilGrids model data inside pilot coverage; steps deterministically
- * to the nearest valid cropland 250 m cell when the requested pixel is masked NoData,
- * and returns null only outside packaged coverage or when an entire grid has no valid cells.
+ * to the nearest valid cropland 250 m cell when the requested pixel is masked NoData
+ * (unless `fallbackToNearest: false`), and returns null outside packaged coverage or
+ * when an entire grid has no valid cells.
  */
-export function resolveBundledSoil(lat: number, lon: number, data = bundledPackage): SoilData | null {
+export function resolveBundledSoil(
+  lat: number,
+  lon: number,
+  data = bundledPackage,
+  options?: ResolveBundledSoilOptions
+): SoilData | null {
   if (!data) return null;
+  const fallbackToNearest = options?.fallbackToNearest ?? true;
   for (const grid of data.grids) {
     if (Math.abs(lat - grid.center.lat) > 0.03 || Math.abs(lon - grid.center.lon) > 0.03) continue;
     for (let index = 0; index < grid.rows * grid.cols; index++) {
@@ -100,11 +149,24 @@ export function resolveBundledSoil(lat: number, lon: number, data = bundledPacka
       if (isCompleteAgriculturalCell(data, grid, index)) {
         return profileForCell(data, grid, index, footprint);
       }
+      if (!fallbackToNearest) {
+        return profileForCell(data, grid, index, footprint);
+      }
       const nearest = findNearestValidCellIndex(data, grid, index);
       if (!nearest) return null;
-      return profileForCell(data, grid, nearest.index, soilCellFootprint(grid, nearest.index), {
+      const nearestFootprint = soilCellFootprint(grid, nearest.index);
+      const distanceKm = centroidDistanceKm(nearestFootprint, lat, lon);
+      if (options?.maxDistanceKm !== undefined && distanceKm > options.maxDistanceKm) return null;
+      return profileForCell(data, grid, nearest.index, nearestFootprint, {
         requestedCellIndex: index,
-        offsetDistanceMeters: Math.round(nearest.distanceGridCells * 250)
+        offsetDistanceMeters: Math.round(nearest.distanceGridCells * 250),
+        relocatedFrom: {
+          originalLat: lat,
+          originalLon: lon,
+          distanceKm,
+          cellIndex: index,
+          reason: 'nodata_cell'
+        }
       });
     }
   }
@@ -116,11 +178,19 @@ function profileForCell(
   grid: SoilGridsPackage['grids'][number],
   index: number,
   footprint: Position[],
-  stepMeta?: { requestedCellIndex: number; offsetDistanceMeters: number }
+  stepMeta?: {
+    requestedCellIndex: number;
+    offsetDistanceMeters: number;
+    relocatedFrom: NonNullable<SoilModelEvidence['relocatedFrom']>;
+  }
 ): SoilData {
   const evidence: SoilModelEvidence = {
     packageId: data.id, gridId: grid.id, gridName: grid.name, cellIndex: index,
-    ...(stepMeta ? { requestedCellIndex: stepMeta.requestedCellIndex, offsetDistanceMeters: stepMeta.offsetDistanceMeters } : {}),
+    ...(stepMeta ? {
+      requestedCellIndex: stepMeta.requestedCellIndex,
+      offsetDistanceMeters: stepMeta.offsetDistanceMeters,
+      relocatedFrom: stepMeta.relocatedFrom
+    } : {}),
     footprint,
     retrievedAt: data.retrievedAt, license: data.license,
     readings: SOIL_PROPERTIES.map(property => ({ property, unit: data.properties[property].unit,
@@ -146,7 +216,7 @@ function profileForCell(
   const organicMatter = deriveOrganicMatterFromSoc(rawSocDgPerKg);
   const drainage = derivePreliminaryDrainage({ texture, clayPct, sandPct });
   const stepNote = stepMeta
-    ? `Center cell #${stepMeta.requestedCellIndex + 1} is masked (urban/built-up/water); using nearest valid 250 m agricultural cell #${index + 1} (~${stepMeta.offsetDistanceMeters} m away). `
+    ? `Default coordinates fell on an unmeasured cell (cell ${stepMeta.requestedCellIndex + 1}); data resolved from nearest valid agricultural cell (cell ${index + 1}, ${stepMeta.relocatedFrom.distanceKm} km / ~${stepMeta.offsetDistanceMeters} m away). `
     : '';
   const soil: SoilData = {
     source: 'ISRIC SoilGrids 2.0 · bundled model grid', modelEvidence: evidence,

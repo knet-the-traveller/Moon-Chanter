@@ -26,7 +26,7 @@
    - Show the **NASA Climate Card**:
      - NASA POWER climatology: annual precipitation, heat-stress days (`Tmax ≥ 35°C`), and 10-year trend, with full provenance (`source | variable | resolution | observation period`).
    - Show the **Soil Card**:
-     - Point out the bundled 250 m **ISRIC SoilGrids 2.0** extract: because Town Hall center cell #41 is masked (urban/built-up), FieldShift transparently discloses stepping ~250 m to nearest valid agricultural cell #32 (clay texture, pH 6.4, Q05/Q95 prediction uncertainty bounds), with Van Bemmelen `OM% = SOC% × 1.724` and SRTM-adjusted preliminary drainage clearly marked provisional for local confirmation.
+     - Point out the bundled 250 m **ISRIC SoilGrids 2.0** extract: the Muñoz preset resolves cleanly to complete cropland cell #32 (`15.71715, 120.90643`, relocated away from masked Town Hall cell #41; tapping any masked urban pixel on the map still automatically recovers to the nearest valid cell ~250 m away), showing clay texture, pH 6.4, Q05/Q95 prediction uncertainty bounds, with Van Bemmelen `OM% = SOC% × 1.724` and SRTM-adjusted preliminary drainage clearly marked provisional for local confirmation.
      - Demonstrate farmer control: click the 1-click **"Use Municipal Agricultural Baseline"** button (or **"Return to SoilGrids data"**) and tap a **1-button Farmer Soil Override** to reflect actual field pH/texture/drainage.
 
 ---

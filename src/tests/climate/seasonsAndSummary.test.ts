@@ -10,15 +10,15 @@ import {
 import type { DailySeries } from '../../services/nasaPower';
 
 describe('Seasonal Boundary & Summarization Logic', () => {
-  it('correctly maps dates across the Dec-May year boundary into the same dry season cycle', () => {
+  it('correctly maps dates across the Nov-May year boundary into the same dry season cycle and sub-windows', () => {
     const syntheticSeries: DailySeries = {
-      location: { lat: 15.714, lon: 120.906 },
-      dates: ['2020-11-30', '2020-12-01', '2020-12-31', '2021-01-01', '2021-05-31', '2021-06-01'],
-      t2m: [25, 24, 23, 22, 28, 29],
-      t2mMax: [30, 29, 28, 27, 34, 33],
-      prectotcorr: [10, 0, 0, 0, 5, 20],
-      rh2m: [80, 75, 75, 70, 68, 85],
-      allskySfcSwDwn: [15, 16, 17, 18, 22, 16],
+      location: { lat: 15.71715, lon: 120.90643 },
+      dates: ['2020-10-31', '2020-11-30', '2020-12-01', '2020-12-31', '2021-01-01', '2021-05-31', '2021-06-01'],
+      t2m: [25, 24, 23, 22, 28, 29, 30],
+      t2mMax: [30, 29, 28, 27, 34, 33, 35],
+      prectotcorr: [10, 0, 0, 0, 5, 20, 25],
+      rh2m: [80, 75, 75, 70, 68, 85, 80],
+      allskySfcSwDwn: [15, 16, 17, 18, 22, 16, 17],
       tier: 'live',
       isSample: false,
       source: 'Test Series'
@@ -26,13 +26,25 @@ describe('Seasonal Boundary & Summarization Logic', () => {
 
     const buckets = groupDailySeriesBySeasons(syntheticSeries);
 
-    expect(buckets['2020-wet']?.dates).toEqual(['2020-11-30']);
+    expect(buckets['2020-wet']?.dates).toEqual(['2020-10-31']);
     expect(buckets['2021-wet']?.dates).toEqual(['2021-06-01']);
-    // December 2020 through May 2021 must be grouped into '2020-2021-dry'
+    // November 2020 through May 2021 must be grouped into '2020-2021-dry'
     expect(buckets['2020-2021-dry']?.dates).toEqual([
+      '2020-11-30',
       '2020-12-01',
       '2020-12-31',
       '2021-01-01',
+      '2021-05-31'
+    ]);
+    // November 2020 through January 2021 must be grouped into '2020-2021-coolDry'
+    expect(buckets['2020-2021-coolDry']?.dates).toEqual([
+      '2020-11-30',
+      '2020-12-01',
+      '2020-12-31',
+      '2021-01-01'
+    ]);
+    // May 2021 must be grouped into '2021-hotDry'
+    expect(buckets['2021-hotDry']?.dates).toEqual([
       '2021-05-31'
     ]);
   });
@@ -62,6 +74,26 @@ describe('Seasonal Boundary & Summarization Logic', () => {
     expect(instance.totalRainfallMm).toBe(15);
     expect(instance.maxDrySpellDays).toBe(4);
     expect(instance.heatStressDays).toBe(3);
+  });
+
+  it('enforces heat threshold invariant that heatDaysAbove35C <= heatDaysAbove34C', () => {
+    const dates = Array.from({ length: 30 }, (_, i) => `2020-04-${String(i + 1).padStart(2, '0')}`);
+    const rain = Array(30).fill(0);
+    const t2m = Array(30).fill(28);
+    // 10 days at 34.5°C (>= 34, < 35), 5 days at 35.5°C (>= 35), 15 days at 30°C
+    const t2mMax = Array(30).fill(30);
+    for (let i = 0; i < 10; i++) t2mMax[i] = 34.5;
+    for (let i = 10; i < 15; i++) t2mMax[i] = 35.5;
+
+    const instance = summarizeSeasonInstance(
+      '2020-hotDry',
+      'hotDry',
+      { dates, t2m, t2mMax, rain }
+    );
+
+    expect(instance.heatDaysAbove34C).toBe(15);
+    expect(instance.heatDaysAbove35C).toBe(5);
+    expect(instance.heatDaysAbove35C).toBeLessThanOrEqual(instance.heatDaysAbove34C);
   });
 
   it('correctly calculates sample mean, standard deviation, and coefficient of variation', () => {
@@ -102,13 +134,13 @@ describe('Seasonal Boundary & Summarization Logic', () => {
       dates.push(d.toISOString().slice(0, 10));
       const m = d.getMonth() + 1;
 
-      // Wet months (6-11): higher rain, lower heat
-      if (m >= 6 && m <= 11) {
+      // Wet months (6-10): higher rain, lower heat
+      if (m >= 6 && m <= 10) {
         t2m.push(27.0);
         t2mMax.push(31.5);
         prectotcorr.push(10.0);
       } else {
-        // Dry months (12, 1-5): lower rain, high heat in April/May
+        // Dry months (11-12, 1-5): lower rain, high heat in April/May
         t2m.push(28.0);
         t2mMax.push(m >= 3 && m <= 5 ? 36.0 : 31.0);
         prectotcorr.push(0.5);
@@ -118,7 +150,7 @@ describe('Seasonal Boundary & Summarization Logic', () => {
     }
 
     const series: DailySeries = {
-      location: { lat: 15.714, lon: 120.906 },
+      location: { lat: 15.71715, lon: 120.90643 },
       dates,
       t2m,
       t2mMax,
@@ -132,13 +164,29 @@ describe('Seasonal Boundary & Summarization Logic', () => {
 
     const summary = calculateClimateSummary(series);
 
-    expect(summary.location).toEqual({ lat: 15.714, lon: 120.906 });
+    expect(summary.location).toEqual({ lat: 15.71715, lon: 120.90643 });
     expect(summary.seasons).toHaveLength(2);
     expect(summary.seasons[0].name).toBe('wet');
     expect(summary.seasons[1].name).toBe('dry');
+    expect(summary.dryWindows).toBeDefined();
+    expect(summary.dryWindows?.coolDry.name).toBe('coolDry');
+    expect(summary.dryWindows?.hotDry.name).toBe('hotDry');
+    expect(summary.windowsVerified).toBe(true);
+
+    expect(summary.seasons[0].heatDaysAbove35C).toBeLessThanOrEqual(summary.seasons[0].heatDaysAbove34C!);
+    expect(summary.seasons[1].heatDaysAbove35C).toBeLessThanOrEqual(summary.seasons[1].heatDaysAbove34C!);
+
     expect(['low', 'med', 'high']).toContain(summary.risks.drought);
     expect(['low', 'med', 'high']).toContain(summary.risks.flood);
     expect(['low', 'med', 'high']).toContain(summary.risks.heat);
+
+    expect(summary.riskScores).toBeDefined();
+    expect(summary.riskScores?.drought).toBeGreaterThanOrEqual(0);
+    expect(summary.riskScores?.drought).toBeLessThanOrEqual(100);
+    expect(summary.riskScores?.flood).toBeGreaterThanOrEqual(0);
+    expect(summary.riskScores?.flood).toBeLessThanOrEqual(100);
+    expect(summary.riskScores?.heat).toBeGreaterThanOrEqual(0);
+    expect(summary.riskScores?.heat).toBeLessThanOrEqual(100);
 
     const explanation = explainRisks(summary);
     expect(explanation.drought.explanation).toBeDefined();

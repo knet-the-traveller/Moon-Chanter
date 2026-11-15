@@ -27,6 +27,8 @@ export interface PilotConfig {
   thresholds: {
     // Heat stress threshold for daily maximum temperature (T2M_MAX)
     heatStressTempThresholdC: number;
+    heatStressTempThreshold34C: number;
+    heatStressTempThreshold35C: number;
     // Rainfall below this threshold is counted as a dry day
     dryDayPrecipThresholdMm: number;
     // Maximum allowable fraction of missing/null days before a season-year is excluded
@@ -35,11 +37,21 @@ export interface PilotConfig {
     seasons: {
       wet: {
         name: 'wet';
-        months: number[]; // e.g. [6, 7, 8, 9, 10, 11] (June - November)
+        months: number[]; // [6, 7, 8, 9, 10] (June - October)
       };
       dry: {
         name: 'dry';
-        months: number[]; // e.g. [12, 1, 2, 3, 4, 5] (December - May, crosses calendar year)
+        months: number[]; // [11, 12, 1, 2, 3, 4, 5] (November - May, crosses calendar year)
+      };
+      dryWindows: {
+        coolDry: {
+          name: 'coolDry';
+          months: number[]; // [11, 12, 1] (November - January, residual moisture)
+        };
+        hotDry: {
+          name: 'hotDry';
+          months: number[]; // [2, 3, 4, 5] (February - May, terminal drought/heat)
+        };
       };
     };
     // Risk classification thresholds (placeholders needing climate/agronomy review)
@@ -67,6 +79,13 @@ export interface PilotConfig {
     hotterTempDeltaC: number;      // e.g. +1.5 °C added to T2M and T2M_MAX
     drierPrecipMultiplier: number; // e.g. 0.85 (15% reduction)
     wetterPrecipMultiplier: number; // e.g. 1.15 (15% increase)
+    scoringPenalties: {
+      heatStressDaysPerYearDelta: number;
+      hotterCrops: { low: number; medium: number; high: number };
+      drierCrops: { droughtHigh: number; droughtLow: number; highWaterDemand: number };
+      wetterCrops: { floodLow: number; floodHigh: number };
+      compound: { hotterWeight: number; drierWeight: number };
+    };
   };
   api: {
     baseUrl: string;
@@ -82,8 +101,8 @@ export const PILOT_CONFIG: PilotConfig = {
     name: 'Science City of Muñoz',
     province: 'Nueva Ecija',
     region: 'Central Luzon (Region III)',
-    lat: 15.714,
-    lon: 120.906,
+    lat: 15.71715,
+    lon: 120.90643,
     elevationMeters: 58
   },
   period: {
@@ -95,17 +114,29 @@ export const PILOT_CONFIG: PilotConfig = {
     endApiFormat: '20231231'
   },
   thresholds: {
-    heatStressTempThresholdC: 35.0, // °C
+    heatStressTempThresholdC: 35.0, // °C (legacy alias for >= 35°C)
+    heatStressTempThreshold34C: 34.0, // °C
+    heatStressTempThreshold35C: 35.0, // °C
     dryDayPrecipThresholdMm: 1.0,    // mm/day
     maxMissingDayFraction: 0.20,     // 20% max missing days
     seasons: {
       wet: {
         name: 'wet',
-        months: [6, 7, 8, 9, 10, 11] // June through November
+        months: [6, 7, 8, 9, 10] // June through October (5 months)
       },
       dry: {
         name: 'dry',
-        months: [12, 1, 2, 3, 4, 5]  // December through May (crosses year boundary)
+        months: [11, 12, 1, 2, 3, 4, 5]  // November through May (7 months, crosses year boundary)
+      },
+      dryWindows: {
+        coolDry: {
+          name: 'coolDry',
+          months: [11, 12, 1] // November through January (3 months, crosses year boundary)
+        },
+        hotDry: {
+          name: 'hotDry',
+          months: [2, 3, 4, 5] // February through May (4 months)
+        }
       }
     },
     // Placeholders needing climate/agronomy review with DA/PhilRice
@@ -129,7 +160,14 @@ export const PILOT_CONFIG: PilotConfig = {
   scenarios: {
     hotterTempDeltaC: 1.5,
     drierPrecipMultiplier: 0.85,
-    wetterPrecipMultiplier: 1.15
+    wetterPrecipMultiplier: 1.15,
+    scoringPenalties: {
+      heatStressDaysPerYearDelta: 18,
+      hotterCrops: { low: -9, medium: -3, high: 2 },
+      drierCrops: { droughtHigh: 3, droughtLow: -10, highWaterDemand: -8 },
+      wetterCrops: { floodLow: -16, floodHigh: 6 },
+      compound: { hotterWeight: 0.8, drierWeight: 0.85 }
+    }
   },
   api: {
     baseUrl: 'https://power.larc.nasa.gov/api/temporal/daily/point',
@@ -138,4 +176,15 @@ export const PILOT_CONFIG: PilotConfig = {
     backoffBaseMs: 1000,
     cacheTtlMs: TELEMETRY_CACHE_TTL_MS
   }
+};
+
+export interface PilotPresetVerification {
+  windowsVerified: boolean;
+}
+
+export const PRESET_VERIFICATIONS: Record<string, PilotPresetVerification> = {
+  munoz: { windowsVerified: true },
+  ilagan: { windowsVerified: true },
+  pototan: { windowsVerified: false },
+  bukidnon: { windowsVerified: false }
 };
