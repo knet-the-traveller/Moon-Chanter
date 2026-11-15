@@ -319,4 +319,67 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(warningHtml).toContain('role="alert"');
     expect(warningHtml).toContain(getTranslation('en', 'priorities.lowCropWarning'));
   });
+
+  it('renders Step 4 Spotlight plan with 5 fit bars and Other Good Crop Plans with pinned baseline plan above the fold', async () => {
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    useAppStore.getState().setSoilOverride({ texture: 'loam', drainage: 'well' });
+    useAppStore.setState({ currentStep: 4, language: 'en' });
+    const plans = useAppStore.getState().recommendedPlans;
+    expect(plans.length).toBe(6);
+    const baselinePlan = plans.find(p => p.isBaseline);
+    expect(baselinePlan).toBeDefined();
+
+    const appHtml = renderToStaticMarkup(createElement(App));
+
+    // 1. Spotlight plan defaults to recommendedPlans[0]
+    expect(appHtml).toContain(plans[0].name.en);
+    // 5 fit bars
+    expect(appHtml).toContain('Soil Health');
+    expect(appHtml).toContain('Water Resilience');
+    expect(appHtml).toContain('Climate Shock Buffer');
+    expect(appHtml).toContain('Economics');
+    expect(appHtml).toMatch(/Labor Feasibility|Labor/);
+
+    // 2. Other Good Crop Plans section
+    expect(appHtml).toContain(getTranslation('en', 'results.otherGoodPlans'));
+    // #2 and #3 visible
+    expect(appHtml).toContain(plans[1].name.en);
+    expect(appHtml).toContain(plans[2].name.en);
+    // Pinned baseline plan visible immediately without clicking show more
+    expect(appHtml).toContain(baselinePlan!.name.en);
+    expect(appHtml).toContain(getTranslation('en', 'results.showMorePlans'));
+  });
+
+  it('promotes an alternative plan to active spotlight and updates PrintablePlan with promoted rank, waterSource, fieldSizeHa, and plotNotes', async () => {
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const plans = useAppStore.getState().recommendedPlans;
+    expect(plans.length).toBeGreaterThan(1);
+    const planToPromote = plans[1];
+
+    useAppStore.setState({
+      currentStep: 4,
+      language: 'en',
+      waterSource: 'pump_well',
+      fieldSizeHa: 3.2,
+      plotNotes: 'Lower terrace near creek'
+    });
+
+    // Promote plan #2
+    useAppStore.getState().promotePlan(planToPromote.id);
+    expect(useAppStore.getState().activeSpotlightPlanId).toBe(planToPromote.id);
+
+    const appHtml = renderToStaticMarkup(createElement(App));
+    // Spotlight card shows promoted badge
+    const expectedPromotedBadge = getTranslation('en', 'results.promotedBadge').replace('{rank}', '2');
+    expect(appHtml).toContain(expectedPromotedBadge);
+
+    // PrintablePlan reflects promoted plan
+    const { PrintablePlan } = await import('../components/PrintablePlan');
+    const printHtml = renderToStaticMarkup(createElement(PrintablePlan));
+    expect(printHtml).toContain(planToPromote.name.en);
+    expect(printHtml).toContain('Active Plan · Promoted from #2');
+    expect(printHtml).toContain(getTranslation('en', 'conditions.waterPumpWell'));
+    expect(printHtml).toContain('3.2');
+    expect(printHtml).toContain('Lower terrace near creek');
+  });
 });
