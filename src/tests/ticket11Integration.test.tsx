@@ -50,7 +50,9 @@ describe('Ticket 11 real service/store integration',()=>{
   expect(state.soilData?.provenance?.slopePct?.source).toContain('SRTM');
   expect(state.climateData?.isSampleData).toBe(false);
   expect(state.climateData?.provenance?.heatStressDays?.isSynthetic).toBe(false);
-  expect(state.recommendedPlans).toEqual([]); // Missing field-only inputs.
+  expect(state.recommendedPlans.length).toBeGreaterThan(0);
+  expect(state.soilData?.provenance?.drainage?.isSynthetic).toBe(true);
+  expect(state.soilData?.provenance?.organicMatter?.isSynthetic).toBe(true);
   expect(state.isLoadingLand||state.isLoadingTelemetry).toBe(false);
   expect(state.landError??state.telemetryError).toBeNull();
  });
@@ -70,6 +72,7 @@ describe('Ticket 11 real service/store integration',()=>{
  it.each(['en','fil'] as const)('propagates field overrides through plans, dashboard, comparison and print in %s',async language=>{
   await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
   const base=useAppStore.getState().soilData!;
+  const originalScores=useAppStore.getState().recommendedPlans.map(plan=>plan.scores);
   const before=JSON.stringify(base);
   useAppStore.getState().setLanguage(language);
   useAppStore.getState().setSoilOverride({texture:'clay',drainage:'moderate',organicMatter:'medium',ph:7.1});
@@ -95,6 +98,9 @@ describe('Ticket 11 real service/store integration',()=>{
   useAppStore.getState().resetSoilOverride();
   expect(useAppStore.getState().soilOverride).toBeNull();
   expect(useAppStore.getState().soilData).toBe(base);
+  expect(useAppStore.getState().recommendedPlans.map(plan=>plan.scores)).toEqual(originalScores);
+  // Source-derived inputs restore plans; an explicit unknown still gates them.
+  useAppStore.getState().setSoilOverride({ph:null});
   expect(useAppStore.getState().recommendedPlans).toEqual([]);
   expect(useAppStore.getState().comparedPlanIds).toEqual([]);
   expect(useAppStore.getState().advisoryIssuedAt).toBeNull();

@@ -20,43 +20,37 @@
 ### Act 2: Step 1 & 2 — Locating the Farm & NASA Telemetry (0:40 – 1:30)
 1. **Show the Map:**
    - Tap **"Science City of Muñoz, Nueva Ecija"** (the national rice capital).
-   - Toggle the satellite layers: switch from standard map to **NASA GIBS True Color (MODIS)** and **NASA GIBS Vegetation Greenness (NDVI)**. Show the real satellite reflectance.
+   - Toggle the satellite layers: switch from standard map to **NASA GIBS True Color (MODIS)** and **NASA GIBS Vegetation Greenness (NDVI)**. Show the real satellite reflectance and local terrain/SRTM panel.
 2. **Review Telemetry:**
    - Click **"Confirm & Analyze Field"**.
    - Show the **NASA Climate Card**:
-     - Live NASA POWER climatology: 1,845 mm annual rainfall, 42 heat-stress days, and a decadal drying trend.
-     - Note the provenance badge showing exact NASA variables (`T2M`, `PRECTOTCORR`, `ALLSKY_SFC_SW_DWN`).
+     - NASA POWER climatology: annual precipitation, heat-stress days (`Tmax ≥ 35°C`), and 10-year trend, with full provenance (`source | variable | resolution | observation period`).
    - Show the **Soil Card**:
-     - ISRIC SoilGrids integration showing clay loam texture, pH 6.3, and medium organic carbon.
-     - Demonstrate farmer empowerment: click 1-button override to adapt to local field reality.
+     - Point out the bundled 250 m **ISRIC SoilGrids 2.0** extract: the Muñoz preset resolves to a complete model cell near `15.71715, 120.90643`. Selecting an incomplete cell inside packaged coverage can use a neighboring complete model reference; show the requested/used cell and distance disclosure. This does not verify cropland, urban land cover, or the cause of missing data. Show clay texture, pH 6.4, Q05/Q95 prediction uncertainty bounds, with Van Bemmelen `OM% = SOC% × 1.724` and SRTM-adjusted preliminary drainage clearly marked provisional for local confirmation.
+     - Demonstrate farmer control: click the 1-click **"Use Municipal Agricultural Baseline"** button (or **"Return to SoilGrids data"**) and tap a **1-button Farmer Soil Override** to reflect actual field pH/texture/drainage.
 
 ---
 
-### Act 3: Step 3 & 4 — Priorities & Explainable Rotations (1:30 – 2:20)
+### Act 3: Step 3 & 4 — Priorities, Baseline Comparison & Explainable Rotations (1:30 – 2:20)
 1. **Field History & Priority Sliders:**
-   - Set previous crop to **Lowland Rice**.
-   - Move the **Soil Health & Regeneration** slider to 90% and **Water Resilience** to 80%.
+   - Keep recent crop at **Lowland Rice**.
+   - Adjust **Soil Health**, **Water Resilience**, and **Climate Shock Buffer** sliders cleanly.
    - Click **"Generate & Rank Rotation Plans"**.
-2. **Review Recommended Rotations:**
-   - Point out **Plan #1: Lowland Rice $\to$ Mungbean $\to$ Cowpea**.
-   - Explain the 3-season visual timeline strip:
-     - Wet Season: Flood-adapted Rice.
-     - Cool Dry: Fast-maturing Mungbean fixes 50 kg N/ha into the soil.
-     - Hot Dry: Extremely drought-hardy Cowpea shields soil from intense heat.
-   - Expand **"Why this plan?"**:
-     - Show the scientific citations: `[AGRO-RULE-01-NFIX]` and `[AGRO-RULE-03-HYDRO-ALIGN]`, directly citing NASA POWER data.
-   - Expand **"Risks & Field Mitigations"**:
-     - Real-world advice on drainage ditches and seed selection.
+2. **Review Recommended Rotations vs. Existing Practice:**
+   - Point first to **Strategy 1 — Existing Baseline: Continuous Double Rice → Bare Fallow** alongside diversified plans such as **Wet Rice → Pag-asa Mungbean → Dry Yellow Corn** and **Wet Rice → Bulb Onion → Pre-Rice Mungbean**.
+   - Expand **"Why this plan?"** and **"Risks & Field Mitigations"**:
+     - Highlight auditable Rule IDs: `[AGRO-RULE-01-NFIX]` (mungbean nitrogen fixation and short-cycle water savings), `[AGRO-RULE-02-HEAT35]` (>35°C April 10 – May 30 dry-season rice sterility cliff), and `[AGRO-RULE-03-PESTBREAK]` (breaking pest/disease carry-over).
+     - Show the **Information Gaps & Local Review Checklist** disclosing sample/synthetic assumptions and prompting local technician verification (canal turnouts, plow-pan test, local buyer prices).
 
 ---
 
-### Act 4: Stress Scenarios, Filipino Language & Field Export (2:20 – 3:00)
-1. **Climate Stress Testing:**
+### Act 4: Provisional Sensitivity Scenarios, Filipino Language & Field Export (2:20 – 3:00)
+1. **Provisional Sensitivity Testing:**
    - Click **"Drier (-15% Rain)"** or **"Hotter + Drier Shock"** in the scenario bar.
-   - Show how the plan is certified **"Climate-Robust"** because its legume-catch strategy maintains a high fit score even during drought.
+   - Explain clearly that these are rule-based sensitivity comparisons (explicitly marked **"Provisional plan"**, not deterministic weather forecasts or scientific certifications), comparing how the legume-relay sequence buffers soil health and water stress relative to continuous monoculture.
 2. **Local Inclusivity:**
    - Toggle the language switcher to **FIL (Filipino / Tagalog)**:
-     - Show how all labels, agronomic reasons, and advice switch seamlessly to clear, respectful agricultural Tagalog (*"Pagpapalit-palit ng Pananim"*, *"Kalusugan ng Lupa"*).
+     - Show how all labels, soil disclosures, agronomic reasons, and local review items switch seamlessly into clear agricultural Tagalog (*"Pagpapalit-palit ng Pananim"*, *"Kalusugan ng Lupa"*).
 3. **Closing & Print View:**
-   - Click **"Print Field Plan"** to reveal the single-page printable advisory sheet, ready for municipal extension workers and farmers to take into the field.
-   - *"FieldShift turns NASA's view from space into resilient food systems on the ground. Thank you!"*
+   - Click **"Print Plan Sheet"** (`Ctrl+P`) to reveal the single-page printable advisory sheet, ready for municipal extension workers and farmers to verify and take into the field.
+   - *"FieldShift turns open NASA Earth observations and local soil science into transparent, smallholder-ready decision support. Thank you!"*

@@ -45,6 +45,10 @@ export const SoilCard: React.FC = () => {
   const {
     useDemoAssumptions,
     soilData,
+    telemetrySoilData,
+    isMunicipalBaselineActive,
+    applyMunicipalBaseline,
+    restoreSoilTelemetry,
     soilOverride,
     setSoilOverride,
     resetSoilOverride,
@@ -129,6 +133,35 @@ export const SoilCard: React.FC = () => {
       </p>}
 
       {hasDemoSoil(effectiveSoil) && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">{getTranslation(language,'mvp.soilNotice')}</p>}
+      {(isMunicipalBaselineActive || Boolean(soilData.modelEvidence) || !hasRequiredSoilInputs(effectiveSoil) || soilData.provenance?.ph?.tier === 'unavailable') && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-900">
+          {isMunicipalBaselineActive ? (
+            <>
+              <span className="font-semibold text-amber-900">
+                {getTranslation(language, 'dataQuality.usingMunicipalBaseline')}
+              </span>
+              {telemetrySoilData && (
+                <button
+                  type="button"
+                  onClick={restoreSoilTelemetry}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-400 bg-white px-3 py-2 text-xs font-semibold text-stone-900 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-emerald-800"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  {getTranslation(language, 'dataQuality.restoreSoilTelemetry')}
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { void applyMunicipalBaseline(); }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-800 bg-emerald-800 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-emerald-800"
+            >
+              {getTranslation(language, 'dataQuality.useMunicipalBaseline')}
+            </button>
+          )}
+        </div>
+      )}
 
       {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} />}
 
@@ -157,7 +190,7 @@ export const SoilCard: React.FC = () => {
             {effectiveDrainage ?? unknown}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            {getTranslation(language, metadata.drainage.isSynthetic ? 'mvp.assumptionTag' : metadata.drainage.tier==='farmer'?'provenance.farmer':metadata.drainage.tier==='unavailable'?'provenance.unavailableValue':'provenance.derived')}
+            {getTranslation(language, metadata.drainage.source === DEMO_SOIL_SOURCE ? 'mvp.assumptionTag' : metadata.drainage.tier==='farmer'?'provenance.farmer':metadata.drainage.tier==='unavailable'?'provenance.unavailableValue':'provenance.derived')}
           </div>
         </div>
 
@@ -183,6 +216,7 @@ export const SoilCard: React.FC = () => {
           <div className="text-base font-bold text-stone-900 mt-1 capitalize">
             {effectiveOrganicMatter === 'unknown' ? unknown : effectiveOrganicMatter}
             {metadata.organicMatter.source === DEMO_SOIL_SOURCE && <span className="mt-1 block text-xs font-semibold text-amber-900">{getTranslation(language,'mvp.assumptionTag')}</span>}
+            {metadata.organicMatter.isSynthetic && metadata.organicMatter.source !== DEMO_SOIL_SOURCE && <span className="mt-1 block text-xs font-semibold text-amber-900">{getTranslation(language,'provenance.derived')}</span>}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
             SOC: {effectiveSoil.rawSocDgPerKg !== undefined ? (effectiveSoil.rawSocDgPerKg / 100).toFixed(2) + '%' : unknown}

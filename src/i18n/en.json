@@ -186,8 +186,8 @@
       "rainfallTrend": "Fixed illustrative trend; not an observed fitted trend",
       "risk": "Fixed illustrative risk classes",
       "texture": "Local clay/sand/silt threshold classification",
-      "drainage": "Texture-based drainage proxy; field validation needed",
-      "organicMatter": "Local SOC-based class; not a measured organic-matter percentage",
+      "drainage": "Texture & SRTM slope drainage estimate (preliminary); field validation needed",
+      "organicMatter": "Derived from SoilGrids SOC via Van Bemmelen (OM% ≈ SOC% × 1.724); laboratory test recommended",
       "phosphorusFixationRisk": "Local pH-based screen; not a Bray-2 phosphorus test",
       "depthMean": "Unweighted mean of returned depth predictions",
       "estimate": "Illustrative regional or texture estimate",
@@ -236,13 +236,16 @@
     "phHint": "Enter a field or laboratory reading. It will be labeled farmer-reported and still needs local verification. Reset overrides to return to the source profile.",
     "loading": "Loading field data. Recommendations will appear after the available inputs have been checked.",
     "missingTelemetry": "Climate or soil data is unavailable. Return to Locate Farm and select the location again to retry.",
-    "noPrintablePlan": "No advisory is available to print yet."
+    "noPrintablePlan": "No advisory is available to print yet.",
+    "useMunicipalBaseline": "Use Municipal Agricultural Baseline",
+    "usingMunicipalBaseline": "Using Municipal Agricultural Baseline (field test recommended)",
+    "restoreSoilTelemetry": "Return to SoilGrids data"
   },
   "soilModel": {
     "locationAdvisory": "Soil location advisory",
     "relocatedReference": "The selected location has missing model data (cell {cell}). Soil predictions use a nearby model reference cell ({distance} km away), not measurements at your selected point. Land cover and the cause of missing data have not been verified.",
     "title": "SoilGrids model extract · 250 m cells",
-    "coverage": "Packaged area: {grid}; selected cell {cell}. Coverage is a 2.25 × 2.25 km grid around the pilot point, not the entire municipality. Missing pixels stay unavailable.",
+    "coverage": "Packaged area: {grid}; selected cell {cell}. Coverage is a 2.25 × 2.25 km grid around the pilot point, not the entire municipality.",
     "limits": "These are historical soil-model predictions, not live measurements. Confirm drainage and organic matter separately. Topsoil bulk density does not establish subsoil compaction.",
     "retrieved": "Raster data acquired {date}; this is not an observation date",
     "showPredictions": "View source predictions and uncertainty",
@@ -266,7 +269,8 @@
     "well": "Well drained",
     "organicMatterPrompt": "Field organic-matter class",
     "depthMean": "0–15 cm estimate; depth means weighted by thickness (5:10)",
-    "noPredictions": "No soil predictions are available for this cell. Check your actual field location or enter verified field observations below. Neighboring cells are not substituted."
+    "noPredictions": "No usable soil predictions are available in this cell or the searched nearby cells. Enter verified field observations below or use the labeled municipal baseline.",
+    "nearestValidCell": "Selected cell {requestedCell} has incomplete model data; showing nearby 250 m model reference cell {usedCell} (~{meters} m away). Land cover and the cause of missing data are unverified. Confirm conditions at your selected point."
   },
   "mvp": {
     "modeTitle": "MVP demonstration mode",

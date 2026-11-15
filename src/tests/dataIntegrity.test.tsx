@@ -264,6 +264,24 @@ describe('incomplete and provisional plan presentation', () => {
     expect(cleared.phosphorusFixationRisk).toBeUndefined();
     expect(cleared.provenance?.phosphorusFixationRisk?.tier).toBe('unavailable');
   });
+  it.each(['en', 'fil'] as const)('offers non-blocking municipal baseline recovery in Step 4 when soil is incomplete in %s', async language => {
+    useAppStore.setState({
+      currentStep: 4,
+      isLoadingTelemetry: false,
+      climateData: fixture.climate,
+      soilData: { ...fixture.soil, ph: null },
+      recommendedPlans: [],
+      language
+    });
+    const html = renderToStaticMarkup(createElement(App));
+    expect(html).toContain(getTranslation(language, 'dataQuality.missingSoil'));
+    expect(html).toContain(getTranslation(language, 'dataQuality.useMunicipalBaseline'));
+    expect(html).toContain(getTranslation(language, 'nav.conditions'));
+
+    await useAppStore.getState().applyMunicipalBaseline();
+    expect(useAppStore.getState().isMunicipalBaselineActive).toBe(true);
+    expect(useAppStore.getState().recommendedPlans.length).toBeGreaterThan(0);
+  });
   it.each(['en', 'fil'] as const)('shows unavailable readings and provisional notices in %s', async language => {
     mockApi(payload({ soc: 0 }));
     const soil = await fetchSoilGridsData(15.714, 120.906);

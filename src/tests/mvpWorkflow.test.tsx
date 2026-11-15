@@ -71,18 +71,27 @@ it('does not derive phosphorus risk from demo pH on unrelated edits, but honors 
  expect(resolvePlanningSoil(base,{ph:null},true).phosphorusFixationRisk).toBeUndefined();
  expect(resolvePlanningSoil({...base,phosphorusFixationRisk:'high'},{texture:'loam'},true).phosphorusFixationRisk).toBe('high');
 });
-it.each(PILOT_LOCATIONS)('generates demo plans offline at $id without disguising assumptions as observations',async pilot=>{
+it.each(PILOT_LOCATIONS)('uses source-derived inputs before demo defaults offline at $id',async pilot=>{
  await useAppStore.getState().selectPilotPreset(pilot);
  const state=useAppStore.getState();
  expect(fetch).not.toHaveBeenCalled();
  expect(state.recommendedPlans.length).toBeGreaterThan(0);
  const original=JSON.stringify(state.soilData);
  const effective=resolvePlanningSoil(state.soilData!,state.soilOverride,state.useDemoAssumptions);
- expect(hasDemoSoil(effective)).toBe(true);
+ expect(hasDemoSoil(effective)).toBe(false);
  expect(effective.provenance?.drainage?.tier).toBe('synthetic');
  expect(effective.provenance?.organicMatter?.tier).toBe('synthetic');
  expect(effective.ph).toBe(state.soilData!.ph);
  expect(JSON.stringify(state.soilData)).toBe(original);
+ expect(renderToStaticMarkup(createElement(PrintablePlan))).not.toContain(getTranslation('en','mvp.printNotice'));
+ useAppStore.getState().setDemoAssumptions(false);
+ expect(useAppStore.getState().recommendedPlans.map(plan=>plan.scores)).toEqual(state.recommendedPlans.map(plan=>plan.scores));
+ // Simulate a genuinely missing input without changing the source packages.
+ const incomplete={...state.soilData!,drainage:null};
+ useAppStore.setState({soilData:incomplete});
+ useAppStore.getState().setDemoAssumptions(true);
+ expect(hasDemoSoil(resolvePlanningSoil(incomplete,null,true))).toBe(true);
+ expect(incomplete.drainage).toBeNull();
  useAppStore.getState().setDemoAssumptions(false);
  expect(useAppStore.getState().recommendedPlans).toEqual([]);
  useAppStore.getState().setDemoAssumptions(true);
@@ -90,6 +99,8 @@ it.each(PILOT_LOCATIONS)('generates demo plans offline at $id without disguising
 });
 it.each(['en','fil'] as const)('labels demo inputs and printed output in %s and respects explicit clears',async language=>{
  await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[1]);
+ useAppStore.setState({soilData:{...useAppStore.getState().soilData!,drainage:null}});
+ useAppStore.getState().computeRecommendations();
  useAppStore.getState().setLanguage(language);
  const print=renderToStaticMarkup(createElement(PrintablePlan));
  expect(print).toContain(getTranslation(language,'mvp.printNotice'));

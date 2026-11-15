@@ -186,8 +186,8 @@
       "rainfallTrend": "Nakatakdang halimbawang trend; hindi trend na kinalkula mula sa obserbasyon",
       "risk": "Nakatakdang halimbawang klasipikasyon ng panganib",
       "texture": "Lokal na klasipikasyon batay sa mga hangganan ng clay/sand/silt",
-      "drainage": "Palatandaan ng paagusan batay sa tekstura; kailangang tiyakin sa sakahan",
-      "organicMatter": "Lokal na klasipikasyon batay sa SOC; hindi sinukat na porsiyento ng organic matter",
+      "drainage": "Tantiya ng paagusan batay sa tekstura at dalisdis ng SRTM (pansamantala); kailangang tiyakin sa bukid",
+      "organicMatter": "Hango sa SoilGrids SOC gamit ang Van Bemmelen (OM% ≈ SOC% × 1.724); inirerekomenda ang pagsusuri sa lab",
       "phosphorusFixationRisk": "Lokal na pagsusuri batay sa pH; hindi Bray-2 phosphorus test",
       "depthMean": "Pantay na average ng mga tantiyang halaga sa mga lalim na ibinalik",
       "estimate": "Halimbawang tantiya batay sa rehiyon o tekstura",
@@ -236,13 +236,16 @@
     "phHint": "Ilagay ang resulta ng pagsusuri sa bukid o laboratoryo. Mamarkahan itong input ng magsasaka at kailangan pa ring tiyakin sa lokal na tekniko. I-reset ang mga input upang bumalik sa datos ng pinagmulan.",
     "loading": "Kinukuha ang datos ng bukid. Lalabas ang mga mungkahi matapos suriin ang mga available na input.",
     "missingTelemetry": "Hindi available ang datos ng klima o lupa. Bumalik sa Lokasyon ng Bukid at piliin muli ang lokasyon upang subukang muli.",
-    "noPrintablePlan": "Wala pang payong maaaring i-print."
+    "noPrintablePlan": "Wala pang payong maaaring i-print.",
+    "useMunicipalBaseline": "Gamitin ang Batayang Profile ng Lupa ng Munisipyo",
+    "usingMunicipalBaseline": "Gamit ang Batayang Profile ng Lupa ng Munisipyo (inirerekomenda ang pagsusuri sa bukid)",
+    "restoreSoilTelemetry": "Bumalik sa datos ng SoilGrids"
   },
   "soilModel": {
     "locationAdvisory": "Paunawa sa lokasyon ng datos ng lupa",
     "relocatedReference": "May kulang na datos ng modelo sa napiling lokasyon (cell {cell}). Ang pagtataya ng lupa ay mula sa kalapit na sangguniang cell ng modelo ({distance} km ang layo), hindi sa pagsukat sa napiling punto. Hindi pa natitiyak ang uri ng takip ng lupa at dahilan ng nawawalang datos.",
     "title": "Datos ng modelong SoilGrids · mga cell na 250 m",
-    "coverage": "Lugar na may nakahandang datos: {grid}; napiling cell {cell}. Ang saklaw ay grid na 2.25 × 2.25 km sa paligid ng pilot point, hindi ang buong munisipalidad. Mananatiling hindi available ang mga pixel na walang datos.",
+    "coverage": "Lugar na may nakahandang datos: {grid}; napiling cell {cell}. Ang saklaw ay grid na 2.25 × 2.25 km sa paligid ng pilot point, hindi ang buong munisipalidad.",
     "limits": "Mga pagtataya ito ng modelo ng lupa mula sa nakaraang datos, hindi live na pagsukat. Tiyakin nang hiwalay ang drainage at organikong materyal. Hindi pinatutunayan ng bulk density ng ibabaw na lupa ang pagsiksik ng ilalim na lupa.",
     "retrieved": "Kinuha ang raster noong {date}; hindi ito petsa ng obserbasyon",
     "showPredictions": "Tingnan ang datos ng modelo at kawalan ng katiyakan",
@@ -266,7 +269,8 @@
     "well": "Maayos ang drainage",
     "organicMatterPrompt": "Antas ng organikong materyal sa bukid",
     "depthMean": "Tantiyang 0–15 cm; mean ng bawat lalim na may timbang na 5:10",
-    "noPredictions": "Walang available na pagtataya ng lupa para sa cell na ito. Tiyakin ang tunay na lokasyon ng bukid o ilagay sa ibaba ang nasuring datos mula sa bukid. Hindi ipinapalit ang datos ng kalapit na cell."
+    "noPredictions": "Walang magamit na pagtataya ng lupa sa cell na ito o sa mga nasuring kalapit na cell. Ilagay sa ibaba ang nasuring datos o gamitin ang may label na municipal baseline.",
+    "nearestValidCell": "Kulang ang datos ng modelo sa napiling cell {requestedCell}; ipinapakita ang kalapit na sangguniang cell {usedCell} na may 250 m na resolusyon (~{meters} m ang layo). Hindi pa natitiyak ang takip ng lupa at dahilan ng kulang na datos. Tiyakin ang kondisyon sa napiling punto."
   },
   "mvp": {
     "modeTitle": "MVP demonstration mode",
