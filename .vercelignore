@@ -1,0 +1,2 @@
+# Exclude local offline data preprocessing scripts from Vercel deployment
+scripts/soilgrids/

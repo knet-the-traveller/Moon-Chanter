@@ -1,29 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "app": {
-      "root": ".",
-      "framework": "vite",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "soilgrids",
-          "format": "url",
-          "env": "SOILGRIDS_URL"
-        }
-      ]
-    },
-    "soilgrids": {
-      "root": "scripts/soilgrids",
-      "runtime": "python"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": {
-        "service": "app"
-      }
-    }
-  ]
+  "framework": "vite",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 }
