@@ -1,0 +1,118 @@
+import React from 'react';
+import type { LandingLanguage } from '../types';
+import { getLandingTranslation } from '../i18n';
+import { LandingImage } from './LandingImage';
+
+interface LandingHeroProps {
+  language: LandingLanguage;
+}
+
+export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
+  const t = getLandingTranslation(language);
+
+  const scrollToSteps = () => {
+    const target = document.getElementById('planning-steps');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <section className="relative overflow-hidden bg-[#132e22] text-white pt-10 pb-20 lg:pt-14 lg:pb-24">
+      {/* Topographic Contour Background SVG Pattern */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-15 overflow-hidden"
+        aria-hidden="true"
+      >
+        <svg
+          className="w-full h-full object-cover"
+          viewBox="0 0 1440 600"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M-100,200 C300,100 600,350 1000,180 C1300,50 1500,220 1600,300"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M-100,250 C320,150 620,400 1020,230 C1320,100 1520,270 1600,350"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M-100,300 C340,200 640,450 1040,280 C1340,150 1540,320 1600,400"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M-100,350 C360,250 660,500 1060,330 C1360,200 1560,370 1600,450"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M-100,400 C380,300 680,550 1080,380 C1380,250 1580,420 1600,500"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+        </svg>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          {/* Left Text Column */}
+          <div className="lg:col-span-7 flex flex-col items-start space-y-5">
+            {/* Pill Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[#d6ff62] text-xs font-semibold tracking-wider uppercase">
+              <span aria-hidden="true">✦</span>
+              <span>{t.hero.badge}</span>
+            </div>
+
+            {/* H1 Heading */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight text-white leading-[1.15]">
+              {t.hero.titleLine1} <br />
+              {t.hero.titleLine2} <br />
+              <span className="text-[#d6ff62]">{t.hero.titleLine3}</span>
+            </h1>
+
+            {/* Subtitle Description */}
+            <p className="text-sm sm:text-base md:text-lg text-white/80 max-w-xl leading-relaxed">
+              {t.hero.description}
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <a
+                href="#/app"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#bbf246] hover:bg-[#aee637] active:bg-[#9dd626] text-[#122b1e] text-sm md:text-base font-semibold transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#132e22] focus:ring-[#bbf246]"
+              >
+                {t.hero.startPlanning}
+              </a>
+              <button
+                type="button"
+                onClick={scrollToSteps}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 text-white text-sm md:text-base font-medium border border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#132e22] focus:ring-white"
+              >
+                <span className="text-xs" aria-hidden="true">▶</span>
+                <span>{t.hero.seeHowItWorks}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Right Image Card Column */}
+          <div className="lg:col-span-5 flex justify-center lg:justify-end">
+            <div className="w-full max-w-md lg:max-w-none">
+              <LandingImage
+                slot="hero"
+                alt={t.hero.imageAlt}
+                priority={true}
+                className="rounded-3xl shadow-2xl border-2 border-white/15"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
