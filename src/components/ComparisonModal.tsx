@@ -97,34 +97,34 @@ export const ComparisonModal: React.FC = () => {
 
                     {/* Scores Comparison */}
                     <div className="py-3 space-y-1.5 text-xs border-b border-stone-200">
-                      <div className="font-bold text-stone-700 text-[11px] uppercase mb-1">Pillar Breakdown</div>
+                      <div className="font-bold text-stone-700 text-[11px] uppercase mb-1">{getTranslation(language, 'results.pillarBreakdown')}</div>
                       <div className="flex justify-between">
                         <span className="text-stone-600 flex items-center gap-1">
-                          <Sprout className="w-3 h-3 text-emerald-600" /> Soil Health:
+                          <Sprout className="w-3 h-3 text-emerald-600" /> {getTranslation(language, 'results.pillarSoil')}:
                         </span>
                         <span className="font-mono font-bold">{plan.scores.soilHealth}/100</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-stone-600 flex items-center gap-1">
-                          <Droplets className="w-3 h-3 text-blue-600" /> Water Resilience:
+                          <Droplets className="w-3 h-3 text-blue-600" /> {getTranslation(language, 'results.pillarWater')}:
                         </span>
                         <span className="font-mono font-bold">{plan.scores.waterResilience}/100</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-stone-600 flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-rose-600" /> Climate Risk:
+                          <ShieldCheck className="w-3 h-3 text-rose-600" /> {getTranslation(language, 'results.pillarClimate')}:
                         </span>
                         <span className="font-mono font-bold">{plan.scores.climateRisk}/100</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-stone-600 flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-amber-600" /> Economics:
+                          <Coins className="w-3 h-3 text-amber-600" /> {getTranslation(language, 'results.pillarEconomics')}:
                         </span>
                         <span className="font-mono font-bold">{plan.scores.economics}/100</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-stone-600 flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-indigo-600" /> Labor:
+                          <Clock className="w-3 h-3 text-indigo-600" /> {getTranslation(language, 'results.pillarLabor')}:
                         </span>
                         <span className="font-mono font-bold">{plan.scores.labor}/100</span>
                       </div>
