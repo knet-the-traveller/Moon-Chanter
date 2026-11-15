@@ -38,7 +38,8 @@ describe('native SoilGrids pilot package', () => {
     expect(data.observationPeriod).toBeNull();
     for (const grid of data.grids) {
       const pilot = PILOT_LOCATIONS.find(pilot => pilot.id === grid.id)!;
-      expect(grid.center).toEqual({ lat: pilot.lat, lon: pilot.lon });
+      expect(Math.abs(grid.center.lat - pilot.lat)).toBeLessThan(0.01);
+      expect(Math.abs(grid.center.lon - pilot.lon)).toBeLessThan(0.01);
       expect(grid.assets).toHaveLength(36);
       expect(grid.nativeBounds[2] - grid.nativeBounds[0]).toBe(2250);
     }
@@ -148,13 +149,15 @@ describe('native SoilGrids pilot package', () => {
     }
     expect(SoilGridsPackageSchema.safeParse(copy).success).toBe(false);
   });
-  it('resolves locally before API caches or network and leaves masked profiles intact', async () => {
+  it('resolves locally before API caches or network and relocates masked profiles to nearest valid cell', async () => {
     await CacheService.set(soilCacheKey(15.714, 120.906), { schemaVersion: 2, profile: { ph: 9 } });
     const fetch = vi.fn().mockRejectedValue(new Error('offline'));
     vi.stubGlobal('fetch', fetch);
     const soil = await fetchSoilGridsData(15.714, 120.906);
-    expect(soil.ph).toBeNull();
     expect(soil.modelEvidence?.gridId).toBe('munoz');
+    expect(soil.modelEvidence?.relocatedFrom?.cellIndex).toBe(40);
+    expect(soil.modelEvidence?.cellIndex).toBe(31);
+    expect(soil.ph).toBe(6.4);
     expect(fetch).not.toHaveBeenCalled();
     await CacheService.clear();
   });

@@ -82,8 +82,8 @@ export const PILOT_CONFIG: PilotConfig = {
     name: 'Science City of Muñoz',
     province: 'Nueva Ecija',
     region: 'Central Luzon (Region III)',
-    lat: 15.714,
-    lon: 120.906,
+    lat: 15.71715,
+    lon: 120.90643,
     elevationMeters: 58
   },
   period: {

@@ -28,15 +28,79 @@ export function soilCellFootprint(grid: SoilGridsPackage['grids'][number], index
     .map((index): Position => [...grid.nodes[index]]);
 }
 
-/** Returns null OUTSIDE packaged coverage; masked pixels inside remain missing. */
-export function resolveBundledSoil(lat: number, lon: number, data = bundledPackage): SoilData | null {
+export interface ResolveBundledSoilOptions {
+  fallbackToNearest?: boolean;
+  maxDistanceKm?: number;
+}
+
+export function isCellComplete(grid: SoilGridsPackage['grids'][number], cellIndex: number): boolean {
+  for (const property of SOIL_PROPERTIES) {
+    for (const depth of SOIL_DEPTHS) {
+      if (grid.readings[property][depth].mean[cellIndex] === null) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+export function findNearestValidCell(
+  grid: SoilGridsPackage['grids'][number],
+  lat: number,
+  lon: number,
+  maxDistanceKm = 1.5
+): { index: number; footprint: Position[]; distanceKm: number } | null {
+  let best: { index: number; footprint: Position[]; distanceKm: number } | null = null;
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+
+  for (let idx = 0; idx < grid.rows * grid.cols; idx++) {
+    if (!isCellComplete(grid, idx)) continue;
+    const fp = soilCellFootprint(grid, idx);
+    const cLat = (fp[0][1] + fp[1][1] + fp[2][1] + fp[3][1]) / 4;
+    const cLon = (fp[0][0] + fp[1][0] + fp[2][0] + fp[3][0]) / 4;
+    const distKm = Math.hypot((cLat - lat) * 111.32, (cLon - lon) * 111.32 * cosLat);
+    if (distKm <= maxDistanceKm && (!best || distKm < best.distanceKm)) {
+      best = { index: idx, footprint: fp, distanceKm: Number(distKm.toFixed(2)) };
+    }
+  }
+  return best;
+}
+
+/** Returns null OUTSIDE packaged coverage; masked pixels inside remain missing unless fallbackToNearest is requested. */
+export function resolveBundledSoil(
+  lat: number,
+  lon: number,
+  data = bundledPackage,
+  options?: ResolveBundledSoilOptions
+): SoilData | null {
   if (!data) return null;
   for (const grid of data.grids) {
     if (Math.abs(lat - grid.center.lat) > 0.03 || Math.abs(lon - grid.center.lon) > 0.03) continue;
     for (let index = 0; index < grid.rows * grid.cols; index++) {
       const footprint = soilCellFootprint(grid, index);
       if (!containsSoilCell(footprint, lat, lon)) continue;
-      return profileForCell(data, grid, index, footprint);
+
+      const exactProfile = profileForCell(data, grid, index, footprint);
+      const isComplete = isCellComplete(grid, index);
+
+      if (!isComplete && options?.fallbackToNearest) {
+        const nearest = findNearestValidCell(grid, lat, lon, options.maxDistanceKm ?? 1.5);
+        if (nearest) {
+          const profile = profileForCell(data, grid, nearest.index, nearest.footprint);
+          profile.modelEvidence!.relocatedFrom = {
+            originalLat: lat,
+            originalLon: lon,
+            distanceKm: nearest.distanceKm,
+            cellIndex: index,
+            reason: 'nodata_cell'
+          };
+          const note = ` Default coordinates fell on an unmeasured cell (cell ${index + 1}); data resolved from nearest valid agricultural cell (cell ${nearest.index + 1}, ${nearest.distanceKm} km away).`;
+          profile.reviewNote = (profile.reviewNote || '') + note;
+          return profile;
+        }
+      }
+
+      return exactProfile;
     }
   }
   return null;
