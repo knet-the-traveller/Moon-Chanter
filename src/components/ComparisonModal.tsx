@@ -1,12 +1,12 @@
+import { resolvePlanningSoil } from '../services/planningSoil';
 import { PlanDataEvidence, LocalReviewChecklist } from './RotationCard';
-import { applyFarmerSoilOverride } from '../services/soilGrids';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
 import { X, ShieldCheck, Sprout, Droplets, Coins, Clock } from 'lucide-react';
 
 export const ComparisonModal: React.FC = () => {
-  const {
+  const { useDemoAssumptions,
     isComparisonModalOpen,
     setComparisonModalOpen,
     comparedPlanIds,
@@ -16,7 +16,7 @@ export const ComparisonModal: React.FC = () => {
 
   if (!isComparisonModalOpen) return null;
 
-  const context = { climate: climateData, soil: soilData ? applyFarmerSoilOverride(soilData, soilOverride) : null, land: landSummary };
+  const context = { climate: climateData, soil: soilData ? resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions) : null, land: landSummary };
   const selectedPlans = recommendedPlans.filter((p) => comparedPlanIds.includes(p.id));
 
   return (

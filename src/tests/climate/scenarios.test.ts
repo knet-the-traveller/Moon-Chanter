@@ -111,3 +111,15 @@ describe('Climate Scenarios Sensitivity Transformations', () => {
     expect(wetSeasonWetter.rainfallMm).toBeGreaterThan(wetSeasonDrier.rainfallMm);
   });
 });
+
+describe('Ticket 10 canonical definitions and ID adapters',()=>{
+  it('round-trips both combined IDs without changing public result keys',async()=>{
+    const {CLIMATE_SCENARIO_IDS,toClimateScenarioId,toRotationScenarioId,scenarioAdjustment}=await import('../../config/pilot');
+    for(const id of CLIMATE_SCENARIO_IDS)expect(toClimateScenarioId(toRotationScenarioId(id))).toBe(id);
+    expect(toRotationScenarioId('hotterAndDrier')).toBe('hotterAndDrier');
+    expect(scenarioAdjustment('hotterAndDrier')).toEqual(scenarioAdjustment('hotter_drier'));
+    expect(scenarioAdjustment('hotter_drier')).toEqual({temperatureDeltaC:1.5,rainfallMultiplier:0.85});
+    expect(scenarioAdjustment('baseline')).toEqual({temperatureDeltaC:0,rainfallMultiplier:1});
+    expect(scenarioAdjustment('hotter_drier',{hotterTempDeltaC:0,drierPrecipMultiplier:0})).toEqual({temperatureDeltaC:0,rainfallMultiplier:0});
+  });
+});

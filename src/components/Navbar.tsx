@@ -25,8 +25,8 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#172d24] text-amber-50 shadow-md border-b border-emerald-950/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="relative sm:sticky sm:top-0 z-40 bg-[#172d24] text-amber-50 shadow-md border-b border-emerald-950/40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 sm:py-0 sm:h-16 flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-inner">

@@ -1,3 +1,4 @@
+import { resolvePlanningSoil } from '../services/planningSoil';
 import { create } from 'zustand';
 import type {
   Language,
@@ -16,7 +17,6 @@ import { fetchNasaPowerClimate } from '../services/nasaPower';
 import {
   fetchSoilGridsData,
   getMunicipalAgriculturalBaseline,
-  applyFarmerSoilOverride,
   parseFarmerSoilOverride
 } from '../services/soilGrids';
 import { generateRotationRecommendations } from '../engine';
@@ -28,6 +28,7 @@ import { getTranslation } from '../i18n';
 const allCrops = cropsData as Crop[];
 let telemetryRequestId = 0;
 let gpsRequestId = 0;
+let soilSourceRequestId = 0;
 let landController: AbortController | null = null;
 
 interface AppState {
@@ -61,6 +62,8 @@ interface AppState {
   isLocatingGps: boolean;
   gpsError: string | null;
   soilOverride: Partial<SoilData> | null;
+  useDemoAssumptions:boolean;
+  setDemoAssumptions:(enabled:boolean)=>void;
 
   // Farmer Inputs & History
   recentCropId: string | null;
@@ -125,6 +128,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLocatingGps: false,
   gpsError: null,
   soilOverride: null,
+  useDemoAssumptions:true,
+  setDemoAssumptions:(enabled)=>{set({useDemoAssumptions:enabled});get().computeRecommendations();},
 
   recentCropId: 'rice', // Common baseline in Philippines
   excludedCropIds: [],
@@ -308,25 +313,29 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   applyMunicipalBaseline: async () => {
     const requestId = telemetryRequestId;
-    const { selectedLocation, telemetrySoilData, soilData, isMunicipalBaselineActive } = get();
+    const sourceRequestId = ++soilSourceRequestId;
+    const { selectedLocation, soilOverride } = get();
     try {
       const baseline = await getMunicipalAgriculturalBaseline(selectedLocation.lat, selectedLocation.lon);
-      if (requestId !== telemetryRequestId) return;
+      if (requestId !== telemetryRequestId || sourceRequestId !== soilSourceRequestId) return;
+      const current = get();
       set({
-        telemetrySoilData: telemetrySoilData ?? (isMunicipalBaselineActive ? null : soilData),
+        telemetrySoilData: current.telemetrySoilData ?? (current.isMunicipalBaselineActive ? null : current.soilData),
         soilData: baseline,
-        soilOverride: null,
+        // Keep explicit field edits made while baseline acquisition was pending.
+        soilOverride: current.soilOverride === soilOverride ? null : current.soilOverride,
         isMunicipalBaselineActive: true,
         telemetryError: null
       });
       get().computeRecommendations();
     } catch {
-      if (requestId !== telemetryRequestId) return;
+      if (requestId !== telemetryRequestId || sourceRequestId !== soilSourceRequestId) return;
       set({ telemetryError: 'land.telemetryUnavailable' });
     }
   },
 
   restoreSoilTelemetry: () => {
+    soilSourceRequestId += 1;
     const { telemetrySoilData } = get();
     if (!telemetrySoilData) return;
     set({
@@ -374,14 +383,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   computeRecommendations: () => {
-    const { climateData, soilData, soilOverride, priorities, recentCropId, excludedCropIds } = get();
+    const { useDemoAssumptions, climateData, soilData, soilOverride, priorities, recentCropId, excludedCropIds } = get();
 
     if (!climateData || !soilData) {
       set({ recommendedPlans: [], advisoryIssuedAt: null, comparedPlanIds: [] });
       return;
     }
 
-    const effectiveSoil: SoilData = applyFarmerSoilOverride(soilData, soilOverride);
+    const effectiveSoil: SoilData = resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions);
 
     const plans = generateRotationRecommendations({
       allCrops,

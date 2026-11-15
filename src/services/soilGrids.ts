@@ -107,10 +107,12 @@ export function applyFarmerSoilOverride(
   }
 
   const mergedPh = override.ph !== undefined ? override.ph : baseSoil.ph;
+  // Unrelated edits must preserve source risk, including its absence. Only an
+  // explicit pH/risk input may change this screen and its farmer provenance.
   const phosphorusFixationRisk = override.phosphorusFixationRisk
     ?? (override.ph !== undefined
       ? (mergedPh === null ? undefined : derivePhosphorusFixationRisk(mergedPh))
-      : baseSoil.phosphorusFixationRisk ?? (mergedPh === null ? undefined : derivePhosphorusFixationRisk(mergedPh)));
+      : baseSoil.phosphorusFixationRisk);
 
   const provenance = soilProvenance(baseSoil);
   for (const key of Object.keys(provenance) as Array<keyof typeof provenance>) {

@@ -35,7 +35,7 @@ function mockApi(data: unknown) {
   return fetch;
 }
 beforeEach(async () => {
-  useAppStore.setState(useAppStore.getInitialState(), true);
+  useAppStore.setState({...useAppStore.getInitialState(),useDemoAssumptions:false}, true);
   await CacheService.clear();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 });

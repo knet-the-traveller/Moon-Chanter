@@ -1,3 +1,5 @@
+import { DemoModeNotice } from './components/DemoModeNotice';
+import { resolvePlanningSoil } from './services/planningSoil';
 import React, { useEffect } from 'react';
 import { useAppStore } from './store/useAppStore';
 import { getTranslation } from './i18n';
@@ -13,7 +15,6 @@ import { ComparisonModal } from './components/ComparisonModal';
 import { MethodologyModal } from './components/MethodologyModal';
 import { PrintablePlan } from './components/PrintablePlan';
 import { hasRequiredSoilInputs } from './engine/soilInputs';
-import { applyFarmerSoilOverride } from './services/soilGrids';
 import {
   ArrowRight,
   ArrowLeft,
@@ -23,6 +24,7 @@ import {
 
 export const App: React.FC = () => {
   const {
+    useDemoAssumptions,
     currentStep,
     setCurrentStep,
     selectedLocation,
@@ -35,7 +37,7 @@ export const App: React.FC = () => {
 
   const emptyResultsKey = isLoadingTelemetry ? 'dataQuality.loading'
     : !soilData || !climateData ? 'dataQuality.missingTelemetry'
-    : !hasRequiredSoilInputs(applyFarmerSoilOverride(soilData, soilOverride)) ? 'dataQuality.missingSoil'
+    : !hasRequiredSoilInputs(resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions)) ? 'dataQuality.missingSoil'
     : 'results.noPlans';
 
   // Initial load: Fetch telemetry for default pilot region on first render
@@ -47,13 +49,14 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-stone-900 flex flex-col font-sans selection:bg-amber-200">
+    <div className="min-h-screen w-full min-w-0 bg-[#faf8f5] text-stone-900 flex flex-col font-sans selection:bg-amber-200">
       {/* Screen View */}
-      <div className="no-print flex-1 flex flex-col">
+      <div className="no-print min-w-0 w-full flex-1 flex flex-col">
         <Navbar />
         <StepProgress />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <main className="min-w-0 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <DemoModeNotice />
           {/* STEP 1: LOCATE FARM */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -195,7 +198,7 @@ export const App: React.FC = () => {
                   <p className="text-sm text-stone-600">
                     {getTranslation(language, emptyResultsKey)}
                   </p>
-                  {!isLoadingTelemetry && !!climateData && (!soilData || !hasRequiredSoilInputs(applyFarmerSoilOverride(soilData, soilOverride))) && (
+                  {!isLoadingTelemetry && !!climateData && (!soilData || !hasRequiredSoilInputs(resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions))) && (
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                       <button
                         type="button"

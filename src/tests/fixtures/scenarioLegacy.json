@@ -1,0 +1,689 @@
+{
+  "munoz": {
+    "location": {
+      "id": "munoz",
+      "name": "Science City of Muñoz",
+      "province": "Nueva Ecija",
+      "region": "Central Luzon (Region III)",
+      "lat": 15.714,
+      "lon": 120.906,
+      "elevationMeters": 58,
+      "description": {
+        "en": "Central Luzon's agricultural technology capital and national rice granary. Heavy clay-loam plains with pronounced monsoon wet season and dry early months.",
+        "fil": "Kabisera ng teknolohiyang agrikultural sa Gitnang Luzon at imbakan ng bigas ng bansa. Malawak na kapatagan na may malinaw na tag-ulan at tag-init."
+      }
+    },
+    "climate": {
+      "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
+      "variableList": [
+        "T2M",
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "RH2M"
+      ],
+      "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
+      "isSampleData": true,
+      "meanAnnualPrecipitation": 1845,
+      "meanAnnualTemp": 27.6,
+      "seasonalStats": {
+        "wet": {
+          "precip": 1410,
+          "avgTemp": 27.8,
+          "maxTemp": 32.4
+        },
+        "dryCool": {
+          "precip": 95,
+          "avgTemp": 25.6,
+          "maxTemp": 30.8
+        },
+        "dryHot": {
+          "precip": 340,
+          "avgTemp": 29.4,
+          "maxTemp": 35.6
+        }
+      },
+      "monthly": [
+        {
+          "month": "Jan",
+          "monthNum": 1,
+          "temp": 25.1,
+          "tempMax": 30.5,
+          "tempMin": 19.8,
+          "rainfall": 12,
+          "solarRadiation": 16.4,
+          "humidity": 74
+        },
+        {
+          "month": "Feb",
+          "monthNum": 2,
+          "temp": 26.0,
+          "tempMax": 31.8,
+          "tempMin": 20.2,
+          "rainfall": 15,
+          "solarRadiation": 18.9,
+          "humidity": 71
+        },
+        {
+          "month": "Mar",
+          "monthNum": 3,
+          "temp": 27.9,
+          "tempMax": 34.2,
+          "tempMin": 21.6,
+          "rainfall": 28,
+          "solarRadiation": 21.2,
+          "humidity": 68
+        },
+        {
+          "month": "Apr",
+          "monthNum": 4,
+          "temp": 29.8,
+          "tempMax": 36.1,
+          "tempMin": 23.5,
+          "rainfall": 65,
+          "solarRadiation": 22.8,
+          "humidity": 66
+        },
+        {
+          "month": "May",
+          "monthNum": 5,
+          "temp": 29.5,
+          "tempMax": 34.8,
+          "tempMin": 24.2,
+          "rainfall": 210,
+          "solarRadiation": 20.5,
+          "humidity": 75
+        },
+        {
+          "month": "Jun",
+          "monthNum": 6,
+          "temp": 28.6,
+          "tempMax": 33.1,
+          "tempMin": 24.1,
+          "rainfall": 285,
+          "solarRadiation": 17.6,
+          "humidity": 82
+        },
+        {
+          "month": "Jul",
+          "monthNum": 7,
+          "temp": 27.9,
+          "tempMax": 32.0,
+          "tempMin": 23.8,
+          "rainfall": 365,
+          "solarRadiation": 15.8,
+          "humidity": 85
+        },
+        {
+          "month": "Aug",
+          "monthNum": 8,
+          "temp": 27.5,
+          "tempMax": 31.4,
+          "tempMin": 23.6,
+          "rainfall": 395,
+          "solarRadiation": 15.2,
+          "humidity": 87
+        },
+        {
+          "month": "Sep",
+          "monthNum": 9,
+          "temp": 27.8,
+          "tempMax": 32.1,
+          "tempMin": 23.5,
+          "rainfall": 310,
+          "solarRadiation": 16.5,
+          "humidity": 86
+        },
+        {
+          "month": "Oct",
+          "monthNum": 10,
+          "temp": 27.9,
+          "tempMax": 32.4,
+          "tempMin": 23.3,
+          "rainfall": 195,
+          "solarRadiation": 17.2,
+          "humidity": 83
+        },
+        {
+          "month": "Nov",
+          "monthNum": 11,
+          "temp": 26.8,
+          "tempMax": 31.6,
+          "tempMin": 22.0,
+          "rainfall": 78,
+          "solarRadiation": 16.8,
+          "humidity": 79
+        },
+        {
+          "month": "Dec",
+          "monthNum": 12,
+          "temp": 25.5,
+          "tempMax": 30.6,
+          "tempMin": 20.4,
+          "rainfall": 24,
+          "solarRadiation": 15.9,
+          "humidity": 76
+        }
+      ],
+      "heatStressDaysPerYear": 42,
+      "drySpellRisk": "high",
+      "excessWaterRisk": "high",
+      "heatRisk": "high",
+      "tenYearRainfallTrend": "decreasing",
+      "trendDeltaPercent": -4.8
+    },
+    "soil": {
+      "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean)",
+      "texture": "clay_loam",
+      "drainage": "moderate",
+      "organicMatter": "medium",
+      "ph": 6.3,
+      "isEstimate": false,
+      "rawClayPercent": 36.5,
+      "rawSandPercent": 28.2,
+      "rawSocDgPerKg": 142
+    },
+    "land": {
+      "slopePct": 1.8,
+      "ndviMonthly": [
+        0.6,
+        0.5,
+        0.2,
+        0.15,
+        0.2,
+        0.4,
+        0.6,
+        0.7,
+        0.7,
+        0.65,
+        0.6,
+        0.55
+      ],
+      "annualNdvi": [],
+      "rusle": {
+        "R": 1000,
+        "K": 0.03,
+        "LS": 0.4,
+        "P": 1,
+        "units": {
+          "R": "MJ mm ha-1 h-1 yr-1",
+          "K": "t ha h ha-1 MJ-1 mm-1",
+          "LS": "dimensionless",
+          "P": "dimensionless"
+        }
+      },
+      "landCover": "cropland",
+      "meta": {
+        "source": "Illustrative municipal land scenario",
+        "variable": "terrain, NDVI, RUSLE factors",
+        "spatialResolution": null,
+        "dateRange": null,
+        "isSample": true,
+        "isSynthetic": true,
+        "needsReview": true,
+        "note": "Synthetic demonstration slope, NDVI and RUSLE factors. Existing preset elevation is unverified. Verify elevation/slope with SRTM or a local survey, NDVI with quality-controlled MODIS/VIIRS observations, and erosion factors with DA-BSWM or local technicians. No field measurements or satellite retrieval are claimed.",
+        "retrievedOn": null,
+        "createdOn": "2026-11-14"
+      }
+    }
+  },
+  "ilagan": {
+    "location": {
+      "id": "ilagan",
+      "name": "City of Ilagan",
+      "province": "Isabela",
+      "region": "Cagayan Valley (Region II)",
+      "lat": 16.975,
+      "lon": 121.81,
+      "elevationMeters": 46,
+      "description": {
+        "en": "Corn Capital of the Philippines. Cagayan river basin alluvial soils with good drainage, ideal for diversified rotations of corn, legumes, and high-value vegetables.",
+        "fil": "Kabisera ng Mais ng Pilipinas. Matatabang lupang alluvial sa tabi ng ilog Cagayan na may maayos na daloy ng tubig, angkop sa mais at munggo."
+      }
+    },
+    "climate": {
+      "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
+      "variableList": [
+        "T2M",
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "RH2M"
+      ],
+      "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
+      "isSampleData": true,
+      "meanAnnualPrecipitation": 1980,
+      "meanAnnualTemp": 27.2,
+      "seasonalStats": {
+        "wet": {
+          "precip": 1390,
+          "avgTemp": 27.5,
+          "maxTemp": 32.8
+        },
+        "dryCool": {
+          "precip": 180,
+          "avgTemp": 24.8,
+          "maxTemp": 29.8
+        },
+        "dryHot": {
+          "precip": 410,
+          "avgTemp": 29.1,
+          "maxTemp": 35.8
+        }
+      },
+      "monthly": [
+        {
+          "month": "Jan",
+          "monthNum": 1,
+          "temp": 24.2,
+          "tempMax": 28.8,
+          "tempMin": 19.6,
+          "rainfall": 45,
+          "solarRadiation": 14.8,
+          "humidity": 82
+        },
+        {
+          "month": "Feb",
+          "monthNum": 2,
+          "temp": 25.1,
+          "tempMax": 30.2,
+          "tempMin": 20.0,
+          "rainfall": 35,
+          "solarRadiation": 17.5,
+          "humidity": 78
+        },
+        {
+          "month": "Mar",
+          "monthNum": 3,
+          "temp": 27.2,
+          "tempMax": 33.4,
+          "tempMin": 21.0,
+          "rainfall": 52,
+          "solarRadiation": 20.4,
+          "humidity": 74
+        },
+        {
+          "month": "Apr",
+          "monthNum": 4,
+          "temp": 29.2,
+          "tempMax": 35.9,
+          "tempMin": 22.5,
+          "rainfall": 98,
+          "solarRadiation": 22.1,
+          "humidity": 71
+        },
+        {
+          "month": "May",
+          "monthNum": 5,
+          "temp": 29.6,
+          "tempMax": 35.7,
+          "tempMin": 23.5,
+          "rainfall": 195,
+          "solarRadiation": 21.0,
+          "humidity": 76
+        },
+        {
+          "month": "Jun",
+          "monthNum": 6,
+          "temp": 29.0,
+          "tempMax": 34.5,
+          "tempMin": 23.5,
+          "rainfall": 215,
+          "solarRadiation": 19.5,
+          "humidity": 80
+        },
+        {
+          "month": "Jul",
+          "monthNum": 7,
+          "temp": 28.3,
+          "tempMax": 33.4,
+          "tempMin": 23.2,
+          "rainfall": 240,
+          "solarRadiation": 18.2,
+          "humidity": 83
+        },
+        {
+          "month": "Aug",
+          "monthNum": 8,
+          "temp": 28.0,
+          "tempMax": 33.0,
+          "tempMin": 23.0,
+          "rainfall": 270,
+          "solarRadiation": 17.8,
+          "humidity": 84
+        },
+        {
+          "month": "Sep",
+          "monthNum": 9,
+          "temp": 28.1,
+          "tempMax": 33.1,
+          "tempMin": 23.1,
+          "rainfall": 265,
+          "solarRadiation": 17.6,
+          "humidity": 84
+        },
+        {
+          "month": "Oct",
+          "monthNum": 10,
+          "temp": 27.5,
+          "tempMax": 32.2,
+          "tempMin": 22.8,
+          "rainfall": 280,
+          "solarRadiation": 16.5,
+          "humidity": 85
+        },
+        {
+          "month": "Nov",
+          "monthNum": 11,
+          "temp": 26.2,
+          "tempMax": 30.8,
+          "tempMin": 21.6,
+          "rainfall": 175,
+          "solarRadiation": 14.5,
+          "humidity": 86
+        },
+        {
+          "month": "Dec",
+          "monthNum": 12,
+          "temp": 24.8,
+          "tempMax": 29.2,
+          "tempMin": 20.4,
+          "rainfall": 110,
+          "solarRadiation": 13.9,
+          "humidity": 85
+        }
+      ],
+      "heatStressDaysPerYear": 38,
+      "drySpellRisk": "moderate",
+      "excessWaterRisk": "high",
+      "heatRisk": "high",
+      "tenYearRainfallTrend": "stable",
+      "trendDeltaPercent": 1.2
+    },
+    "soil": {
+      "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean)",
+      "texture": "loam",
+      "drainage": "well",
+      "organicMatter": "medium",
+      "ph": 6.6,
+      "isEstimate": false,
+      "rawClayPercent": 24.1,
+      "rawSandPercent": 41.5,
+      "rawSocDgPerKg": 158
+    },
+    "land": {
+      "slopePct": 2.5,
+      "ndviMonthly": [
+        0.55,
+        0.45,
+        0.22,
+        0.18,
+        0.24,
+        0.45,
+        0.65,
+        0.72,
+        0.7,
+        0.65,
+        0.6,
+        0.55
+      ],
+      "annualNdvi": [],
+      "rusle": {
+        "R": 1000,
+        "K": 0.03,
+        "LS": 0.6,
+        "P": 1,
+        "units": {
+          "R": "MJ mm ha-1 h-1 yr-1",
+          "K": "t ha h ha-1 MJ-1 mm-1",
+          "LS": "dimensionless",
+          "P": "dimensionless"
+        }
+      },
+      "landCover": "cropland",
+      "meta": {
+        "source": "Illustrative municipal land scenario",
+        "variable": "terrain, NDVI, RUSLE factors",
+        "spatialResolution": null,
+        "dateRange": null,
+        "isSample": true,
+        "isSynthetic": true,
+        "needsReview": true,
+        "note": "Synthetic demonstration slope, NDVI and RUSLE factors. Existing preset elevation is unverified. Verify elevation/slope with SRTM or a local survey, NDVI with quality-controlled MODIS/VIIRS observations, and erosion factors with DA-BSWM or local technicians. No field measurements or satellite retrieval are claimed.",
+        "retrievedOn": null,
+        "createdOn": "2026-11-14"
+      }
+    }
+  },
+  "pototan": {
+    "location": {
+      "id": "pototan",
+      "name": "Pototan",
+      "province": "Iloilo",
+      "region": "Western Visayas (Region VI)",
+      "lat": 10.952,
+      "lon": 122.632,
+      "elevationMeters": 22,
+      "description": {
+        "en": "Panay Island's rice and legume granary. Lowland clay plains with acute dry spell vulnerability during El Niño years; benefits greatly from drought-tolerant post-rice pulses.",
+        "fil": "Imbakan ng palay at legumbre sa Panay. Kapatagan na lubhang delikado sa tagtuyot lalo na kung may El Niño; malaking tulong ang munggo at mani pagkatapos ng palay."
+      }
+    },
+    "climate": {
+      "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
+      "variableList": [
+        "T2M",
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "RH2M"
+      ],
+      "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
+      "isSampleData": true,
+      "meanAnnualPrecipitation": 1920,
+      "meanAnnualTemp": 27.8,
+      "seasonalStats": {
+        "wet": {
+          "precip": 1380,
+          "avgTemp": 27.6,
+          "maxTemp": 31.9
+        },
+        "dryCool": {
+          "precip": 175,
+          "avgTemp": 26.2,
+          "maxTemp": 30.6
+        },
+        "dryHot": {
+          "precip": 365,
+          "avgTemp": 29.5,
+          "maxTemp": 35.1
+        }
+      },
+      "monthly": [
+        {
+          "month": "Jan",
+          "monthNum": 1,
+          "temp": 25.8,
+          "tempMax": 30.2,
+          "tempMin": 22.0,
+          "rainfall": 35,
+          "solarRadiation": 17.1,
+          "humidity": 80
+        },
+        {
+          "month": "Feb",
+          "monthNum": 2,
+          "temp": 26.2,
+          "tempMax": 30.8,
+          "tempMin": 22.1,
+          "rainfall": 28,
+          "solarRadiation": 19.3,
+          "humidity": 77
+        },
+        {
+          "month": "Mar",
+          "monthNum": 3,
+          "temp": 27.5,
+          "tempMax": 32.5,
+          "tempMin": 23.0,
+          "rainfall": 38,
+          "solarRadiation": 21.8,
+          "humidity": 74
+        },
+        {
+          "month": "Apr",
+          "monthNum": 4,
+          "temp": 29.2,
+          "tempMax": 34.6,
+          "tempMin": 24.5,
+          "rainfall": 62,
+          "solarRadiation": 22.9,
+          "humidity": 72
+        },
+        {
+          "month": "May",
+          "monthNum": 5,
+          "temp": 29.5,
+          "tempMax": 34.8,
+          "tempMin": 25.0,
+          "rainfall": 170,
+          "solarRadiation": 20.8,
+          "humidity": 78
+        },
+        {
+          "month": "Jun",
+          "monthNum": 6,
+          "temp": 28.5,
+          "tempMax": 32.8,
+          "tempMin": 24.8,
+          "rainfall": 245,
+          "solarRadiation": 18.2,
+          "humidity": 82
+        },
+        {
+          "month": "Jul",
+          "monthNum": 7,
+          "temp": 27.9,
+          "tempMax": 31.8,
+          "tempMin": 24.3,
+          "rainfall": 295,
+          "solarRadiation": 17.0,
+          "humidity": 85
+        },
+        {
+          "month": "Aug",
+          "monthNum": 8,
+          "temp": 27.7,
+          "tempMax": 31.6,
+          "tempMin": 24.2,
+          "rainfall": 310,
+          "solarRadiation": 16.5,
+          "humidity": 86
+        },
+        {
+          "month": "Sep",
+          "monthNum": 9,
+          "temp": 27.8,
+          "tempMax": 31.8,
+          "tempMin": 24.2,
+          "rainfall": 275,
+          "solarRadiation": 17.2,
+          "humidity": 85
+        },
+        {
+          "month": "Oct",
+          "monthNum": 10,
+          "temp": 27.9,
+          "tempMax": 32.0,
+          "tempMin": 24.0,
+          "rainfall": 250,
+          "solarRadiation": 17.5,
+          "humidity": 84
+        },
+        {
+          "month": "Nov",
+          "monthNum": 11,
+          "temp": 27.2,
+          "tempMax": 31.5,
+          "tempMin": 23.5,
+          "rainfall": 145,
+          "solarRadiation": 16.9,
+          "humidity": 82
+        },
+        {
+          "month": "Dec",
+          "monthNum": 12,
+          "temp": 26.3,
+          "tempMax": 30.5,
+          "tempMin": 22.8,
+          "rainfall": 67,
+          "solarRadiation": 16.1,
+          "humidity": 81
+        }
+      ],
+      "heatStressDaysPerYear": 34,
+      "drySpellRisk": "high",
+      "excessWaterRisk": "moderate",
+      "heatRisk": "moderate",
+      "tenYearRainfallTrend": "decreasing",
+      "trendDeltaPercent": -3.5
+    },
+    "soil": {
+      "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean)",
+      "texture": "clay_loam",
+      "drainage": "moderate",
+      "organicMatter": "medium",
+      "ph": 6.1,
+      "isEstimate": false,
+      "rawClayPercent": 34.0,
+      "rawSandPercent": 30.5,
+      "rawSocDgPerKg": 135
+    },
+    "land": {
+      "slopePct": 1.0,
+      "ndviMonthly": [
+        0.65,
+        0.55,
+        0.2,
+        0.15,
+        0.22,
+        0.5,
+        0.7,
+        0.75,
+        0.72,
+        0.68,
+        0.65,
+        0.6
+      ],
+      "annualNdvi": [],
+      "rusle": {
+        "R": 1000,
+        "K": 0.03,
+        "LS": 0.2,
+        "P": 1,
+        "units": {
+          "R": "MJ mm ha-1 h-1 yr-1",
+          "K": "t ha h ha-1 MJ-1 mm-1",
+          "LS": "dimensionless",
+          "P": "dimensionless"
+        }
+      },
+      "landCover": "cropland",
+      "meta": {
+        "source": "Illustrative municipal land scenario",
+        "variable": "terrain, NDVI, RUSLE factors",
+        "spatialResolution": null,
+        "dateRange": null,
+        "isSample": true,
+        "isSynthetic": true,
+        "needsReview": true,
+        "note": "Synthetic demonstration slope, NDVI and RUSLE factors. Existing preset elevation is unverified. Verify elevation/slope with SRTM or a local survey, NDVI with quality-controlled MODIS/VIIRS observations, and erosion factors with DA-BSWM or local technicians. No field measurements or satellite retrieval are claimed.",
+        "retrievedOn": null,
+        "createdOn": "2026-11-14"
+      }
+    }
+  }
+}

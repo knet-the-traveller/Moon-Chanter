@@ -37,6 +37,16 @@ describe('municipal land service', () => {
     expect(result.ndvi.trendAvailable).toBe(false);
     expect(result.rusleErosionRiskTonsHaYr).toBeGreaterThanOrEqual(0);
     expect(Object.values(result.provenance).every((entry) => entry.isSample && entry.isSynthetic)).toBe(true);
+    expect(result.provenance['ndvi.trend']).toMatchObject({ isSample: true, isSynthetic: true, needsReview: true });
+  });
+
+  it('uses the nearest municipal proxy for custom coordinates with networking restricted to local fixtures', async () => {
+    const result = await service.fetchLandSummary(8.2, 125.2);
+    expect(result.sampleHub.id).toBe('bukidnon');
+    expect(result.sampleHub.distanceKm).toBeGreaterThan(0);
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => String(url)).sort()).toEqual(
+      slugs.map(slug => `/sample-data/${slug}.json`).sort());
+    expect(result.isSample).toBe(true);
   });
 
   it('chooses the nearest proxy and uses deterministic tie-breaking', () => {

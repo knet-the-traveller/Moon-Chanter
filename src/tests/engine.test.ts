@@ -459,3 +459,29 @@ describe('AGRO-RULE-05-MODEL-SUPPORT: imported soil predictions', () => {
     expect(sloping.find(sequence => sequence.isBaseline)?.s1Crop.id).toBe('corn');
   });
 });
+
+describe('Ticket 10 rotation-score compatibility',()=>{
+  it('retains pre-refactor scenario scores for all 90 valid municipal candidates',async()=>{
+    const legacy=(await import('./fixtures/scenarioLegacy.json')).default;
+    const {createHash}=await import('node:crypto');
+    const expected={
+      munoz:'79948cadf4600e7aa3bcc1981c0e1e32a23adab706e3d4fd374f0a6cb0c191b2',
+      ilagan:'38a92609d61fc8d788d9ddfa4a071c0752610c7f37cf14b02c365398b8113da9',
+      pototan:'4d9dcf7e3b8b3dae55a0162c73acb068d886710c1097f5ad78c260712e22f04b'
+    };
+    for(const [slug,hash] of Object.entries(expected)){
+      const fixture=legacy[slug as keyof typeof legacy] as {soil:SoilData;climate:ClimateData};
+      const candidates=generateCandidateRotations({allCrops:crops,soil:fixture.soil});
+      expect(candidates).toHaveLength(30);
+      const values=candidates.map(c=>{
+        const result=evaluateScenarios(c,fixture.climate,fixture.soil,defaultPriorities);
+        const {baseline,hotter,drier,hotterAndDrier,wetter}=result.scenarioScores;
+        // Upstream adds aliases; compare the original public result shape.
+        expect(result.scenarioScores.compound).toBe(hotterAndDrier);
+        expect(result.scenarioScores.hotter_drier).toBe(hotterAndDrier);
+        return {scenarioScores:{baseline,hotter,drier,hotterAndDrier,wetter},robustness:result.robustness,maxDegradation:result.maxDegradation};
+      });
+      expect(createHash('sha256').update(JSON.stringify(values)).digest('hex')).toBe(hash);
+    }
+  });
+});

@@ -43,7 +43,6 @@ export const ClimateCard: React.FC = () => {
   }
 
   const metadata = climateProvenance(climateData);
-  const source = (key: keyof typeof metadata) => formatProvenance(language, metadata[key]);
   const chartData = climateData.monthly.map((m) => ({
     name: m.month,
     rainfall: m.rainfall,
@@ -102,9 +101,6 @@ export const ClimateCard: React.FC = () => {
           <div className="text-xl font-black text-blue-950 mt-1">
             {climateData.meanAnnualPrecipitation.toLocaleString()} <span className="text-xs font-normal">mm/yr</span>
           </div>
-          <div className="text-[11px] text-blue-700 mt-0.5">
-            {source('precipitation')}
-          </div>
         </div>
 
         {/* Mean Temp */}
@@ -115,9 +111,6 @@ export const ClimateCard: React.FC = () => {
           </div>
           <div className="text-xl font-black text-orange-950 mt-1">
             {climateData.meanAnnualTemp}°C
-          </div>
-          <div className="text-[11px] text-orange-700 mt-0.5">
-            {source('temperature')}
           </div>
         </div>
 
@@ -153,8 +146,6 @@ export const ClimateCard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <p className="text-xs text-stone-700 mb-3">{source('heatStressDays')}<br />{source('rainfallTrend')}<br />{source('risk')}</p>
       {/* Seasonal Breakdown Pills */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5 p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 text-xs">
         <div>
@@ -176,8 +167,6 @@ export const ClimateCard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <p className="text-xs text-stone-700 mb-3">{source('precipitation')}<br />{source('maximumTemperature')}</p>
       {/* Monthly Chart (Recharts) */}
       <div className="mt-2">
         <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center justify-between">
@@ -208,6 +197,10 @@ export const ClimateCard: React.FC = () => {
         </div>
       </div>
 
+      <details className="mt-4 text-sm text-stone-800">
+        <summary className="cursor-pointer font-semibold">{getTranslation(language,'mvp.sourceDetails')}</summary>
+        <ul className="mt-2 space-y-2 break-words text-xs">{Object.entries(metadata).map(([key,value])=><li key={key}>{formatProvenance(language,value)}</li>)}</ul>
+      </details>
       {/* NASA Variables Citation Footer */}
       <div className="mt-4 pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between text-[11px] text-stone-500 gap-2">
         <div className="flex items-center gap-1.5">

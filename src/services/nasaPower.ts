@@ -273,9 +273,20 @@ export async function loadBundledSampleDailySeries(location: { lat: number; lon:
   // In Browser environment
   if (!sampleJson && typeof fetch !== 'undefined') {
     try {
-      const res = await fetch('/sample-data/nasa-power-pilot.json');
-      if (res.ok) {
-        sampleJson = await res.json();
+      const controller = new AbortController();
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const request = (async () => {
+          const res = await fetch(`${import.meta.env.BASE_URL}sample-data/nasa-power-pilot.json`, {signal:controller.signal});
+          if (!res.ok) throw new Error(`POWER reference HTTP ${res.status}`);
+          return await res.json() as unknown;
+        })();
+        const expired = new Promise<never>((_,reject)=>{
+          timeout=setTimeout(()=>{controller.abort();reject(new Error('POWER reference timed out'));},5000);
+        });
+        sampleJson = await Promise.race([request,expired]);
+      } finally {
+        clearTimeout(timeout);
       }
     } catch {
       // ignore

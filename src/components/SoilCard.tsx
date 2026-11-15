@@ -1,11 +1,12 @@
+import { resolvePlanningSoil, hasDemoSoil, DEMO_SOIL_SOURCE } from '../services/planningSoil';
 import { SoilModelDetails } from './SoilModelDetails';
 import { soilProvenance, formatProvenance } from '../data/provenance';
-import { applyFarmerSoilOverride, parseFarmerSoilOverride } from '../services/soilGrids';
+import { parseFarmerSoilOverride } from '../services/soilGrids';
 import { hasRequiredSoilInputs } from '../engine/soilInputs';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
-import type { SoilTexture, DrainageClass, OrganicMatterLevel, Language } from '../types';
+import type { SoilTexture, OrganicMatterLevel, Language } from '../types';
 import { Layers, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
 
 const SoilPhInput: React.FC<{ ph: number | null; language: Language; onApply: (ph: number) => void }> = ({ ph, language, onApply }) => {
@@ -42,6 +43,7 @@ const SoilPhInput: React.FC<{ ph: number | null; language: Language; onApply: (p
 
 export const SoilCard: React.FC = () => {
   const {
+    useDemoAssumptions,
     soilData,
     telemetrySoilData,
     isMunicipalBaselineActive,
@@ -67,21 +69,20 @@ export const SoilCard: React.FC = () => {
 
   if (!soilData) return null;
 
-  const effectiveSoil = applyFarmerSoilOverride(soilData, soilOverride);
+  const effectiveSoil = resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions);
   const metadata = soilProvenance(effectiveSoil);
-  const source = (key: keyof typeof metadata) => formatProvenance(language, metadata[key]);
   const unknown = getTranslation(language, 'provenance.unavailableValue');
   const effectiveTexture = effectiveSoil.texture;
   const effectiveDrainage = effectiveSoil.drainage;
   const effectiveOrganicMatter = effectiveSoil.organicMatter;
   const isOverridden = !!soilOverride && Object.keys(soilOverride).length > 0;
 
-  const texturePresets: { id: SoilTexture; nameEn: string; nameFil: string; defaultDrainage: DrainageClass }[] = [
-    { id: 'clay', nameEn: 'Heavy Clay', nameFil: 'Lagkitan / Pulot', defaultDrainage: 'poor' },
-    { id: 'clay_loam', nameEn: 'Clay Loam', nameFil: 'Mabanlik na Lupa', defaultDrainage: 'moderate' },
-    { id: 'loam', nameEn: 'Medium Loam', nameFil: 'Matabang Lupang Itim', defaultDrainage: 'well' },
-    { id: 'sandy_loam', nameEn: 'Sandy Loam', nameFil: 'Mabuhangin na Lupa', defaultDrainage: 'well' },
-    { id: 'sandy', nameEn: 'Sandy', nameFil: 'Buhangin', defaultDrainage: 'well' }
+  const texturePresets: { id: SoilTexture; nameEn: string; nameFil: string }[] = [
+    { id: 'clay', nameEn: 'Heavy Clay', nameFil: 'Lagkitan / Pulot' },
+    { id: 'clay_loam', nameEn: 'Clay Loam', nameFil: 'Mabanlik na Lupa' },
+    { id: 'loam', nameEn: 'Medium Loam', nameFil: 'Matabang Lupang Itim' },
+    { id: 'sandy_loam', nameEn: 'Sandy Loam', nameFil: 'Mabuhangin na Lupa' },
+    { id: 'sandy', nameEn: 'Sandy', nameFil: 'Buhangin' }
   ];
 
   const omLevels: { id: OrganicMatterLevel; labelEn: string; labelFil: string }[] = [
@@ -131,6 +132,7 @@ export const SoilCard: React.FC = () => {
         {getTranslation(language, 'dataQuality.missingSoil')}
       </p>}
 
+      {hasDemoSoil(effectiveSoil) && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">{getTranslation(language,'mvp.soilNotice')}</p>}
       {(isMunicipalBaselineActive || Boolean(soilData.modelEvidence) || !hasRequiredSoilInputs(effectiveSoil) || soilData.provenance?.ph?.tier === 'unavailable') && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-900">
           {isMunicipalBaselineActive ? (
@@ -172,6 +174,7 @@ export const SoilCard: React.FC = () => {
           </div>
           <div className="text-base font-bold text-stone-900 mt-1 capitalize">
             {effectiveTexture?.replace('_', ' ') ?? unknown}
+            {metadata.texture.source === DEMO_SOIL_SOURCE && <span className="mt-1 block text-xs font-semibold text-amber-900">{getTranslation(language,'mvp.assumptionTag')}</span>}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
             {getTranslation(language, 'provenance.baseFractions')}: {effectiveSoil.rawClayPercent !== undefined ? `${effectiveSoil.rawClayPercent}%` : unknown} / {effectiveSoil.rawSandPercent !== undefined ? `${effectiveSoil.rawSandPercent}%` : unknown}
@@ -187,7 +190,7 @@ export const SoilCard: React.FC = () => {
             {effectiveDrainage ?? unknown}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            {source('drainage')}
+            {getTranslation(language, metadata.drainage.source === DEMO_SOIL_SOURCE ? 'mvp.assumptionTag' : metadata.drainage.tier==='farmer'?'provenance.farmer':metadata.drainage.tier==='unavailable'?'provenance.unavailableValue':'provenance.derived')}
           </div>
         </div>
 
@@ -198,6 +201,7 @@ export const SoilCard: React.FC = () => {
           </div>
           <div className="text-base font-bold text-stone-900 mt-1">
             {effectiveSoil.ph === null ? unknown : `${effectiveSoil.ph} pH`}
+            {metadata.ph.source === DEMO_SOIL_SOURCE && <span className="mt-1 block text-xs font-semibold text-amber-900">{getTranslation(language,'mvp.assumptionTag')}</span>}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
             {getTranslation(language, 'provenance.phReview')}
@@ -211,6 +215,8 @@ export const SoilCard: React.FC = () => {
           </div>
           <div className="text-base font-bold text-stone-900 mt-1 capitalize">
             {effectiveOrganicMatter === 'unknown' ? unknown : effectiveOrganicMatter}
+            {metadata.organicMatter.source === DEMO_SOIL_SOURCE && <span className="mt-1 block text-xs font-semibold text-amber-900">{getTranslation(language,'mvp.assumptionTag')}</span>}
+            {metadata.organicMatter.isSynthetic && metadata.organicMatter.source !== DEMO_SOIL_SOURCE && <span className="mt-1 block text-xs font-semibold text-amber-900">{getTranslation(language,'provenance.derived')}</span>}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
             SOC: {effectiveSoil.rawSocDgPerKg !== undefined ? (effectiveSoil.rawSocDgPerKg / 100).toFixed(2) + '%' : unknown}
@@ -218,9 +224,12 @@ export const SoilCard: React.FC = () => {
         </div>
       </div>
 
-      <ul className="text-xs text-stone-700 space-y-2 break-words" aria-label={getTranslation(language, 'provenance.title')}>
+      <details className="mt-3 text-sm text-stone-800">
+      <summary className="cursor-pointer font-semibold">{getTranslation(language,'mvp.sourceDetails')}</summary>
+      <ul className="mt-2 text-xs text-stone-700 space-y-2 break-words" aria-label={getTranslation(language, 'provenance.title')}>
         {Object.entries(metadata).map(([key, value]) => <li key={key}>{formatProvenance(language, value)}</li>)}
       </ul>
+      </details>
       {/* Farmer Override Bar */}
       <div className="mt-4 pt-3 border-t border-stone-100">
         <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
@@ -236,12 +245,7 @@ export const SoilCard: React.FC = () => {
               <button
                 key={preset.id}
                 type="button" aria-pressed={isSelected}
-                onClick={() =>
-                  setSoilOverride({
-                    texture: preset.id,
-                    ...(soilData.modelEvidence ? {} : { drainage: preset.defaultDrainage })
-                  })
-                }
+                onClick={() => setSoilOverride({ texture: preset.id })}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/30 font-semibold'
@@ -254,8 +258,7 @@ export const SoilCard: React.FC = () => {
             );
           })}
         </div>
-
-        {soilData.modelEvidence && <fieldset className="mt-3">
+        <fieldset className="mt-3">
           <legend className="mb-2 text-xs font-semibold text-stone-800">{getTranslation(language, 'soilModel.drainagePrompt')}</legend>
           <div className="flex flex-wrap gap-2">
             {(['poor', 'moderate', 'well'] as const).map(drainage => <button key={drainage} type="button"
@@ -264,7 +267,7 @@ export const SoilCard: React.FC = () => {
               {getTranslation(language, `soilModel.${drainage}`)}
             </button>)}
           </div>
-        </fieldset>}
+        </fieldset>
         {/* OM Override Selection */}
         <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
           <span className="font-medium text-stone-700">{getTranslation(language, 'soilModel.organicMatterPrompt')}:</span>

@@ -64,7 +64,7 @@ export function isCellComplete(grid: SoilGridsPackage['grids'][number], cellInde
   return true;
 }
 
-function isCompleteAgriculturalCell(
+function isCompleteModelCell(
   data: SoilGridsPackage,
   grid: SoilGridsPackage['grids'][number],
   index: number
@@ -112,7 +112,7 @@ function findNearestValidCellIndex(
   const reqCol = requestedIndex % grid.cols;
   let best: { index: number; distanceGridCells: number } | null = null;
   for (let i = 0; i < grid.rows * grid.cols; i++) {
-    if (!isCompleteAgriculturalCell(data, grid, i)) continue;
+    if (!isCompleteModelCell(data, grid, i)) continue;
     const row = Math.floor(i / grid.cols);
     const col = i % grid.cols;
     const distanceGridCells = Math.hypot(row - reqRow, col - reqCol);
@@ -129,7 +129,7 @@ function findNearestValidCellIndex(
 
 /**
  * Resolves packaged SoilGrids model data inside pilot coverage; steps deterministically
- * to the nearest valid cropland 250 m cell when the requested pixel is masked NoData
+ * to the nearest complete 250 m model cell when the requested pixel is masked NoData
  * (unless `fallbackToNearest: false`), and returns null outside packaged coverage or
  * when an entire grid has no valid cells.
  */
@@ -146,7 +146,7 @@ export function resolveBundledSoil(
     for (let index = 0; index < grid.rows * grid.cols; index++) {
       const footprint = soilCellFootprint(grid, index);
       if (!containsSoilCell(footprint, lat, lon)) continue;
-      if (isCompleteAgriculturalCell(data, grid, index)) {
+      if (isCompleteModelCell(data, grid, index)) {
         return profileForCell(data, grid, index, footprint);
       }
       if (!fallbackToNearest) {
@@ -216,7 +216,7 @@ function profileForCell(
   const organicMatter = deriveOrganicMatterFromSoc(rawSocDgPerKg);
   const drainage = derivePreliminaryDrainage({ texture, clayPct, sandPct });
   const stepNote = stepMeta
-    ? `Default coordinates fell on an unmeasured cell (cell ${stepMeta.requestedCellIndex + 1}); data resolved from nearest valid agricultural cell (cell ${index + 1}, ${stepMeta.relocatedFrom.distanceKm} km / ~${stepMeta.offsetDistanceMeters} m away). `
+    ? `Default coordinates fell on an unmeasured cell (cell ${stepMeta.requestedCellIndex + 1}); data resolved from nearby model reference cell (cell ${index + 1}, ${stepMeta.relocatedFrom.distanceKm} km / ~${stepMeta.offsetDistanceMeters} m away). `
     : '';
   const soil: SoilData = {
     source: 'ISRIC SoilGrids 2.0 · bundled model grid', modelEvidence: evidence,

@@ -122,11 +122,11 @@ export async function fetchLandSummary(lat: number, lon: number, signal?: AbortS
   return buildSampleLandSummary(lat, lon, fixtures);
 }
 
-export const FALLOW_WINDOW_MONTHS = [3, 4, 5, 6] as const;
+export const FALLOW_WINDOW_MONTHS = [1, 2, 3, 4, 5, 6] as const;
 export const BARE_FIELD_NDVI_THRESHOLD = 0.25;
 export const BARE_FIELD_REVIEW = {
   needsReview: true,
-  note: 'Verify the 0.25 NDVI threshold and March–June fallow window against regional crop calendars and quality-controlled imagery.'
+  note: 'Verify the 0.25 NDVI threshold and January–June screening window against regional crop calendars and quality-controlled imagery.'
 } as const;
 export const COVER_FACTOR_ASSUMPTION = {
   exponent: 2,

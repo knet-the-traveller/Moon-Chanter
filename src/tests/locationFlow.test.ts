@@ -200,6 +200,7 @@ describe('active-location pipeline', () => {
   });
 
   it('switches cleanly to municipal agricultural baseline and restores SoilGrids telemetry without racing', async () => {
+    useAppStore.getState().setDemoAssumptions(false);
     vi.mocked(fetchSoilGridsData).mockResolvedValueOnce({
       ...municipal.soil,
       texture: 'clay',
@@ -262,6 +263,49 @@ describe('active-location pipeline', () => {
     expect(useAppStore.getState().isMunicipalBaselineActive).toBe(false);
     expect(useAppStore.getState().soilData?.ph).toBe(municipal.soil.ph);
   });
+
+  it('preserves field edits made while a municipal baseline is loading', async () => {
+    await useAppStore.getState().selectPilotPreset(a);
+    const baseline = deferred<SoilData>();
+    vi.mocked(getMunicipalAgriculturalBaseline).mockReturnValueOnce(baseline.promise);
+    const request = useAppStore.getState().applyMunicipalBaseline();
+    useAppStore.getState().setSoilOverride({ph:7.1});
+    baseline.resolve({...municipal.soil,ph:5.2});
+    await request;
+    expect(useAppStore.getState().isMunicipalBaselineActive).toBe(true);
+    expect(useAppStore.getState().soilData?.ph).toBe(5.2);
+    expect(useAppStore.getState().soilOverride).toEqual({ph:7.1});
+  });
+
+  it('does not reactivate a pending baseline after the user restores telemetry', async () => {
+    await useAppStore.getState().selectPilotPreset(a);
+    const baseline = deferred<SoilData>();
+    vi.mocked(getMunicipalAgriculturalBaseline).mockReturnValueOnce(baseline.promise);
+    const request = useAppStore.getState().applyMunicipalBaseline();
+    useAppStore.getState().restoreSoilTelemetry();
+    baseline.resolve({...municipal.soil,ph:5.2});
+    await request;
+    expect(useAppStore.getState().isMunicipalBaselineActive).toBe(false);
+    expect(useAppStore.getState().soilData).toBe(useAppStore.getState().telemetrySoilData);
+    expect(useAppStore.getState().soilData?.ph).toBe(municipal.soil.ph);
+  });
+
+  it('retains telemetry that arrives during baseline acquisition for later restoration', async () => {
+    const telemetry = deferred<SoilData>();
+    const baseline = deferred<SoilData>();
+    vi.mocked(fetchSoilGridsData).mockReturnValueOnce(telemetry.promise);
+    const selection = useAppStore.getState().selectPilotPreset(a);
+    vi.mocked(getMunicipalAgriculturalBaseline).mockReturnValueOnce(baseline.promise);
+    const request = useAppStore.getState().applyMunicipalBaseline();
+    telemetry.resolve({...municipal.soil,ph:6.8});
+    await selection;
+    baseline.resolve({...municipal.soil,ph:5.2});
+    await request;
+    expect(useAppStore.getState().telemetrySoilData?.ph).toBe(6.8);
+    expect(useAppStore.getState().soilData?.ph).toBe(5.2);
+    useAppStore.getState().restoreSoilTelemetry();
+    expect(useAppStore.getState().soilData?.ph).toBe(6.8);
+  });
 });
 
 describe('GPS selection ordering', () => {
@@ -315,5 +359,38 @@ describe('GPS selection ordering', () => {
     expect(() => useAppStore.getState().locateWithGps()).not.toThrow();
     expect(useAppStore.getState().isLocatingGps).toBe(false);
     expect(useAppStore.getState().gpsError).toBe('map.gpsFailure');
+  });
+});
+
+describe('Ticket 11 independent terrain/soil arrival',()=>{
+  it.each(['land-first','soil-first'] as const)('retains real slope and pending field overrides when %s',async order=>{
+    const {resolveRealLand}=await import('../services/realLandData');
+    const land=resolveRealLand(b.lat,b.lon)!;
+    const pendingLand=deferred<LandSummary>();
+    const pendingSoil=deferred<SoilData>();
+    vi.mocked(fetchLandSummary).mockReturnValueOnce(pendingLand.promise);
+    vi.mocked(fetchSoilGridsData).mockReturnValueOnce(pendingSoil.promise);
+    const request=useAppStore.getState().selectPilotPreset(b);
+    useAppStore.getState().setSoilOverride({ph:7.1});
+    const base={...municipal.soil,slopePct:99};
+    if(order==='land-first'){
+      pendingLand.resolve(land);
+      await vi.waitFor(()=>expect(useAppStore.getState().isLoadingLand).toBe(false));
+      expect(useAppStore.getState().soilData).toBeNull();
+      pendingSoil.resolve(base);
+    }else{
+      pendingSoil.resolve(base);
+      await vi.waitFor(()=>expect(useAppStore.getState().isLoadingTelemetry).toBe(false));
+      expect(useAppStore.getState().isLoadingLand).toBe(true);
+      pendingLand.resolve(land);
+    }
+    await request;
+    const state=useAppStore.getState();
+    expect(state.soilData?.slopePct).toBe(land.slopePct);
+    expect(state.soilData?.provenance?.slopePct).toEqual(land.provenance.slopePct);
+    expect(state.soilOverride).toEqual({ph:7.1});
+    expect(state.soilData?.ph).toBe(municipal.soil.ph);
+    expect(state.recommendedPlans.length).toBeGreaterThan(0);
+    expect(state.isLoadingLand||state.isLoadingTelemetry).toBe(false);
   });
 });

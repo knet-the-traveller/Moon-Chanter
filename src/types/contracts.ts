@@ -89,6 +89,7 @@ export interface LandSummary {
     trendUnavailableReason: string | null;
     evidence?: { accepted: number; total: number; monthlyCounts: number[]; annualYears: number[]; qualityPolicy: string };
   };
+  screening?: { erosionConcern:'gentle'|'sloping'|'steep'|null; observedMonths:number[]; missingMonths:number[] };
   landCover?: string;
   isSample: boolean;
   needsReview: boolean;

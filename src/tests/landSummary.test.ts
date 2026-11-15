@@ -57,7 +57,7 @@ describe('bare-field and RUSLE helpers', () => {
     monthly[2] = 0.25;
     monthly[3] = 0.249;
     monthly[5] = 0.1;
-    expect(detectBareFieldMonths(monthly)).toEqual([4, 6]);
+    expect(detectBareFieldMonths(monthly)).toEqual([1, 4, 6]);
     expect(detectBareFieldMonths(green)).toEqual([]);
     expect(detectBareFieldMonths(monthly, [6, 4, 4])).toEqual([4, 6]);
     expect(() => detectBareFieldMonths(monthly, [13])).toThrow();

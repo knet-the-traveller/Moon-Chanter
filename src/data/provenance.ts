@@ -124,6 +124,7 @@ export function formatProvenance(language: Language, metadata: MetricProvenance)
   const t = (key: string) => getTranslation(language, `provenance.${key}`);
   const status = metadata.isSynthetic ? t('synthetic') : t(metadata.tier ?? (metadata.isSample ? 'sample' : 'unavailable'));
   const source = metadata.tier === 'farmer' ? t('farmer') : metadata.source.startsWith('FieldShift illustrative') ? t('illustrativeSource')
+    : metadata.source === 'FieldShift demonstration assumptions' ? getTranslation(language,'mvp.assumptionSource')
     : metadata.source === 'FieldShift municipal soil reference' ? t('municipalSoilSource') : metadata.source;
   return [source, metadata.productVersion ? `${t('version')} ${metadata.productVersion}` : null, metadata.variable, metadata.spatialResolution ?? t('unknownResolution'),
     metadata.dateRange ?? t('unknownDates'), metadata.unit, metadata.depth,

@@ -9,7 +9,7 @@ describe('real SRTM terrain package',()=>{
   const result=await fetchLandSummary(grid.lat,grid.lon);
   expect(result.elevationM).toBe(grid.elevationM[17*35+17]);
   expect(result.provenance.elevationM.tier).toBe('bundled-model');
-  expect(result.isSample).toBe(false);expect(result.floodProne).toBeNull();
+  expect(result.isSample).toBe(false);expect(result.floodProne).toBe(result.elevationM!<30&&result.slopePct!<=3);expect(result.provenance.floodProne.methodKey).toBe('mvp.lowlandMethod');
   expect(result.rusleErosionRiskTonsHaYr).toBeNull();expect(result.ndvi.evidence?.total).toBe(115);expect(result.provenance['ndvi.seasonalMean'].isSynthetic).toBe(false);
   expect(fetch).not.toHaveBeenCalled();fetch.mockRestore();
  });

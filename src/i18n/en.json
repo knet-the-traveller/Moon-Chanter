@@ -146,7 +146,7 @@
     "unknownElevation": "Elevation unavailable",
     "realNotice": "Raster estimates · Needs local verification",
     "gridReference": "SRTM pilot grid: {hub}; the selected native cell is used.",
-    "realLimitations": "Elevation and slope use SRTM from February 2000. Scientific NDVI history is available only at acquired reference points, subject to quality filtering. Flood susceptibility and erosion remain unavailable without verified supporting data.",
+    "realLimitations": "Historical terrain and quality-filtered vegetation support preliminary screens. Flood likelihood and annual erosion rates are not established. Reference-point vegetation may differ from the selected field.",
     "nativeElevation": "Nearest native SRTM post; no field-survey accuracy implied",
     "hornSlope": "Horn 3 × 3 slope with WGS84 metric spacing; percent gradient",
     "qualityNdvi": "Already-scaled MOD13Q1.061; conservative land-only QA; monthly means require ≥3 accepted composites across ≥2 years. Composite start month is used; cloudy gaps remain unavailable.",
@@ -220,7 +220,7 @@
     "ndviTrend": "An annual NDVI trend is unavailable. Monthly greenness patterns alone do not establish a year-to-year trend.",
     "review": "Source assumptions, derived classes and risk thresholds need local scientific review. Treat the scores as advisory comparisons.",
     "cropReview": "Some crop profiles need review. Confirm locally appropriate varieties, growing periods and agronomic assumptions.",
-    "pixelScale": "Grids and municipal references describe areas larger than an individual field. Verify field slope, drainage and soil conditions locally.",
+    "pixelScale": "Regional context: POWER meteorology 0.5° × 0.625°; SRTM ~30 m; MODIS NDVI / SoilGrids 250 m nominal. These are not parcel measurements. SMAP products commonly use 9–36 km grids; SMAP is not integrated here.",
     "canalTurnouts": "Check canal turnouts, irrigation schedules and drainage access with the local irrigation or agriculture office.",
     "compaction": "Inspect possible plow-pan compaction and confirm soil measurements before deciding on field operations.",
     "buyerPrices": "For the crops in this plan ({crops}), check local buyer prices, market access, labor and input costs. Income scores are not price or yield forecasts."
@@ -242,9 +242,10 @@
     "restoreSoilTelemetry": "Return to SoilGrids data"
   },
   "soilModel": {
+    "locationAdvisory": "Soil location advisory",
+    "relocatedReference": "The selected location has missing model data (cell {cell}). Soil predictions use a nearby model reference cell ({distance} km away), not measurements at your selected point. Land cover and the cause of missing data have not been verified.",
     "title": "SoilGrids model extract · 250 m cells",
     "coverage": "Packaged area: {grid}; selected cell {cell}. Coverage is a 2.25 × 2.25 km grid around the pilot point, not the entire municipality.",
-    "nearestValidCell": "Selected center cell {requestedCell} has no agricultural predictions (urban/built-up or water mask); showing nearest valid 250 m cell {usedCell} (~{meters} m away). Verify conditions on your actual parcel.",
     "limits": "These are historical soil-model predictions, not live measurements. Confirm drainage and organic matter separately. Topsoil bulk density does not establish subsoil compaction.",
     "retrieved": "Raster data acquired {date}; this is not an observation date",
     "showPredictions": "View source predictions and uncertainty",
@@ -268,6 +269,39 @@
     "well": "Well drained",
     "organicMatterPrompt": "Field organic-matter class",
     "depthMean": "0–15 cm estimate; depth means weighted by thickness (5:10)",
-    "noPredictions": "No agricultural soil predictions are available within this cell or nearby 250 m cells. Enter verified field observations below or use the Municipal Agricultural Baseline."
+    "noPredictions": "No usable soil predictions are available in this cell or the searched nearby cells. Enter verified field observations below or use the labeled municipal baseline.",
+    "nearestValidCell": "Selected cell {requestedCell} has incomplete model data; showing nearby 250 m model reference cell {usedCell} (~{meters} m away). Land cover and the cause of missing data are unverified. Confirm conditions at your selected point."
+  },
+  "mvp": {
+    "modeTitle": "MVP demonstration mode",
+    "modeHelp": "Missing required soil inputs use editable example assumptions so you can explore rotation plans. Available source readings stay unchanged. This is not a field-verified recommendation.",
+    "fieldMode": "Field-input mode",
+    "fieldHelp": "Only source data and your reported inputs are used. Missing required soil inputs can pause ranking.",
+    "disable": "Use field inputs only",
+    "enable": "Try complete example inputs",
+    "assumptionSource": "FieldShift example assumptions",
+    "assumptionMethod": "Editable demo defaults only: clay loam, pH 6.3, moderate drainage, medium organic matter when that input is missing. Not inferred from satellite readings.",
+    "assumptionTag": "Example assumption",
+    "soilNotice": "Missing properties use example assumptions for this demonstration. Edit any field below; your inputs take priority. Source predictions remain available in details.",
+    "printNotice": "DEMONSTRATION PLAN — example soil assumptions were used. Edit and locally verify these inputs before field decisions.",
+    "sourceDetails": "Data sources, methods and limitations",
+    "landDetails": "Technical details and annual NDVI trend",
+    "lowlandFlag": "Within preliminary lowland screen",
+    "lowlandOutside": "Outside this lowland screen; flood risk not assessed",
+    "lowlandMethod": "Team screening rule: elevation <30 m and slope ≤3%. Historical surface terrain only; does not establish flood likelihood, drainage or safety. Requires local review.",
+    "bareMethod": "Possible low-greenness months: quality-approved monthly NDVI <0.25 in January–June. Partial coverage is disclosed; no cloud filling, crop or bare-soil confirmation.",
+    "noLowGreenness": "No months below 0.25 in the observed January–June data",
+    "noLandNdvi": "No usable land observations after quality screening",
+    "gap": "No accepted data",
+    "erosionTitle": "Slope-related erosion screen",
+    "screenLimit": "These are preliminary screens, not flood maps or erosion rates. Rain, soil, cover and management also matter. Missing or rejected vegetation observations are not bare fields.",
+    "exampleNdvi": "View an illustrative seasonal vegetation example",
+    "exampleNdviHelp": "Separate synthetic municipal example, January–December. These values illustrate the workflow and do not replace the selected pixel or rejected NASA observations.",
+    "erosion": {
+      "gentle": "Gentle slope (≤3%); lower slope contribution, not a measured erosion rate",
+      "sloping": "Sloping terrain (>3–15%); review cover and runoff control",
+      "steep": "Steep terrain (>15%); prioritize local erosion and cover assessment"
+    },
+    "erosionMethod": "Qualitative team screen from slope only: ≤3%, >3–15%, >15%. No RUSLE tonnes/ha/year is calculated; rainfall, soil, cover and management require separate evidence."
   }
 }

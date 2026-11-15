@@ -146,7 +146,7 @@
     "unknownElevation": "Walang datos ng taas",
     "realNotice": "Mga tantiyang raster · Kailangan ng lokal na pagpapatunay",
     "gridReference": "SRTM pilot grid: {hub}; ginagamit ang napiling native cell.",
-    "realLimitations": "Mula sa SRTM noong Pebrero 2000 ang elevation at slope. May kasaysayan ng siyentipikong NDVI lamang sa mga nakuhang reference point, ayon sa kalidad ng datos. Hindi pa matukoy ang panganib ng baha at erosion nang walang sapat na beripikadong datos.",
+    "realLimitations": "Paunang screen ang sinusuportahan ng makasaysayang terrain at vegetation na pasado sa kalidad. Hindi pa natutukoy ang posibilidad ng baha o taunang erosion rate. Maaaring iba ang vegetation sa reference point kaysa sa napiling bukid.",
     "nativeElevation": "Pinakamalapit na native SRTM post; hindi ito pagsukat sa bukid",
     "hornSlope": "Horn 3 × 3 slope na may WGS84 metric spacing; percent gradient",
     "qualityNdvi": "Naiskala na ang MOD13Q1.061; mahigpit na QA para sa lupa; kailangan ng ≥3 tinanggap na composite mula sa ≥2 taon para sa buwanang mean. Ginagamit ang buwan ng simula ng composite; hindi pinupunan ang puwang dahil sa ulap.",
@@ -220,7 +220,7 @@
     "ndviTrend": "Walang sapat na datos para sa taunang trend ng NDVI. Hindi sapat ang buwanang luntiang pattern upang matukoy ang pagbabago bawat taon.",
     "review": "Kailangan ng lokal na siyentipikong pagsusuri ang mga palagay, klasipikasyon at hangganan ng panganib. Gabay lamang sa paghahambing ang mga score.",
     "cropReview": "May mga profile ng pananim na kailangang suriin. Tiyakin ang angkop na barayti, panahon ng paglaki at mga palagay sa pagsasaka.",
-    "pixelScale": "Mas malawak kaysa sa isang sakahan ang saklaw ng mga grid at sanggunian ng munisipyo. Tiyakin sa lugar ang dalisdis, paagusan at kondisyon ng lupa.",
+    "pixelScale": "Regional na konteksto: POWER meteorology 0.5° × 0.625°; SRTM ~30 m; MODIS NDVI / SoilGrids 250 m nominal. Hindi ito sukat sa mismong parsela. Karaniwang 9–36 km grid ang SMAP; hindi pa isinama ang SMAP dito.",
     "canalTurnouts": "Suriin ang mga labasan ng kanal, iskedyul ng patubig at paagusan kasama ang lokal na tanggapan ng patubig o agrikultura.",
     "compaction": "Suriin ang posibleng siksik na ilalim ng lupang naararo at tiyakin ang sukat ng lupa bago magpasya sa mga gawain.",
     "buyerPrices": "Para sa mga pananim sa plano ({crops}), suriin ang presyo ng mamimili, merkado, paggawa at gastos sa input. Hindi hula sa presyo o ani ang income score."
@@ -242,9 +242,10 @@
     "restoreSoilTelemetry": "Bumalik sa datos ng SoilGrids"
   },
   "soilModel": {
+    "locationAdvisory": "Paunawa sa lokasyon ng datos ng lupa",
+    "relocatedReference": "May kulang na datos ng modelo sa napiling lokasyon (cell {cell}). Ang pagtataya ng lupa ay mula sa kalapit na sangguniang cell ng modelo ({distance} km ang layo), hindi sa pagsukat sa napiling punto. Hindi pa natitiyak ang uri ng takip ng lupa at dahilan ng nawawalang datos.",
     "title": "Datos ng modelong SoilGrids · mga cell na 250 m",
     "coverage": "Lugar na may nakahandang datos: {grid}; napiling cell {cell}. Ang saklaw ay grid na 2.25 × 2.25 km sa paligid ng pilot point, hindi ang buong munisipalidad.",
-    "nearestValidCell": "Walang datos pang-agrikultura para sa piniling gitnang cell {requestedCell} (lungsod, gusali, o tubig); ipinapakita ang pinakamalapit na may-datos na cell {usedCell} (~{meters} m ang layo). Tiyakin ang kondisyon sa aktuwal mong sakahan.",
     "limits": "Mga pagtataya ito ng modelo ng lupa mula sa nakaraang datos, hindi live na pagsukat. Tiyakin nang hiwalay ang drainage at organikong materyal. Hindi pinatutunayan ng bulk density ng ibabaw na lupa ang pagsiksik ng ilalim na lupa.",
     "retrieved": "Kinuha ang raster noong {date}; hindi ito petsa ng obserbasyon",
     "showPredictions": "Tingnan ang datos ng modelo at kawalan ng katiyakan",
@@ -268,6 +269,39 @@
     "well": "Maayos ang drainage",
     "organicMatterPrompt": "Antas ng organikong materyal sa bukid",
     "depthMean": "Tantiyang 0–15 cm; mean ng bawat lalim na may timbang na 5:10",
-    "noPredictions": "Walang available na pagtataya ng lupa para sa cell na ito o sa kalapit na mga 250 m na cell. Ilagay sa ibaba ang nasuring datos o gamitin ang Municipal Agricultural Baseline."
+    "noPredictions": "Walang magamit na pagtataya ng lupa sa cell na ito o sa mga nasuring kalapit na cell. Ilagay sa ibaba ang nasuring datos o gamitin ang may label na municipal baseline.",
+    "nearestValidCell": "Kulang ang datos ng modelo sa napiling cell {requestedCell}; ipinapakita ang kalapit na sangguniang cell {usedCell} na may 250 m na resolusyon (~{meters} m ang layo). Hindi pa natitiyak ang takip ng lupa at dahilan ng kulang na datos. Tiyakin ang kondisyon sa napiling punto."
+  },
+  "mvp": {
+    "modeTitle": "MVP demonstration mode",
+    "modeHelp": "Gumagamit ng nae-edit na halimbawang palagay para sa kulang na kailangang soil input upang masubukan ang rotation plans. Hindi binabago ang available na source readings. Hindi ito rekomendasyong beripikado sa bukid.",
+    "fieldMode": "Mode para sa datos ng bukid",
+    "fieldHelp": "Source data at iniulat mong input lamang ang ginagamit. Maaaring mahinto ang ranking kung kulang ang kailangang soil input.",
+    "disable": "Gamitin lamang ang datos ng bukid",
+    "enable": "Subukan ang kumpletong halimbawang input",
+    "assumptionSource": "Mga halimbawang palagay ng FieldShift",
+    "assumptionMethod": "Nae-edit na demo defaults lamang: clay loam, pH 6.3, katamtamang drainage at organic matter kapag kulang ang input. Hindi hinango sa satellite readings.",
+    "assumptionTag": "Halimbawang palagay",
+    "soilNotice": "Halimbawang palagay ang gamit para sa kulang na property sa demo. Maaaring i-edit ang mga input sa ibaba; mas inuuna ang iyong input. Nasa detalye pa rin ang source predictions.",
+    "printNotice": "DEMONSTRATION PLAN — may ginamit na halimbawang palagay sa lupa. I-edit at beripikahin sa lokal na kondisyon bago magpasya para sa bukid.",
+    "sourceDetails": "Mga source, pamamaraan at limitasyon ng datos",
+    "landDetails": "Teknikal na detalye at taunang NDVI trend",
+    "lowlandFlag": "Pasok sa paunang lowland screen",
+    "lowlandOutside": "Labas sa lowland screen; hindi pa nasusuri ang panganib ng baha",
+    "lowlandMethod": "Screening rule ng team: elevation <30 m at slope ≤3%. Makasaysayang surface terrain lamang; hindi nito tinutukoy ang posibilidad ng baha, drainage o kaligtasan. Kailangan ng lokal na pagsusuri.",
+    "bareMethod": "Mga posibleng buwan ng mababang greenness: buwanang NDVI <0.25 na pasado sa kalidad sa Enero–Hunyo. Ipinapakita ang kulang na coverage; hindi pinupunan ang ulap o kinukumpirma ang pananim o bakanteng lupa.",
+    "noLowGreenness": "Walang buwan na mas mababa sa 0.25 sa naobserbahang datos ng Enero–Hunyo",
+    "noLandNdvi": "Walang magagamit na obserbasyon sa lupa matapos ang quality screening",
+    "gap": "Walang tinanggap na datos",
+    "erosionTitle": "Pagsusuri ng erosion batay sa slope",
+    "screenLimit": "Paunang screen lamang ito, hindi mapa ng baha o rate ng erosion. Mahalaga rin ang ulan, lupa, takip ng lupa at pamamahala. Ang kulang o hindi tinanggap na vegetation observation ay hindi patunay ng bakanteng bukid.",
+    "exampleNdvi": "Tingnan ang halimbawang pana-panahong vegetation profile",
+    "exampleNdviHelp": "Hiwalay na synthetic na halimbawa ng munisipalidad, Enero–Disyembre. Ipinapakita nito ang workflow at hindi pinapalitan ang napiling pixel o hindi tinanggap na obserbasyon ng NASA.",
+    "erosion": {
+      "gentle": "Banayad na slope (≤3%); mas maliit na ambag ng slope, hindi nasukat na erosion rate",
+      "sloping": "Pahilis na terrain (>3–15%); suriin ang takip ng lupa at kontrol sa runoff",
+      "steep": "Matarik na terrain (>15%); unahin ang lokal na pagsusuri ng erosion at takip ng lupa"
+    },
+    "erosionMethod": "Qualitative screen ng team mula sa slope lamang: ≤3%, >3–15%, >15%. Walang kinalkulang RUSLE tonnes/ha/year; kailangan ng hiwalay na ebidensya para sa ulan, lupa, takip at pamamahala."
   }
 }

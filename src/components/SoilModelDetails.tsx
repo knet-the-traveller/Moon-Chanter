@@ -14,12 +14,13 @@ export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEv
     <p className="font-semibold">{t('title')}</p>
     <p>{t('coverage').replace('{grid}', evidence.gridName).replace('{cell}', String(evidence.cellIndex + 1))}</p>
     {requestedCell !== undefined && (
-      <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">
-        {t('nearestValidCell')
+      <div role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 text-amber-950">
+        <p className="font-bold">{t('locationAdvisory')}</p>
+        <p>{t('nearestValidCell')
           .replace('{requestedCell}', String(requestedCell + 1))
           .replace('{usedCell}', String(evidence.cellIndex + 1))
-          .replace('{meters}', String(offsetMeters))}
-      </p>
+          .replace('{meters}', String(offsetMeters))}</p>
+      </div>
     )}
     {!hasPredictions && <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">{t('noPredictions')}</p>}
     <p>{t('limits')}</p>

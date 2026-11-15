@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import rawPackage from '../data/soilgrids/pilots-v1.json';
 import { SoilGridsPackageSchema, SoilModelEvidenceSchema, SOIL_PROPERTIES, SOIL_DEPTHS } from '../types/soilGridsPackage';
 import { resolveBundledSoil, soilCellFootprint } from '../services/bundledSoilGrids';
@@ -27,6 +27,7 @@ vi.mock('../store/useAppStore', async importOriginal => {
   return { useAppStore: Object.assign(() => original.useAppStore.getState(), original.useAppStore) };
 });
 
+beforeEach(()=>useAppStore.setState({...useAppStore.getInitialState(),useDemoAssumptions:false},true));
 const data = SoilGridsPackageSchema.parse(rawPackage);
 const gridCenter = (grid: typeof data.grids[number], index: number) => {
   const footprint = soilCellFootprint(grid, index);
@@ -40,6 +41,23 @@ function validCell(grid = data.grids[0]) {
 afterEach(() => { useAppStore.setState(useAppStore.getInitialState(), true); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('native SoilGrids pilot package', () => {
+  it.each(['en', 'fil'] as const)('uses one neutral translated relocation advisory in %s', language => {
+    const { lat, lon } = validCell();
+    const soil = resolveBundledSoil(lat, lon)!;
+    soil.modelEvidence!.relocatedFrom = {
+      originalLat: lat, originalLon: lon, distanceKm: 0.25, cellIndex: 40, reason: 'nodata_cell'
+    };
+    useAppStore.setState({ soilData: soil, language });
+    const html = renderToStaticMarkup(createElement(SoilCard));
+    const title = getTranslation(language, 'soilModel.locationAdvisory');
+    const message = getTranslation(language, 'soilModel.nearestValidCell')
+      .replace('{requestedCell}', '41').replace('{usedCell}', String(soil.modelEvidence!.cellIndex + 1)).replace('{meters}', '250');
+    expect(html.split(title)).toHaveLength(2);
+    expect(html).toContain(message);
+    expect(html).not.toMatch(/agricultural cell|urban|NoData urban deadlock/i);
+    expect(html).not.toContain('{cell}');
+    expect(html).not.toContain('{distance}');
+  });
   it('validates all four existing preset coordinates and explicit licensing/provenance', () => {
     expect(data.license).toBe('CC-BY-4.0');
     expect(data.observationPeriod).toBeNull();
