@@ -54,7 +54,8 @@
     "searchTownPlaceholder": "Search municipality or province...",
     "ndviLowFallow": "Low / Fallow",
     "ndviModerate": "Moderate",
-    "ndviHighVigor": "High Vigor"
+    "ndviHighVigor": "High Vigor",
+    "expandedMapDialog": "Expanded farm location map"
   },
   "conditions": {
     "climateTitle": "NASA Climate & Moisture Context",
@@ -200,7 +201,21 @@
     "traitWaterTitle": "Water Demand Profile",
     "traitWaterDesc": "Indicates relative seasonal water requirement to prevent deficit stress during dry periods.",
     "traitRootTitle": "Root Stratification",
-    "traitRootDesc": "Alternating root depths between shallow fibrous roots and deep taproots prevents plow pan subsoil compaction."
+    "traitRootDesc": "Alternating root depths between shallow fibrous roots and deep taproots prevents plow pan subsoil compaction.",
+    "printPlanSheet": "Print Plan Sheet",
+    "comparedQueuedSingular": "{count} plan queued for side-by-side comparison.",
+    "comparedQueuedPlural": "{count} plans queued for side-by-side comparison.",
+    "activeSpotlight": "Active Spotlight Plan",
+    "closeSavedPlans": "Close saved plans modal",
+    "savedSnapshotSingular": "{count} plan snapshot saved",
+    "savedSnapshotPlural": "{count} plan snapshots saved",
+    "farmRecordsFooter": "Farm Records",
+    "closeModal": "Close",
+    "closeTraitTooltip": "Close trait details",
+    "badgeNFixer": "+N Fixer",
+    "badgeWater": "Water: {demand}",
+    "badgeRoot": "Root: {depth}",
+    "printShare": "Print / Share"
   },
   "print": {
     "title": "AniTala Crop Rotation Advisory Plan",

@@ -228,7 +228,7 @@ export const App: React.FC = () => {
                     className="px-4 py-2 rounded-xl text-xs font-bold bg-at-green hover:bg-at-lime-bright text-at-dk flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <Printer className="w-3.5 h-3.5 text-at-dk" />
-                    <span>Print Plan Sheet</span>
+                    <span>{getTranslation(language, 'results.printPlanSheet')}</span>
                   </button>
                 </div>
               </div>
@@ -242,7 +242,10 @@ export const App: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs sm:text-sm">
                     <Scale className="w-4 h-4 text-at-lime" />
                     <span>
-                      {comparedPlanIds.length} plan{comparedPlanIds.length > 1 ? 's' : ''} queued for side-by-side comparison.
+                      {getTranslation(
+                        language,
+                        comparedPlanIds.length === 1 ? 'results.comparedQueuedSingular' : 'results.comparedQueuedPlural'
+                      ).replace('{count}', String(comparedPlanIds.length))}
                     </span>
                   </div>
                   <button
@@ -302,7 +305,7 @@ export const App: React.FC = () => {
                       <div>
                         <div className="text-xs font-bold uppercase tracking-wider text-at-muted mb-2 flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5 text-at-green" />
-                          <span>{language === 'fil' ? 'Pangunahing Itinatampok na Plano' : 'Active Spotlight Plan'}</span>
+                          <span>{getTranslation(language, 'results.activeSpotlight')}</span>
                         </div>
                         <RotationCard plan={spotlightPlan} rank={spotlightRank} />
                       </div>

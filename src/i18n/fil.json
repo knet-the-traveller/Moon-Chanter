@@ -54,7 +54,8 @@
     "searchTownPlaceholder": "Maghanap ng munisipyo o lalawigan...",
     "ndviLowFallow": "Mababa / Tiwangwang",
     "ndviModerate": "Katamtaman",
-    "ndviHighVigor": "Malagong Halaman"
+    "ndviHighVigor": "Malagong Halaman",
+    "expandedMapDialog": "Pinalaking mapa ng lokasyon ng sakahan"
   },
   "conditions": {
     "climateTitle": "Klima at Ulan Ayon sa NASA",
@@ -200,7 +201,21 @@
     "traitWaterTitle": "Pangangailangan sa Tubig",
     "traitWaterDesc": "Ipinapakita ang kailangang tubig ng pananim upang maiwasan ang pinsala sa panahon ng tag-tuyot.",
     "traitRootTitle": "Lalim ng Ugat",
-    "traitRootDesc": "Ang pagsasalit-salit ng mababaw at malalalim na ugat ay tumutulong sa pagluwag ng matigas na ilalim ng lupa."
+    "traitRootDesc": "Ang pagsasalit-salit ng mababaw at malalalim na ugat ay tumutulong sa pagluwag ng matigas na ilalim ng lupa.",
+    "printPlanSheet": "I-print ang Papel ng Plano",
+    "comparedQueuedSingular": "{count} plano ang nakapila para sa paghahambing.",
+    "comparedQueuedPlural": "{count} plano ang nakapila para sa paghahambing.",
+    "activeSpotlight": "Pangunahing Itinatampok na Plano",
+    "closeSavedPlans": "Isara ang mga naka-save na plano",
+    "savedSnapshotSingular": "{count} kopya ng plano ang naka-save",
+    "savedSnapshotPlural": "{count} kopya ng plano ang naka-save",
+    "farmRecordsFooter": "Mga Talaan ng Sakahan",
+    "closeModal": "Isara",
+    "closeTraitTooltip": "Isara ang detalye ng katangian",
+    "badgeNFixer": "+N Dagdag-Nitroheno",
+    "badgeWater": "Tubig: {demand}",
+    "badgeRoot": "Ugat: {depth}",
+    "printShare": "I-print / Ibahagi"
   },
   "print": {
     "title": "AniTala Gabay sa Salitang Pananim",

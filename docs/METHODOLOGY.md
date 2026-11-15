@@ -81,9 +81,9 @@ Each candidate rotation sequence is evaluated across 5 agronomic and economic pi
 - **Cool Dry Transition ($S_2$):** $-18$ pts for dry-season paddy rice; $+15$ pts for low/medium water demand; $+8$ pts extra (`[AGRO-RULE-01-NFIX]`) when short-cycle Pag-asa Mungbean saves water vs. paddy rice.
 - **Hot Dry Drought Defense ($S_3$):** $+25$ pts high drought tolerance ($+10$ medium, $-20$ low); $+15$ pts low water demand ($-15$ high); $-12$ pts for sloping upland fallow runoff.
 
-#### Water Source assumptions — `[AGRO-RULE-06-WATER-ACCESS]` (pending implementation)
+#### Water Source assumptions — `[AGRO-RULE-06-WATER-ACCESS]` (implemented; `needsReview: true`)
 
-In this checkout, `calculateSequenceScores` accepts a crop sequence, climate, soil, and farmer priorities. Neither that scoring API nor `CandidateGenerationParams` accepts a **Water Source** input. The rule ID `[AGRO-RULE-06-WATER-ACCESS]` names a proposed extension; it is not an implemented scoring rule. The water pillar above applies the same rainfall, crop-demand, and drought/flood-tolerance heuristics regardless of actual irrigation access. Its points are provisional comparisons, not a field water balance or proof that a crop's water needs can be met.
+`RecommendationEngineParams`, `calculateSequenceScores`, `evaluateScenarios`, and `generatePlanExplanations` accept an optional `WaterSource` input (`'irrigation_canal' | 'rainfed' | 'pump_well' | 'small_pond'`, defaulting to `'irrigation_canal'` when omitted), while `CandidateGenerationParams` remains water-source-agnostic (candidates are not hard-excluded by water source). In `src/engine/scoring.ts`, `[AGRO-RULE-06-WATER-ACCESS]` applies dry-season (`S2`, `S3`, excluding `fallow`) adjustments across `waterResilience`, `climateRisk`, and `economics` based on farmer-reported irrigation access and crop water demand / drought tolerance, and surfaces tailored water-access rationales and risks in `src/engine/explainer.ts` (such as `risk_canal_curtailment`, `risk_rainfed_deficit`, `reason_rainfed_drought_fit`, `risk_pump_fuel_cost`, and `reason_pump_water_buffer`). `WATER_ACCESS_RULE_METADATA` marks this rule `needsReview: true` because these adjustments are provisional advisory comparisons requiring local NIA / Irrigators Association service validation and field calibration—not a field water balance or proof that crop water needs can be met.
 
 Before relying on a plan, confirm these Water Source assumptions with the farmer and local irrigation/agriculture office:
 
@@ -91,7 +91,7 @@ Before relying on a plan, confirm these Water Source assumptions with the farmer
 - **Irrigated or mixed supply:** Confirm the actual source, canal turnout or pump access, delivery schedule, seasonal reliability, and pumping costs. A municipal rice profile, a nearby canal, or an irrigated baseline comparison does not establish access for the selected parcel.
 - **Unknown supply:** Keep access unconfirmed until checked locally. NASA POWER rainfall, GIBS imagery, and SoilGrids drainage predictions do not verify irrigation delivery. SMAP remains unintegrated and is not evidence of irrigation access in this version.
 
-Any future implementation of `[AGRO-RULE-06-WATER-ACCESS]` must distinguish farmer-reported supply from verified delivery, disclose assumptions in explanations and the Local Review Checklist, and carry `needsReview: true` for unverified mappings or scoring values. Source-specific bonuses, penalties, or candidate exclusions require a separately scoped engine change with explicit tests. No such adjustments are applied by this documentation update.
+Any calibration or extension of `[AGRO-RULE-06-WATER-ACCESS]` must keep distinguishing farmer-reported supply from verified delivery, preserve `needsReview: true` metadata on unverified thresholds, and validate score deltas or any candidate filtering with explicit unit tests in `src/tests/engine.test.ts`.
 
 ### C. Climate Shock Buffer ($S_{\text{climate}}$)
 - **Base Score:** 45 pts.

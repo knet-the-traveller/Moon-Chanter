@@ -160,14 +160,33 @@ export const MapPicker: React.FC = () => {
     }
   }, [selectedLocation]);
 
-  // Invalidate map size when toggling between standard and expanded full-viewport views
+  // Invalidate map size and wire Escape dismissal when toggling expanded viewport mode
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const timer = setTimeout(() => {
-      mapInstanceRef.current?.invalidateSize();
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [isMapExpanded]);
+    const timer = mapInstanceRef.current
+      ? setTimeout(() => {
+          mapInstanceRef.current?.invalidateSize();
+        }, 50)
+      : undefined;
+
+    let handleKeyDown: ((e: KeyboardEvent) => void) | undefined;
+    if (isMapExpanded && typeof window !== 'undefined') {
+      handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setMapExpanded(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+      if (handleKeyDown && typeof window !== 'undefined') {
+        window.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+  }, [isMapExpanded, setMapExpanded]);
 
   // Switch Tile Layer (GIBS True Color, NDVI, OSM)
   const handleLayerSwitch = (layerKey: string) => {
@@ -437,7 +456,12 @@ export const MapPicker: React.FC = () => {
 
         {/* Right Column: Map Card & Confirm CTA */}
         <div className="lg:col-span-7 space-y-4">
-          <div className={isMapExpanded ? 'fixed inset-0 z-50 bg-at-ow flex flex-col p-3 sm:p-5' : 'bg-white rounded-2xl p-4 sm:p-5 border border-at-line shadow-xs'}>
+          <div
+            role={isMapExpanded ? 'dialog' : undefined}
+            aria-modal={isMapExpanded ? 'true' : undefined}
+            aria-label={isMapExpanded ? getTranslation(language, 'map.expandedMapDialog') : undefined}
+            className={isMapExpanded ? 'fixed inset-0 z-50 bg-at-ow flex flex-col p-3 sm:p-5' : 'bg-white rounded-2xl p-4 sm:p-5 border border-at-line shadow-xs'}
+          >
             {isMapExpanded ? (
               <div className="flex items-center justify-between pb-3 border-b border-at-line/60 gap-3">
                 <div className="flex items-center gap-2">

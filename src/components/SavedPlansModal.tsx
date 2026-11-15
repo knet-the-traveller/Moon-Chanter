@@ -51,10 +51,20 @@ export const SavedPlansModal: React.FC = () => {
     }
   };
 
+  const scenarioKeys: Record<string, string> = {
+    baseline: 'results.baseline',
+    hotter: 'results.hotter',
+    drier: 'results.drier',
+    wetter: 'results.wetter',
+    hotterAndDrier: 'results.hotterAndDrier',
+    compound: 'results.hotterAndDrier',
+    hotter_drier: 'results.hotterAndDrier'
+  };
+
   const getScenarioLabel = (scenario: string): string => {
-    const key = `results.${scenario}` as const;
+    const key = scenarioKeys[scenario] ?? `results.${scenario}`;
     const translated = getTranslation(language, key);
-    return translated || scenario;
+    return translated !== key ? translated : scenario;
   };
 
   return (
@@ -76,8 +86,10 @@ export const SavedPlansModal: React.FC = () => {
                 {getTranslation(language, 'results.savedPlansTitle')}
               </h2>
               <p className="text-xs text-[#C7DA91]/80">
-                {savedPlans.length}{' '}
-                {savedPlans.length === 1 ? 'plan snapshot saved' : 'plan snapshots saved'}
+                {getTranslation(
+                  language,
+                  savedPlans.length === 1 ? 'results.savedSnapshotSingular' : 'results.savedSnapshotPlural'
+                ).replace('{count}', String(savedPlans.length))}
               </p>
             </div>
           </div>
@@ -85,7 +97,7 @@ export const SavedPlansModal: React.FC = () => {
             type="button"
             onClick={() => setSavedPlansOpen(false)}
             className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#A7BD40]"
-            aria-label="Close saved plans modal"
+            aria-label={getTranslation(language, 'results.closeSavedPlans')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -245,13 +257,15 @@ export const SavedPlansModal: React.FC = () => {
 
         {/* Modal Footer */}
         <div className="bg-[#F7F9F4] border-t border-[#D5E0C8] px-5 py-3 flex items-center justify-between text-xs text-[#56664A]">
-          <span>{getTranslation(language, 'app.title')} Farm Records</span>
+          <span>
+            {getTranslation(language, 'app.title')} · {getTranslation(language, 'results.farmRecordsFooter')}
+          </span>
           <button
             type="button"
             onClick={() => setSavedPlansOpen(false)}
             className="px-4 py-1.5 rounded-xl bg-[#1D3309] text-white font-semibold hover:bg-[#2e4d11] transition-colors cursor-pointer"
           >
-            Close
+            {getTranslation(language, 'results.closeModal')}
           </button>
         </div>
       </div>

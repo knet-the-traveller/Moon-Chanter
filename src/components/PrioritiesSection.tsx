@@ -226,7 +226,7 @@ export const PrioritiesSection: React.FC<PrioritiesSectionProps> = ({
     return tags;
   }, [priorities, language]);
 
-  const enabledCropCount = ORDERED_CROPS.length - excludedCropIds.length;
+  const enabledCropCount = ORDERED_CROPS.filter((crop) => !excludedCropIds.includes(crop.id)).length;
   const isLowCropCount = enabledCropCount < 2;
 
   // Pagination slice

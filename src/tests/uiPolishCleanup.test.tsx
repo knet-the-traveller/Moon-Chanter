@@ -395,10 +395,14 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     const cardHtml = renderToStaticMarkup(createElement(RotationCard, { plan, rank: 1 }));
 
     // Trait badge buttons with aria-expanded="false"
+    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const expectedNFixer = escapeRegExp(getTranslation(language, 'results.badgeNFixer'));
+    const expectedWaterPrefix = escapeRegExp(getTranslation(language, 'results.badgeWater').split('{demand}')[0]);
+    const expectedRootPrefix = escapeRegExp(getTranslation(language, 'results.badgeRoot').split('{depth}')[0]);
     expect(cardHtml).toContain('aria-expanded="false"');
     expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>GRASS<\/button>|<button[^>]*aria-expanded="false"[^>]*>grass<\/button>/i);
-    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>\+N Fixer<\/button>/);
-    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>Water: /);
-    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>Root: /);
+    expect(cardHtml).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>${expectedNFixer}<\\/button>`));
+    expect(cardHtml).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>${expectedWaterPrefix}`));
+    expect(cardHtml).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>${expectedRootPrefix}`));
   });
 });

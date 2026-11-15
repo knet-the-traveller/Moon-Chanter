@@ -482,7 +482,7 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
                                 : 'bg-at-tint hover:bg-at-tint/80 text-at-dk border-at-green/40'
                             }`}
                           >
-                            +N Fixer
+                            {getTranslation(language, 'results.badgeNFixer')}
                           </button>
                         )}
 
@@ -497,7 +497,7 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
                               : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200/50'
                           }`}
                         >
-                          Water: {crop.waterDemand}
+                          {getTranslation(language, 'results.badgeWater').replace('{demand}', crop.waterDemand)}
                         </button>
 
                         <button
@@ -511,7 +511,7 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
                               : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200/50'
                           }`}
                         >
-                          Root: {crop.rootDepth}
+                          {getTranslation(language, 'results.badgeRoot').replace('{depth}', crop.rootDepth)}
                         </button>
                       </div>
 
@@ -533,7 +533,7 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
                                 type="button"
                                 onClick={() => setActiveTraitTooltip(null)}
                                 className="text-white/70 hover:text-white p-0.5 text-xs leading-none cursor-pointer"
-                                aria-label={getTranslation(language, 'provenance.closeMethodology')}
+                                aria-label={getTranslation(language, 'results.closeTraitTooltip')}
                               >
                                 ✕
                               </button>
@@ -601,7 +601,7 @@ export const RotationCard: React.FC<RotationCardProps> = ({ plan, rank }) => {
               className="px-4 py-2 rounded-xl text-xs font-bold bg-at-green hover:bg-at-lime-bright text-at-dk flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5 text-at-dk" />
-              <span>Print / Share</span>
+              <span>{getTranslation(language, 'results.printShare')}</span>
             </button>
           </div>
         </div>
