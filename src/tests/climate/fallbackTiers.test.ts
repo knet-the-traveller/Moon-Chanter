@@ -2,6 +2,7 @@ vi.mock('../../services/bundledPower', () => ({ resolveBundledPower: () => null 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchDailySeries } from '../../services/nasaPower';
 import { CacheService } from '../../services/cache';
+import { PILOT_CONFIG } from '../../config/pilot';
 
 describe('NASA POWER Service Fallback Hierarchy (Live -> Cache -> Sample)', () => {
   const originalFetch = globalThis.fetch;
@@ -53,7 +54,7 @@ describe('NASA POWER Service Fallback Hierarchy (Live -> Cache -> Sample)', () =
     };
 
     // Pre-populate cache
-    const cacheKey = `nasa_power_daily_v2_15.714_120.906_20140101_20231231`;
+    const cacheKey = `nasa_power_daily_v2_${PILOT_CONFIG.location.lat}_${PILOT_CONFIG.location.lon}_20140101_20231231`;
     await CacheService.set(cacheKey, {payload:cachedPayload,retrievedAt:'2026-11-15T03:00:00Z'});
 
     // Mock live API failure

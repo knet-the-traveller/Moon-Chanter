@@ -37,6 +37,24 @@ export const RusleFactorsSchema = z.object({
   })
 });
 
+export const SensorReadingSchema = z.object({
+  value: z.number().nullable(),
+  unit: z.string(),
+  period: z.string().nullable(),
+  baseline: z.number().nullable().optional(),
+  source: z.string(),
+  retrievedAt: z.string().nullable(),
+  status: z.enum(['measured', 'estimated', 'unavailable']),
+  reason: z.string().optional()
+});
+
+export const MunicipalSensorsSchema = z.object({
+  smapSoilMoisture: SensorReadingSchema.optional(),
+  extremeRainDays: SensorReadingSchema.optional(),
+  ecostressEsi: SensorReadingSchema.optional(),
+  srtmSlope: SensorReadingSchema.optional()
+});
+
 export const MunicipalLandFixtureSchema = z.object({
   location: CoordinatesSchema.extend({
     id: z.string().min(1),
@@ -50,14 +68,18 @@ export const MunicipalLandFixtureSchema = z.object({
     annualNdvi: z.array(NdviObservationSchema).default([]),
     rusle: RusleFactorsSchema,
     landCover: z.string().optional(),
+    landCoverVerified: z.boolean().optional(),
     meta: MetricProvenanceSchema.extend({
       isSample: z.literal(true),
       retrievedOn: z.string().nullable(),
       createdOn: z.string()
     })
-  })
+  }),
+  sensors: MunicipalSensorsSchema.optional()
 }).passthrough();
 
 export type MunicipalLandFixture = z.infer<typeof MunicipalLandFixtureSchema>;
 export type NdviObservation = z.infer<typeof NdviObservationSchema>;
 export type RusleFactors = z.infer<typeof RusleFactorsSchema>;
+export type SensorReading = z.infer<typeof SensorReadingSchema>;
+export type MunicipalSensors = z.infer<typeof MunicipalSensorsSchema>;

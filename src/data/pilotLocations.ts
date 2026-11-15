@@ -6,8 +6,8 @@ export const PILOT_LOCATIONS: PilotLocation[] = [
     name: 'Science City of Muñoz',
     province: 'Nueva Ecija',
     region: 'Central Luzon (Region III)',
-    lat: 15.714,
-    lon: 120.906,
+    lat: 15.71715,
+    lon: 120.90643,
     elevationMeters: 58,
     description: {
       en: 'National Rice Granary & PhilRice Hub. High-input lowland paddies with sharp wet/dry seasonal divide.',
@@ -45,8 +45,8 @@ export const PILOT_LOCATIONS: PilotLocation[] = [
     name: 'Malaybalay City',
     province: 'Bukidnon',
     region: 'Northern Mindanao (Region X)',
-    lat: 8.156,
-    lon: 125.127,
+    lat: 8.15558,
+    lon: 125.12834,
     elevationMeters: 620,
     description: {
       en: 'Highland agro-ecological plateau with volcanic soils. Suitable for high-value vegetables and root crops.',
@@ -60,6 +60,6 @@ export const PHILIPPINES_BOUNDS = {
   maxLat: 21.5,
   minLon: 116.0,
   maxLon: 127.0,
-  defaultCenter: [15.714, 120.906] as [number, number],
+  defaultCenter: [15.71715, 120.90643] as [number, number],
   defaultZoom: 7
 };

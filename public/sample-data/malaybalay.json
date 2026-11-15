@@ -1,15 +1,19 @@
 {
   "location": {
+    "lat": 8.15558,
+    "lon": 125.12834,
     "id": "bukidnon",
     "name": "Malaybalay City",
     "province": "Bukidnon",
+    "elevationMeters": 620,
     "region": "Northern Mindanao (Region X)",
-    "lat": 8.156,
-    "lon": 125.127,
-    "elevationMeters": 620
+    "description": {
+      "en": "Highland agro-ecological plateau with volcanic soils. Suitable for high-value vegetables and root crops.",
+      "fil": "Mataas na talampas na may lupang bulkaniko. Mainam sa mga gulay at lamang-lupa."
+    }
   },
   "land": {
-    "slopePct": 12.0,
+    "slopePct": 18,
     "ndviMonthly": [
       0.65,
       0.6,
@@ -28,7 +32,7 @@
     "rusle": {
       "R": 1000,
       "K": 0.03,
-      "LS": 3.0,
+      "LS": 3,
       "P": 1,
       "units": {
         "R": "MJ mm ha-1 h-1 yr-1",
@@ -38,6 +42,7 @@
       }
     },
     "landCover": "cropland",
+    "landCoverVerified": false,
     "meta": {
       "source": "Illustrative municipal land scenario",
       "variable": "terrain, NDVI, RUSLE factors",
@@ -49,6 +54,253 @@
       "note": "Synthetic demonstration slope, NDVI and RUSLE factors. Existing preset elevation is unverified. Verify elevation/slope with SRTM or a local survey, NDVI with quality-controlled MODIS/VIIRS observations, and erosion factors with DA-BSWM or local technicians. No field measurements or satellite retrieval are claimed.",
       "retrievedOn": null,
       "createdOn": "2026-11-14"
+    }
+  },
+  "sensors": {
+    "smapSoilMoisture": {
+      "value": null,
+      "unit": "m3/m3",
+      "period": null,
+      "baseline": null,
+      "source": "NASA SMAP L3 Radiometer Global Daily 9 km (SPL3SMP_E v006)",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Requires Earthdata Bearer token; coarse 9 km spatial resolution requires technician disaggregation."
+    },
+    "extremeRainDays": {
+      "value": null,
+      "unit": "days/year >= 50 mm",
+      "period": null,
+      "baseline": null,
+      "source": "NASA POWER daily point (PRECTOTCORR >= 50 mm)",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Computed from 10-year daily series via scripts/build-municipal-fixtures.ts. Note: coarse 0.5 deg grid understates convective point-level rain extremes."
+    },
+    "ecostressEsi": {
+      "value": null,
+      "unit": "ESI z-score",
+      "period": null,
+      "baseline": null,
+      "source": "ECOSTRESS Evaporative Stress Index PT-JPL 70 m (ECO4ESI v002)",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Requires Earthdata AppEEARS token; orbital revisit gaps over Philippines during monsoon cloud cover."
+    },
+    "srtmSlope": {
+      "value": null,
+      "unit": "%",
+      "period": null,
+      "baseline": null,
+      "source": "NASA SRTMGL1 v003 30 m",
+      "retrievedAt": null,
+      "status": "unavailable",
+      "reason": "Requires DEM tile raster analysis via scripts/build-municipal-fixtures.ts."
+    }
+  },
+  "climate": {
+    "source": "NASA POWER Climatology (2013-2023 Monthly AG)",
+    "variableList": [
+      "T2M",
+      "T2M_MAX",
+      "T2M_MIN",
+      "PRECTOTCORR",
+      "ALLSKY_SFC_SW_DWN",
+      "RH2M"
+    ],
+    "dateRange": "2013-01-01 to 2023-12-31 (10-Year Decadal Average)",
+    "isSampleData": true,
+    "meanAnnualPrecipitation": 2550,
+    "meanAnnualTemp": 23.8,
+    "seasonalStats": {
+      "wet": {
+        "precip": 1620,
+        "avgTemp": 23.9,
+        "maxTemp": 28.5
+      },
+      "dryCool": {
+        "precip": 380,
+        "avgTemp": 22.8,
+        "maxTemp": 27.2
+      },
+      "dryHot": {
+        "precip": 550,
+        "avgTemp": 24.8,
+        "maxTemp": 29.8
+      }
+    },
+    "monthly": [
+      {
+        "month": "Jan",
+        "monthNum": 1,
+        "temp": 22.6,
+        "tempMax": 26.8,
+        "tempMin": 18.4,
+        "rainfall": 125,
+        "solarRadiation": 16.2,
+        "humidity": 84
+      },
+      {
+        "month": "Feb",
+        "monthNum": 2,
+        "temp": 22.9,
+        "tempMax": 27.4,
+        "tempMin": 18.5,
+        "rainfall": 110,
+        "solarRadiation": 17.8,
+        "humidity": 82
+      },
+      {
+        "month": "Mar",
+        "monthNum": 3,
+        "temp": 23.8,
+        "tempMax": 28.6,
+        "tempMin": 19,
+        "rainfall": 145,
+        "solarRadiation": 19.5,
+        "humidity": 80
+      },
+      {
+        "month": "Apr",
+        "monthNum": 4,
+        "temp": 24.9,
+        "tempMax": 29.9,
+        "tempMin": 19.8,
+        "rainfall": 165,
+        "solarRadiation": 20.2,
+        "humidity": 79
+      },
+      {
+        "month": "May",
+        "monthNum": 5,
+        "temp": 24.8,
+        "tempMax": 29.5,
+        "tempMin": 20.1,
+        "rainfall": 240,
+        "solarRadiation": 18.9,
+        "humidity": 83
+      },
+      {
+        "month": "Jun",
+        "monthNum": 6,
+        "temp": 24.2,
+        "tempMax": 28.7,
+        "tempMin": 19.8,
+        "rainfall": 295,
+        "solarRadiation": 17.2,
+        "humidity": 86
+      },
+      {
+        "month": "Jul",
+        "monthNum": 7,
+        "temp": 23.8,
+        "tempMax": 28.2,
+        "tempMin": 19.5,
+        "rainfall": 310,
+        "solarRadiation": 16.5,
+        "humidity": 87
+      },
+      {
+        "month": "Aug",
+        "monthNum": 8,
+        "temp": 23.9,
+        "tempMax": 28.4,
+        "tempMin": 19.4,
+        "rainfall": 305,
+        "solarRadiation": 16.8,
+        "humidity": 87
+      },
+      {
+        "month": "Sep",
+        "monthNum": 9,
+        "temp": 23.9,
+        "tempMax": 28.5,
+        "tempMin": 19.4,
+        "rainfall": 285,
+        "solarRadiation": 17,
+        "humidity": 87
+      },
+      {
+        "month": "Oct",
+        "monthNum": 10,
+        "temp": 23.9,
+        "tempMax": 28.6,
+        "tempMin": 19.3,
+        "rainfall": 255,
+        "solarRadiation": 17.2,
+        "humidity": 86
+      },
+      {
+        "month": "Nov",
+        "monthNum": 11,
+        "temp": 23.6,
+        "tempMax": 28,
+        "tempMin": 19.1,
+        "rainfall": 170,
+        "solarRadiation": 16.5,
+        "humidity": 86
+      },
+      {
+        "month": "Dec",
+        "monthNum": 12,
+        "temp": 23,
+        "tempMax": 27.2,
+        "tempMin": 18.8,
+        "rainfall": 145,
+        "solarRadiation": 15.8,
+        "humidity": 85
+      }
+    ],
+    "heatStressDaysPerYear": 0,
+    "drySpellRisk": "low",
+    "excessWaterRisk": "high",
+    "heatRisk": "low",
+    "tenYearRainfallTrend": "stable",
+    "trendDeltaPercent": 0.8
+  },
+  "soil": {
+    "source": "ISRIC SoilGrids v2.0 (0-15cm Depth Mean, Cell 41)",
+    "texture": "clay_loam",
+    "drainage": "well",
+    "organicMatter": "high",
+    "ph": 5.5,
+    "isEstimate": false,
+    "rawClayPercent": 39.6,
+    "rawSandPercent": 24.1,
+    "rawSocDgPerKg": 282,
+    "bulkDensityGcm3": 1.25
+  },
+  "teamBaselines": {
+    "soilPh": {
+      "min": 4.5,
+      "max": 4.8,
+      "unit": "pH",
+      "provenance": "team-provided",
+      "needsReview": true,
+      "source": "DA-PhilFIDA / Regional Agricultural Office"
+    },
+    "phosphorusFixation": {
+      "min": 104,
+      "max": 170,
+      "unit": "mg P/100g",
+      "provenance": "team-provided",
+      "needsReview": true,
+      "source": "Highland Ultisol agronomic baseline"
+    },
+    "slopePct": {
+      "min": 18,
+      "unit": "%",
+      "provenance": "team-provided",
+      "needsReview": true,
+      "source": "Highland plateau topography survey"
+    },
+    "rusleErosionTonsHaYr": {
+      "min": 246.5,
+      "max": 363,
+      "unit": "t/ha/yr",
+      "provenance": "team-provided",
+      "needsReview": true,
+      "source": "High-slope erosion hazard estimate"
     }
   }
 }

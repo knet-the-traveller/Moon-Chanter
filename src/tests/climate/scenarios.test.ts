@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyScenario, summarizeAllScenarios } from '../../engine/climate/scenarios';
+import { applyScenario, summarizeAllScenarios } from '../../engine/scenarios';
 import { calculateClimateSummary } from '../../engine/climate/climateSummary';
 import type { DailySeries } from '../../services/nasaPower';
 

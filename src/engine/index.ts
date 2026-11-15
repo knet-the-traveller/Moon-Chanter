@@ -103,3 +103,6 @@ export function generateRotationRecommendations(params: RecommendationEnginePara
 
   return adaptivePlans.slice(0, maxResults);
 }
+
+export { evaluateScenarios, applyScenario, summarizeAllScenarios } from './scenarios';
+export type { CanonicalScenarioId, ClimateScenarioId, ScenarioEvaluation, ScenarioDeltas } from './scenarios';

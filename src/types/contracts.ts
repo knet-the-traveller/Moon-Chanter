@@ -8,24 +8,34 @@ import type { SoilData } from './index';
 export type { SoilProfile, PhosphorusFixationRisk } from './index';
 export type SoilContract = SoilData;
 
+export interface SeasonalMetrics {
+  name: string;
+  meanTempC: number;
+  rainfallMm: number;                            // mean seasonal total across years
+  rainfallVariability: number;                   // coefficient of variation of seasonal totals (stdDev / mean)
+  dryspellDaysAvg: number;                       // mean of the longest dry spell per season (days)
+  heatStressDays: number;                        // mean days per season above heat threshold (legacy alias for >= 35°C)
+  heatDaysAbove34C?: number;                     // mean days per season with T2M_MAX >= 34°C
+  heatDaysAbove35C?: number;                     // mean days per season with T2M_MAX >= 35°C
+  soilMoistureIndex?: number;                    // left undefined for now (SMAP comes later)
+}
+
 export interface ClimateSummary {
   location: { lat: number; lon: number };
   period: { start: string; end: string };          // ISO dates (YYYY-MM-DD)
-  seasons: Array<{
-    name: "wet" | "dry";
-    meanTempC: number;
-    rainfallMm: number;                            // mean seasonal total across years
-    rainfallVariability: number;                   // coefficient of variation of seasonal totals (stdDev / mean)
-    dryspellDaysAvg: number;                       // mean of the longest dry spell per season (days)
-    heatStressDays: number;                        // mean days per season above heat threshold
-    soilMoistureIndex?: number;                    // left undefined for now (SMAP comes later)
-  }>;
+  seasons: Array<SeasonalMetrics & { name: "wet" | "dry" }>; // Strictly "wet" | "dry"
+  dryWindows?: {
+    coolDry: SeasonalMetrics & { name: "coolDry"; months: number[] };
+    hotDry: SeasonalMetrics & { name: "hotDry"; months: number[] };
+  };
+  windowsVerified?: boolean;
   trend10y: { tempC: number; rainfallPct: number }; // slope per decade
   risks: {
     drought: "low" | "med" | "high";
     flood: "low" | "med" | "high";
     heat: "low" | "med" | "high";
   };
+  riskScores?: { drought: number; flood: number; heat: number };
   sources: string[];                               // e.g. ["NASA POWER daily 2014-2023"]
   isSample: boolean;                               // true when bundled fallback data is used
 }

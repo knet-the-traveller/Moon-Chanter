@@ -127,6 +127,17 @@ export const SoilCard: React.FC = () => {
         {getTranslation(language, 'dataQuality.missingSoil')}
       </p>}
 
+      {soilData.modelEvidence?.relocatedFrom && (
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 font-medium">
+          <span className="font-bold">Advisory:</span>
+          <span>
+            {language === 'fil'
+              ? `Inilipat nang ${soilData.modelEvidence.relocatedFrom.distanceKm} km patungo sa pinakamalapit na agricultural cell upang maiwasan ang NoData urban deadlock.`
+              : `Resolved from nearest valid agricultural cell (${soilData.modelEvidence.relocatedFrom.distanceKm} km away) due to urban NoData cell.`}
+          </span>
+        </div>
+      )}
+
       {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} />}
 
       {/* Soil KPI Grid */}
