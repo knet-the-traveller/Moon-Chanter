@@ -194,7 +194,7 @@ function profileForCell(
       } satisfies MetricProvenance];
     }
     const nativeMetric = !['drainage', 'organicMatter', 'phosphorusFixationRisk', 'slopePct'].includes(key);
-    const available = soil[key] !== undefined && soil[key] !== null && soil[key] !== 'unknown';
+    const available = soil[key] !== undefined && soil[key] !== null;
     return [key, {
       source: 'ISRIC SoilGrids 2.0', tier: available ? 'bundled-model' : 'unavailable',
       variable: variables[key] ?? key, unit: units[key] ?? 'class',

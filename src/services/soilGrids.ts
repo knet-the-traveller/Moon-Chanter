@@ -3,8 +3,6 @@ import { z } from 'zod';
 import type {
   SoilData,
   SoilTexture,
-  DrainageClass,
-  OrganicMatterLevel,
   PhosphorusFixationRisk
 } from '../types';
 import { LocalCacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
