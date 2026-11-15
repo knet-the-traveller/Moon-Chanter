@@ -1,11 +1,11 @@
 {
-  "name": "FieldShift - Adapting Farms with NASA Data",
-  "short_name": "FieldShift",
+  "name": "AniTala - Guided by the stars, growing toward a better harvest",
+  "short_name": "AniTala",
   "description": "Science-backed crop rotation decision support for smallholder farmers and extension workers.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf8f5",
-  "theme_color": "#172d24",
+  "background_color": "#F7F9F4",
+  "theme_color": "#1D3309",
   "icons": [
     {
       "src": "/favicon.svg",

@@ -1,12 +1,14 @@
 {
   "app": {
-    "title": "FieldShift",
+    "title": "AniTala",
     "subtitle": "Adapting Farms with NASA Data",
     "team": "Moon Chanter",
     "tagline": "Science-backed crop rotation decision support for smallholder farmers and extension workers.",
     "spaceApps": "NASA Space Apps Challenge"
   },
   "nav": {
+    "home": "Home",
+    "savedPlans": "Saved Plans",
     "locate": "1. Locate Farm",
     "conditions": "2. Field Conditions",
     "priorities": "3. History & Goals",
@@ -46,7 +48,10 @@
     "longitude": "Longitude",
     "coordinateEntry": "Enter field coordinates",
     "applyCoordinates": "Use these coordinates",
-    "overlay": "Satellite Overlay"
+    "overlay": "Satellite Overlay",
+    "expandMap": "Expand Map",
+    "minimizeMap": "Minimize Map",
+    "searchTownPlaceholder": "Search municipality or province..."
   },
   "conditions": {
     "climateTitle": "NASA Climate & Moisture Context",
@@ -71,7 +76,20 @@
     "drySpellRiskLabel": "Dry Spell Risk",
     "shortNasaPower": "NASA POWER",
     "shortSampleClimate": "Municipal Sample",
-    "shortIllustrativeClimate": "Illustrative climate example"
+    "shortIllustrativeClimate": "Illustrative climate example",
+    "waterSourceTitle": "Water Source / Irrigation",
+    "waterSourceSubtitle": "Select the primary water regime for this parcel to adjust dry-season feasibility.",
+    "waterCanal": "Irrigation Canal (NIA / Gravity)",
+    "waterRainfed": "Rainfed Only (No Active Irrigation)",
+    "waterPumpWell": "Pump / Deep Well (Shallow Tube Well)",
+    "waterSmallPond": "Small Farm Reservoir / Pond",
+    "waterAccessHint": "Heuristic dry-season adjustments: rainfed plots penalize high-water crops during dry months; irrigated plots support continuous cropping.",
+    "waterNeedsReview": "Needs local verification",
+    "fieldNotesTitle": "Field Size & Plot Observations",
+    "fieldNotesOptional": "Optional · Farm Records",
+    "fieldSizeLabel": "Field Size",
+    "fieldSizeUnit": "hectares (ha)",
+    "plotNotesPlaceholder": "e.g. Near secondary canal turnout; lower parcel corner prone to waterlogging after heavy rain..."
   },
   "priorities": {
     "title": "Field History & Farmer Priorities",
@@ -92,7 +110,17 @@
     "lowLaborDesc": "Prevents labor bottlenecks and simplifies field operations.",
     "climateRisk": "Climate Shock Buffer",
     "climateRiskDesc": "Favors crops with high heat tolerance and typhoon flood resistance.",
-    "generateButton": "Generate & Rank Rotation Plans"
+    "generateButton": "Generate & Rank Rotation Plans",
+    "topMatch": "Top Match",
+    "goodMatch": "Good Match",
+    "includedCrop": "Included",
+    "excludedCrop": "Excluded",
+    "lowCropWarning": "Fewer than 2 crops selected. At least 2 crops are recommended to generate diverse rotation plans.",
+    "showingCropsCount": "Showing {visible} of {total} verified crops ({enabled} enabled)",
+    "showAllCrops": "Show All",
+    "paginateCrops": "Paginate",
+    "prevPage": "Previous",
+    "nextPage": "Next"
   },
   "results": {
     "title": "Ranked 3-Season Rotation Plans",
@@ -119,10 +147,27 @@
     "pillarWater": "Water Resilience",
     "pillarClimate": "Climate Shock Buffer",
     "pillarEconomics": "Economics",
-    "pillarLabor": "Labor"
+    "pillarLabor": "Labor",
+    "savedPlansButton": "Saved Plans ({count})",
+    "savedPlansTitle": "Saved Farm Advisory Plans",
+    "savedPlansEmpty": "No saved plans yet. Click \"Save Plan\" on any rotation plan to keep it for quick reference.",
+    "savePlan": "Save Plan",
+    "planSaved": "Saved ✓",
+    "restorePlan": "Restore & View",
+    "removePlan": "Remove",
+    "promotePlan": "Promote to #1 Active Plan ↑",
+    "promotedBadge": "Active Plan · Promoted from #{rank}",
+    "resetToTopPlan": "Reset to Top Ranked",
+    "showMorePlans": "+ Show More Plans",
+    "showFewerPlans": "Show Fewer Plans",
+    "viewPlanDrawer": "View Plan",
+    "hidePlanDrawer": "Hide Plan",
+    "otherGoodPlans": "Other Good Crop Plans",
+    "otherGoodPlansSub": "Alternative adaptive rotations evaluated for your field conditions.",
+    "baselineBenchmarkBadge": "Conventional Baseline Benchmark"
   },
   "print": {
-    "title": "FieldShift Crop Rotation Advisory Plan",
+    "title": "AniTala Crop Rotation Advisory Plan",
     "preparedFor": "Agricultural Extension & Farm Action Sheet",
     "dateGenerated": "Generated Date",
     "locationSummary": "Farm Location",
@@ -176,7 +221,7 @@
     "unknownDates": "Observation period unavailable",
     "review": "Needs local verification",
     "reference": "Reference location",
-    "illustrativeSource": "FieldShift illustrative indicator",
+    "illustrativeSource": "AniTala illustrative indicator",
     "derived": "Derived classifications and estimates require local review.",
     "chart": "Monthly rainfall and maximum temperature · source period shown above",
     "unavailableValue": "Unavailable",
@@ -215,7 +260,7 @@
       "emergencyClimate": "Synthetic emergency monthly example, not acquired observations. Rainfall totals sum the monthly values; temperature averages monthly means. Heat counts, trends and risk classes are illustrative placeholders requiring local review."
     },
     "cached": "Cached data",
-    "municipalSoilSource": "FieldShift municipal soil reference",
+    "municipalSoilSource": "AniTala municipal soil reference",
     "bundled-model": "Bundled scientific data",
     "version": "Version",
     "observedMethods": {
@@ -299,7 +344,7 @@
     "fieldHelp": "Only source data and your reported inputs are used. Missing required soil inputs can pause ranking.",
     "disable": "Use field inputs only",
     "enable": "Try complete example inputs",
-    "assumptionSource": "FieldShift example assumptions",
+    "assumptionSource": "AniTala example assumptions",
     "assumptionMethod": "Editable demo defaults only: clay loam, pH 6.3, moderate drainage, medium organic matter when that input is missing. Not inferred from satellite readings.",
     "assumptionTag": "Example assumption",
     "soilNotice": "Missing properties use example assumptions for this demonstration. Edit any field below; your inputs take priority. Source predictions remain available in details.",

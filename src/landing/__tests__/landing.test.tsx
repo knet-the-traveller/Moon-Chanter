@@ -256,7 +256,7 @@ describe('AniTala Landing Page Suite', () => {
       expect(html).toContain('Plan Smarter Crop');
     });
 
-    it('renders FieldShift App directly when deep linked with #/app', () => {
+    it('renders AniTala App directly when deep linked with #/app', () => {
       const mockWindow = {
         location: { hash: '#/app' },
         addEventListener: vi.fn(),
@@ -268,8 +268,9 @@ describe('AniTala Landing Page Suite', () => {
       const html = renderToStaticMarkup(createElement(AniTalaRoot));
       // Does not contain landing root class
       expect(html).not.toContain('anitala-landing');
-      // Contains FieldShift header / elements
-      expect(html).toContain('FieldShift');
+      // Contains AniTala header / elements
+      expect(html).toContain('AniTala');
+      expect(html).toContain('How Scoring Works');
     });
   });
 
