@@ -1,4 +1,4 @@
-# FieldShift: Agronomic Methodology & Scoring Formulation
+# AniTala: Agronomic Methodology & Scoring Formulation
 
 > **2026 NASA Space Apps Challenge:** "Field Shift: Adapting Farms with NASA Data"  
 > **Team:** Moon Chanter  
@@ -8,7 +8,7 @@
 
 ## 1. Core Philosophy: Transparent, Explainable Decision Support
 
-Modern smallholder farming requires high trust. A farmer will not risk their season's livelihood on a black-box machine learning output. Therefore, FieldShift's recommendation engine is engineered as a **pure TypeScript, rule-based decision support system** where every score, recommendation, and risk warning is 100% auditable and traces back to agronomic literature and NASA telemetry.
+Modern smallholder farming requires high trust. A farmer will not risk their season's livelihood on a black-box machine learning output. Therefore, AniTala's recommendation engine is engineered as a **pure TypeScript, rule-based decision support system** where every score, recommendation, and risk warning is 100% auditable and traces back to agronomic literature and NASA telemetry.
 
 ---
 
@@ -28,9 +28,9 @@ flowchart TD
 
 ### Stage 0: Soil Input Completion & Provenance Gate (`hasRequiredSoilInputs`)
 
-Before ranking runs (`src/engine/soilInputs.ts`), FieldShift requires complete field soil parameters (`texture`, `drainage`, `ph`, `organicMatter`):
+Before ranking runs (`src/engine/soilInputs.ts`), AniTala requires complete field soil parameters (`texture`, `drainage`, `ph`, `organicMatter`):
 - **Masked 250 m SoilGrids Pixel Recovery (`src/services/bundledSoilGrids.ts`):** Pilot coordinates in `src/data/pilotLocations.ts` resolve inside packaged model grids. When a requested cell has incomplete model data, `resolveBundledSoil` searches for a nearby complete 250 m model reference cell and discloses the requested cell, reference cell, and offset in `SoilModelDetails`. Model completeness does not verify cropland or establish why source data are missing; confirm applicability at the selected field.
-- **Transparent Derived Properties (`src/services/soilDerivation.ts`):** When SoilGrids supplies native `soc` (dg/kg) and clay/sand/silt texture without laboratory organic-matter or percolation measurements, FieldShift derives preliminary values tagged `tier: 'synthetic'`, `isSynthetic: true`, `needsReview: true`:
+- **Transparent Derived Properties (`src/services/soilDerivation.ts`):** When SoilGrids supplies native `soc` (dg/kg) and clay/sand/silt texture without laboratory organic-matter or percolation measurements, AniTala derives preliminary values tagged `tier: 'synthetic'`, `isSynthetic: true`, `needsReview: true`:
   - **Organic Matter (`deriveOrganicMatterFromSoc`):** Van Bemmelen approximation $\text{OM\%} = (\text{soc} / 100) \times 1.724$ ($\text{Low} < 1.0\%$, $\text{Medium} = 1.0\text{–}2.5\%$, $\text{High} > 2.5\%$).
   - **Preliminary Drainage (`derivePreliminaryDrainage`):** Classified from topsoil texture / clay / sand fractions and refined dynamically when real SRTM `slopePct` arrives (`poor` $\to$ `moderate` when `slopePct > 8%`; `moderate` $\to$ `well` when `slopePct > 15%`).
 - **One-Click DA-BSWM Municipal Baseline & Farmer Override (`src/services/soilGrids.ts`, `src/store/useAppStore.ts`):** Farmers and technicians can switch anytime between SoilGrids telemetry and the labeled DA-BSWM municipal soil reference (`getMunicipalAgriculturalBaseline`), or enter 1-tap parcel overrides (`setSoilOverride`), with complete undo (`restoreSoilTelemetry` / `resetSoilOverride`).
@@ -50,7 +50,7 @@ To make diversification trade-offs concrete (`src/engine/candidateGenerator.ts`)
 - **Lowlands:** *Existing Baseline: Continuous Double Rice $\to$ Bare Fallow* (`rice → rice → fallow`)
 - **Sloping Uplands (`slopePct > 15%` or non-model acid upland `ph < 5.5 && drainage !== 'poor'`):** *Existing Baseline: Continuous Upland Corn $\to$ Bare Fallow* (`corn → corn → fallow`)
 
-Alongside pinned Strategy 1, FieldShift includes canonical adaptive templates (such as **Adaptive Relay: Wet Rice $\to$ Pag-asa Mungbean $\to$ Dry Yellow Corn**, **Commercial Diversification: Wet Rice $\to$ Bulb Onion $\to$ Pre-Rice Mungbean**, and **Upland Soil Armor: Corn $\to$ Mungbean $\to$ Sweet Potato (Kamote)**) plus all generated candidate sequences passing hard constraints:
+Alongside pinned Strategy 1, AniTala includes canonical adaptive templates (such as **Adaptive Relay: Wet Rice $\to$ Pag-asa Mungbean $\to$ Dry Yellow Corn**, **Commercial Diversification: Wet Rice $\to$ Bulb Onion $\to$ Pre-Rice Mungbean**, and **Upland Soil Armor: Corn $\to$ Mungbean $\to$ Sweet Potato (Kamote)**) plus all generated candidate sequences passing hard constraints:
 
 #### Hard Agronomic Constraints:
 1. **Planting Window Match:** Crop must possess the designated season tag (`crop.plantingWindows.includes(season)`).
@@ -80,6 +80,18 @@ Each candidate rotation sequence is evaluated across 5 agronomic and economic pi
 - **Monsoon Adaptation ($S_1$):** If NASA POWER wet season rainfall $> 1000\text{ mm}$, $+25$ pts for high flood tolerance (Rice); $+12$ pts medium; $-15$ pts for waterlog-sensitive crops.
 - **Cool Dry Transition ($S_2$):** $-18$ pts for dry-season paddy rice; $+15$ pts for low/medium water demand; $+8$ pts extra (`[AGRO-RULE-01-NFIX]`) when short-cycle Pag-asa Mungbean saves water vs. paddy rice.
 - **Hot Dry Drought Defense ($S_3$):** $+25$ pts high drought tolerance ($+10$ medium, $-20$ low); $+15$ pts low water demand ($-15$ high); $-12$ pts for sloping upland fallow runoff.
+
+#### Water Source assumptions — `[AGRO-RULE-06-WATER-ACCESS]` (pending implementation)
+
+In this checkout, `calculateSequenceScores` accepts a crop sequence, climate, soil, and farmer priorities. Neither that scoring API nor `CandidateGenerationParams` accepts a **Water Source** input. The rule ID `[AGRO-RULE-06-WATER-ACCESS]` names a proposed extension; it is not an implemented scoring rule. The water pillar above applies the same rainfall, crop-demand, and drought/flood-tolerance heuristics regardless of actual irrigation access. Its points are provisional comparisons, not a field water balance or proof that a crop's water needs can be met.
+
+Before relying on a plan, confirm these Water Source assumptions with the farmer and local irrigation/agriculture office:
+
+- **Rainfed:** Confirm planting-season rainfall and any residual moisture locally. Annual or seasonal rainfall totals alone do not establish water availability during crop establishment or flowering.
+- **Irrigated or mixed supply:** Confirm the actual source, canal turnout or pump access, delivery schedule, seasonal reliability, and pumping costs. A municipal rice profile, a nearby canal, or an irrigated baseline comparison does not establish access for the selected parcel.
+- **Unknown supply:** Keep access unconfirmed until checked locally. NASA POWER rainfall, GIBS imagery, and SoilGrids drainage predictions do not verify irrigation delivery. SMAP remains unintegrated and is not evidence of irrigation access in this version.
+
+Any future implementation of `[AGRO-RULE-06-WATER-ACCESS]` must distinguish farmer-reported supply from verified delivery, disclose assumptions in explanations and the Local Review Checklist, and carry `needsReview: true` for unverified mappings or scoring values. Source-specific bonuses, penalties, or candidate exclusions require a separately scoped engine change with explicit tests. No such adjustments are applied by this documentation update.
 
 ### C. Climate Shock Buffer ($S_{\text{climate}}$)
 - **Base Score:** 45 pts.

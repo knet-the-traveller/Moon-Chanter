@@ -53,10 +53,10 @@ If an image file is not present at the specified path, `LandingImage` gracefully
 
 - **Zero-Dependency Routing**: AniTala uses hash-based routing (`window.location.hash`).
   - Default route (empty, `#`, or other hash): Renders `<AniTalaLanding />`.
-  - App route (`#/app`): Renders `<App />` (FieldShift).
+  - App route (`#/app`): Renders `<App />` (AniTala).
 - **State Preselection Guard**:
   - The `"Find Crops →"` button on the `SearchPill` is the **only** trigger that preselects state (`selectPilotPreset` and `setPriority(goalKey, 80)`).
   - All other buttons (`"Launch App →"`, `"Start Planning →"`, `"Explore Soil Data"`, and `"Step 01–03 →"`) are clean links (`href="#/app"`) that preserve existing user selections in `useAppStore`.
 - **Bilingual Parity**:
   - English (`en`) and Filipino/Tagalog (`tl` mapping to `fil` in `useAppStore`).
-  - Language selection is synchronized bi-directionally between the landing page and the FieldShift store.
+  - Language selection is synchronized bi-directionally between the landing page and the AniTala store.

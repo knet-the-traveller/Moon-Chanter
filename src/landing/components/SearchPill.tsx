@@ -37,7 +37,7 @@ export const SearchPill: React.FC<SearchPillProps> = ({ language }) => {
       useAppStore.getState().setPriority(selectedGoal as keyof FarmerPriorities, 80);
     }
 
-    // Navigate to FieldShift app
+    // Navigate to AniTala app
     window.location.hash = '#/app';
   };
 
