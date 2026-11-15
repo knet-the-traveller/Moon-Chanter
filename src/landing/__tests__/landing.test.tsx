@@ -50,6 +50,26 @@ describe('AniTala Landing Page Suite', () => {
   });
 
   describe('Branding & Zero-GabayAni Guarantee', () => {
+    it('renders the AniTala logo img in both header and footer with alt="AniTala" and explicit dimensions', () => {
+      const html = renderToStaticMarkup(
+        createElement(AniTalaLanding, {
+          language: 'en',
+          onLanguageChange: () => {}
+        })
+      );
+
+      // Verify both header and footer render <img> for logo with alt="AniTala"
+      const logoMatches = [...html.matchAll(/<img[^>]*alt="AniTala"[^>]*>/g)];
+      expect(logoMatches.length).toBe(2);
+
+      for (const match of logoMatches) {
+        const imgTag = match[0];
+        expect(imgTag).toContain('images/landing/logo.png');
+        expect(imgTag).toMatch(/width="\d+"/);
+        expect(imgTag).toMatch(/height="\d+"/);
+      }
+    });
+
     it('contains ZERO occurrences of "GabayAni" in rendered English markup', () => {
       const html = renderToStaticMarkup(
         createElement(AniTalaLanding, {

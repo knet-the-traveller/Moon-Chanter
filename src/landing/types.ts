@@ -10,7 +10,7 @@ export interface NavItemConfig {
 }
 
 export interface ImageSlotConfig {
-  id: 'hero' | 'why' | 'step1' | 'step2' | 'step3';
+  id: 'logo' | 'hero' | 'why' | 'step1' | 'step2' | 'step3';
   devLabel: string;
   defaultGradient: string;
   width: number;

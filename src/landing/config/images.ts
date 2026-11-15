@@ -1,6 +1,14 @@
 import type { ImageSlotConfig } from '../types';
 
 export const IMAGE_SLOTS: Record<ImageSlotConfig['id'], ImageSlotConfig> = {
+  logo: {
+    id: 'logo',
+    devLabel: 'ANITALA LOGO',
+    defaultGradient: 'linear-gradient(135deg, #bbf246 0%, #8db854 100%)',
+    width: 600,
+    height: 600,
+    defaultSrc: `${import.meta.env.BASE_URL}images/landing/logo.png`
+  },
   hero: {
     id: 'hero',
     devLabel: 'RICE TERRACE PHOTO',

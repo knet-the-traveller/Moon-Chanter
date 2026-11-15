@@ -36,6 +36,7 @@ When real photographs are added, place them in `public/images/landing/` using mo
 
 | Slot ID | Asset Path | Recommended Dimensions | Aspect Ratio | Subject Matter / Description |
 | :--- | :--- | :--- | :--- | :--- |
+| `logo` | `/images/landing/logo.png` | 600 × 600 px (rendered 36×36 in header, 28×28 in footer) | 1:1 | AniTala pictorial brand emblem (star, sprout, terraced fields) |
 | `hero` | `/images/landing/hero-rice-terrace.webp` | 800 × 500 px | 16:10 | Tiered agricultural rice terraces or green Philippine fields under clear daylight |
 | `why` | `/images/landing/why-farm.webp` | 800 × 550 px | ~4:3 / 16:11 | Lush, diversified crop rows showing healthy soil and thriving crops |
 | `step1` | `/images/landing/step1-field-map.webp` | 600 × 400 px | 3:2 | Agricultural field boundary selection on satellite map |

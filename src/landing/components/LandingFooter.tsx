@@ -16,23 +16,14 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ language }) => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Brand & Tagline */}
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-[#bbf246] flex items-center justify-center text-[#11261a] shadow-xs">
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M7 20h10" />
-                  <path d="M10 20c0-4.5 1-8 6-9" />
-                  <path d="M16 11c0-4.5-3.5-7-8-7-1.5 0-2.5.5-3 1 1 2 2 4.5 2 7.5" />
-                </svg>
-              </div>
+            <div className="flex items-center gap-2.5">
+              <img
+                src={`${import.meta.env.BASE_URL}images/landing/logo.png`}
+                alt="AniTala"
+                width={28}
+                height={28}
+                className="w-7 h-7 object-contain rounded-full shrink-0 shadow-xs ring-1 ring-white/20"
+              />
               <span className="font-bold text-base text-white tracking-tight">
                 {t.footer.brandName}
               </span>

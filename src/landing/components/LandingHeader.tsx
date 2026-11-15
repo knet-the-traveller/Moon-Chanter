@@ -40,23 +40,13 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
           className="flex items-center gap-2.5 group focus:outline-none focus:ring-2 focus:ring-[#bbf246] rounded-lg p-1"
           aria-label="AniTala - Home"
         >
-          <div className="w-8 h-8 rounded-lg bg-[#bbf246] flex items-center justify-center text-[#122b1e] shadow-sm">
-            {/* Sprout Icon */}
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M7 20h10" />
-              <path d="M10 20c0-4.5 1-8 6-9" />
-              <path d="M16 11c0-4.5-3.5-7-8-7-1.5 0-2.5.5-3 1 1 2 2 4.5 2 7.5" />
-            </svg>
-          </div>
+          <img
+            src={`${import.meta.env.BASE_URL}images/landing/logo.png`}
+            alt="AniTala"
+            width={36}
+            height={36}
+            className="w-9 h-9 object-contain rounded-full shrink-0 shadow-xs ring-1 ring-white/20"
+          />
           <div className="flex flex-col">
             <span className="font-bold text-lg leading-tight tracking-tight text-white group-hover:text-[#bbf246] transition-colors">
               AniTala
