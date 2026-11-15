@@ -9,7 +9,8 @@ import type {
   RotationPlan,
   ScenarioCondition,
   Crop,
-  PilotLocation
+  PilotLocation,
+  WaterSource
 } from '../types';
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import cropsData from '../data/crops.json';
@@ -24,6 +25,12 @@ import { withTerrainEvidence } from '../services/realLandData';
 import { fetchLandSummary } from '../services/landSummary';
 import { CoordinatesSchema } from '../types/landFixture';
 import { getTranslation } from '../i18n';
+import {
+  loadSavedPlans,
+  savePlanSnapshot,
+  deleteSavedPlanSnapshot,
+  type SavedPlanRecord
+} from '../services/savedPlans';
 
 const allCrops = cropsData as Crop[];
 let telemetryRequestId = 0;
@@ -66,6 +73,13 @@ interface AppState {
   setDemoAssumptions:(enabled:boolean)=>void;
 
   // Farmer Inputs & History
+  waterSource: WaterSource;
+  fieldSizeHa: number | null;
+  plotNotes: string;
+  isMapExpanded: boolean;
+  isSavedPlansOpen: boolean;
+  activeSpotlightPlanId: string | null;
+  savedPlans: SavedPlanRecord[];
   recentCropId: string | null;
   excludedCropIds: string[];
   priorities: FarmerPriorities;
@@ -90,6 +104,15 @@ interface AppState {
   restoreSoilTelemetry: () => void;
   setSoilOverride: (override: Partial<SoilData>) => void;
   resetSoilOverride: () => void;
+  setWaterSource: (waterSource: WaterSource) => void;
+  setFieldSizeHa: (val: number | null) => void;
+  setPlotNotes: (notes: string) => void;
+  setMapExpanded: (open: boolean) => void;
+  setSavedPlansOpen: (open: boolean) => void;
+  promotePlan: (planId: string | null) => void;
+  savePlan: (plan: RotationPlan, rankIndex?: number) => void;
+  restoreSavedPlan: (savedId: string) => void;
+  removeSavedPlan: (savedId: string) => void;
   setRecentCropId: (cropId: string | null) => void;
   toggleCropExclusion: (cropId: string) => void;
   setPriority: (key: keyof FarmerPriorities, val: number) => void;
@@ -130,6 +153,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   soilOverride: null,
   useDemoAssumptions:true,
   setDemoAssumptions:(enabled)=>{set({useDemoAssumptions:enabled});get().computeRecommendations();},
+
+  waterSource: 'irrigation_canal',
+  fieldSizeHa: null,
+  plotNotes: '',
+  isMapExpanded: false,
+  isSavedPlansOpen: false,
+  activeSpotlightPlanId: null,
+  savedPlans: loadSavedPlans(),
 
   recentCropId: 'rice', // Common baseline in Philippines
   excludedCropIds: [],
@@ -183,6 +214,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       landSummary: null,
       recommendedPlans: [],
       advisoryIssuedAt: null,
+      activeSpotlightPlanId: null,
       isLoadingLand: true,
       isLoadingTelemetry: true,
       landError: null,
@@ -253,6 +285,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const controller = new AbortController();
     landController = controller;
     const isCurrent = () => requestId === telemetryRequestId;
+    const currentSpotlight = get().activeSpotlightPlanId;
     set({
       isLoadingTelemetry: true,
       telemetryError: null,
@@ -263,8 +296,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       telemetrySoilData: null,
       isMunicipalBaselineActive: false,
       landSummary: null,
-      recommendedPlans: [],
-      advisoryIssuedAt: null
+      recommendedPlans: currentSpotlight ? get().recommendedPlans : [],
+      advisoryIssuedAt: currentSpotlight ? get().advisoryIssuedAt : null,
+      activeSpotlightPlanId: currentSpotlight
     });
     if (!isCurrent()) return;
 
@@ -358,6 +392,105 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().computeRecommendations();
   },
 
+  setWaterSource: (waterSource) => {
+    set({ waterSource });
+    get().computeRecommendations();
+  },
+
+  setFieldSizeHa: (val) => {
+    if (val === null) {
+      set({ fieldSizeHa: null });
+      return;
+    }
+    if (typeof val === 'number' && Number.isFinite(val) && val >= 0 && val <= 10000) {
+      set({ fieldSizeHa: Number(val.toFixed(2)) });
+    }
+  },
+
+  setPlotNotes: (notes) => {
+    set({ plotNotes: typeof notes === 'string' ? notes.slice(0, 500) : '' });
+  },
+
+  setMapExpanded: (open) => set({ isMapExpanded: open }),
+
+  setSavedPlansOpen: (open) => set({ isSavedPlansOpen: open }),
+
+  promotePlan: (planId) => set({ activeSpotlightPlanId: planId }),
+
+  savePlan: (plan, rankIndex) => {
+    const current = get();
+    const resolvedRankIndex =
+      rankIndex ??
+      (current.recommendedPlans.findIndex((p) => p.id === plan.id) + 1 || 1);
+
+    const record: SavedPlanRecord = {
+      id:
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `saved_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      savedAtIso: new Date().toISOString(),
+      savedAt: Date.now(),
+      rankIndex: resolvedRankIndex,
+      location: { ...current.selectedLocation },
+      waterSource: current.waterSource,
+      fieldSizeHa: current.fieldSizeHa,
+      plotNotes: current.plotNotes,
+      priorities: { ...current.priorities },
+      recentCropId: current.recentCropId,
+      excludedCropIds: [...current.excludedCropIds],
+      soilOverride: current.soilOverride,
+      isMunicipalBaselineActive: current.isMunicipalBaselineActive,
+      useDemoAssumptions: current.useDemoAssumptions,
+      activeScenario: current.activeScenario,
+      plan
+    };
+
+    const updated = savePlanSnapshot(record);
+    set({ savedPlans: updated });
+  },
+
+  removeSavedPlan: (savedId) => {
+    const updated = deleteSavedPlanSnapshot(savedId);
+    set({ savedPlans: updated });
+  },
+
+  restoreSavedPlan: (savedId) => {
+    const current = get();
+    const record = current.savedPlans.find((p) => p.id === savedId);
+    if (!record) return;
+
+    const coordsChanged =
+      current.selectedLocation.lat !== record.location.lat ||
+      current.selectedLocation.lon !== record.location.lon;
+
+    const currentPlans = current.recommendedPlans;
+    const hasPlan = currentPlans.some((p) => p.id === record.plan.id);
+    const nextPlans = hasPlan ? currentPlans : [record.plan, ...currentPlans];
+
+    set({
+      selectedLocation: { ...record.location },
+      waterSource: record.waterSource,
+      fieldSizeHa: record.fieldSizeHa,
+      plotNotes: record.plotNotes,
+      priorities: { ...record.priorities },
+      recentCropId: record.recentCropId,
+      excludedCropIds: [...record.excludedCropIds],
+      soilOverride: record.soilOverride,
+      isMunicipalBaselineActive: record.isMunicipalBaselineActive,
+      useDemoAssumptions: record.useDemoAssumptions,
+      activeScenario: record.activeScenario,
+      currentStep: 4,
+      isSavedPlansOpen: false,
+      activeSpotlightPlanId: record.plan.id,
+      advisoryIssuedAt: Date.now(),
+      recommendedPlans: nextPlans
+    });
+
+    if (coordsChanged) {
+      void get().fetchTelemetry(record.location.lat, record.location.lon);
+    }
+  },
+
   setRecentCropId: (cropId) => {
     set({ recentCropId: cropId });
     get().computeRecommendations();
@@ -383,10 +516,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   computeRecommendations: () => {
-    const { useDemoAssumptions, climateData, soilData, soilOverride, priorities, recentCropId, excludedCropIds } = get();
+    const {
+      useDemoAssumptions,
+      climateData,
+      soilData,
+      soilOverride,
+      priorities,
+      recentCropId,
+      excludedCropIds,
+      waterSource,
+      activeSpotlightPlanId
+    } = get();
 
     if (!climateData || !soilData) {
-      set({ recommendedPlans: [], advisoryIssuedAt: null, comparedPlanIds: [] });
+      set({
+        recommendedPlans: [],
+        advisoryIssuedAt: null,
+        comparedPlanIds: [],
+        activeSpotlightPlanId: null
+      });
       return;
     }
 
@@ -399,11 +547,21 @@ export const useAppStore = create<AppState>((set, get) => ({
       priorities,
       recentCropId: recentCropId || undefined,
       excludedCropIds,
+      waterSource,
       maxResults: 6
     });
 
-    set({ recommendedPlans: plans, advisoryIssuedAt: plans.length ? Date.now() : null,
-      comparedPlanIds: get().comparedPlanIds.filter(id => plans.some(plan => plan.id === id)) });
+    const nextSpotlight =
+      activeSpotlightPlanId && plans.some((p) => p.id === activeSpotlightPlanId)
+        ? activeSpotlightPlanId
+        : null;
+
+    set({
+      recommendedPlans: plans,
+      advisoryIssuedAt: plans.length ? Date.now() : null,
+      activeSpotlightPlanId: nextSpotlight,
+      comparedPlanIds: get().comparedPlanIds.filter((id) => plans.some((plan) => plan.id === id))
+    });
   },
 
   setActiveScenario: (scenario) => set({ activeScenario: scenario }),
