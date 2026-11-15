@@ -90,13 +90,12 @@ export function buildSoilProvenance(data: SoilData, live: boolean, sampleLocatio
         isSample: !live, sampleLocation }];
     }
     if (live && key === 'organicMatter') {
-      const derivedOm = buildDerivedOrganicMatterProvenance(data.rawSocDgPerKg, {
+      return [key, buildDerivedOrganicMatterProvenance(data.rawSocDgPerKg, {
         spatialResolution: '250 m',
         depth: '0–5 cm and 5–15 cm; unweighted mean',
         sampleLocation,
         note: data.reviewNote
-      });
-      return [key, { ...derivedOm, isSynthetic: true, tier: 'synthetic' } satisfies MetricProvenance];
+      })];
     }
     if (live && key === 'drainage') {
       return [key, buildDerivedDrainageProvenance({

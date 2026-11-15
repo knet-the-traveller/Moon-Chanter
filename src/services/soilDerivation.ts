@@ -36,7 +36,7 @@ export function derivePreliminaryDrainage(params: {
   slopePct?: number | null;
 }): DrainageClass | null {
   const { texture, clayPct, sandPct, slopePct } = params;
-  if (texture === null) return null;
+  if (!texture) return null;
 
   let drainage: DrainageClass;
   if (texture === 'clay' || (clayPct !== undefined && Number.isFinite(clayPct) && clayPct >= 38)) {
