@@ -47,7 +47,7 @@ export const ClimateCard: React.FC = () => {
     language,
     climateData.isSampleData ? 'conditions.shortSampleClimate' : 'conditions.shortNasaPower'
   );
-  const conciseSubtitle = `${shortSource} · ${climateData.dateRange}`;
+  const conciseSubtitle = [shortSource, climateData.dateRange].filter(Boolean).join(' · ');
   const chartData = climateData.monthly.map((m) => ({
     name: m.month,
     rainfall: m.rainfall,
@@ -106,7 +106,7 @@ export const ClimateCard: React.FC = () => {
           <div className="text-xl font-black text-blue-950 mt-1">
             {climateData.meanAnnualPrecipitation.toLocaleString()} <span className="text-xs font-normal">mm/yr</span>
           </div>
-          <div className="text-[11px] text-blue-800 mt-0.5 truncate">
+          <div className="text-[11px] text-blue-800 mt-0.5 truncate" title={conciseSubtitle}>
             {conciseSubtitle}
           </div>
         </div>
@@ -120,7 +120,7 @@ export const ClimateCard: React.FC = () => {
           <div className="text-xl font-black text-orange-950 mt-1">
             {climateData.meanAnnualTemp}°C
           </div>
-          <div className="text-[11px] text-orange-800 mt-0.5 truncate">
+          <div className="text-[11px] text-orange-800 mt-0.5 truncate" title={conciseSubtitle}>
             {conciseSubtitle}
           </div>
         </div>

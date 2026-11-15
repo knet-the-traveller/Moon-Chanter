@@ -408,7 +408,11 @@ export const MapPicker: React.FC = () => {
                   <div key={metric.key} className="min-w-0 rounded-lg border border-stone-200 bg-stone-50 p-3">
                     <dt className="text-sm font-semibold text-stone-700">{metric.label}</dt>
                     <dd className="mt-1 break-words text-sm font-bold text-stone-950">{metric.value}</dd>
-                    <dd className="mt-2 break-words text-xs text-stone-700">{provenance.source} · {provenance.dateRange ?? provenance.spatialResolution ?? t('provenance.reviewShort')} · {t('provenance.reviewShort')}</dd>
+                    <dd className="mt-2 break-words text-xs text-stone-700">
+                      {[provenance.source, provenance.dateRange ?? provenance.spatialResolution, t('provenance.reviewShort')]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </dd>
                   </div>
                 );
               })}

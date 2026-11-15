@@ -1,5 +1,5 @@
 import { resolvePlanningSoil, hasDemoSoil, DEMO_SOIL_SOURCE } from '../services/planningSoil';
-import { SoilModelDetails } from './SoilModelDetails';
+import { SoilModelDetails, SoilRelocationNotice } from './SoilModelDetails';
 import { soilProvenance, formatProvenance } from '../data/provenance';
 import { parseFarmerSoilOverride } from '../services/soilGrids';
 import { hasRequiredSoilInputs } from '../engine/soilInputs';
@@ -15,15 +15,33 @@ function resolveSoilOriginBadgeKey(
   isOverridden: boolean,
 ): string {
   if (isOverridden) return 'provenance.soilOriginOverride';
-  if (isMunicipalBaselineActive) return 'provenance.soilOriginMunicipal';
-  const phMeta = soilData.provenance?.ph;
-  const tier = phMeta?.tier;
-  if (phMeta?.cached || tier === 'cached-live' || (tier as string) === 'cached') {
+  if (isMunicipalBaselineActive || soilData.isEstimate) {
+    return 'provenance.soilOriginMunicipal';
+  }
+  const nativeEntries = [
+    soilData.provenance?.ph,
+    soilData.provenance?.texture,
+    soilData.provenance?.rawClayPercent,
+    soilData.provenance?.rawSandPercent,
+    soilData.provenance?.rawSocDgPerKg,
+    soilData.provenance?.bulkDensityGcm3,
+  ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+  if (nativeEntries.some((entry) => entry.tier === 'sample')) {
+    return 'provenance.soilOriginMunicipal';
+  }
+  if (nativeEntries.some((entry) => entry.tier === 'cached-live' || (entry.tier === 'live' && entry.cached))) {
     return 'provenance.soilOriginCached';
   }
-  if (tier === 'live') return 'provenance.soilOriginLive';
-  if (tier === 'bundled-model' || soilData.modelEvidence) return 'provenance.soilOriginBundled';
-  if (tier === 'sample' || soilData.isEstimate) return 'provenance.soilOriginMunicipal';
+  if (nativeEntries.some((entry) => entry.tier === 'live')) {
+    return 'provenance.soilOriginLive';
+  }
+  if (!hasRequiredSoilInputs(soilData) && nativeEntries.every((entry) => entry.tier === 'unavailable')) {
+    return 'provenance.soilOriginUnavailable';
+  }
+  if (nativeEntries.some((entry) => entry.tier === 'bundled-model') || soilData.modelEvidence) {
+    return 'provenance.soilOriginBundled';
+  }
   return 'provenance.soilAutomated';
 }
 
@@ -126,12 +144,13 @@ export const SoilCard: React.FC = () => {
         </div>
 
         {isOverridden ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-700" />
               {getTranslation(language, 'provenance.soilOriginOverride')} · {getTranslation(language, 'provenance.farmer')}
             </span>
             <button
+              type="button"
               onClick={resetSoilOverride}
               className="text-xs text-stone-600 hover:text-stone-900 underline flex items-center gap-1"
             >
@@ -181,24 +200,12 @@ export const SoilCard: React.FC = () => {
         </div>
       )}
 
-      {soilData.modelEvidence && (soilData.modelEvidence.requestedCellIndex ?? soilData.modelEvidence.relocatedFrom?.cellIndex) !== undefined && (
-        <div role="status" className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
-          <p className="font-bold">{getTranslation(language, 'soilModel.locationAdvisory')}</p>
-          <p>
-            {getTranslation(language, 'soilModel.nearestValidCell')
-              .replace('{requestedCell}', String((soilData.modelEvidence.requestedCellIndex ?? soilData.modelEvidence.relocatedFrom!.cellIndex) + 1))
-              .replace('{usedCell}', String(soilData.modelEvidence.cellIndex + 1))
-              .replace(
-                '{meters}',
-                String(
-                  soilData.modelEvidence.offsetDistanceMeters ??
-                    (soilData.modelEvidence.relocatedFrom
-                      ? Math.round(soilData.modelEvidence.relocatedFrom.distanceKm * 1000)
-                      : 250)
-                )
-              )}
-          </p>
-        </div>
+      {soilData.modelEvidence && (
+        <SoilRelocationNotice
+          evidence={soilData.modelEvidence}
+          language={language}
+          className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950"
+        />
       )}
 
       {/* Soil KPI Grid */}
@@ -323,8 +330,8 @@ export const SoilCard: React.FC = () => {
           ph={effectiveSoil.ph} language={language} onApply={ph => setSoilOverride({ ph })} />
       </div>
 
-      <details className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-800">
-        <summary className="cursor-pointer font-semibold text-stone-800 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
+      <details className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words">
+        <summary className="cursor-pointer py-1 font-semibold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
           {getTranslation(language, 'provenance.viewCaveats')}
         </summary>
         <div className="mt-2 space-y-3">

@@ -3,6 +3,31 @@ import type { Language } from '../types';
 import type { SoilModelEvidence } from '../types/soilGridsPackage';
 import { SOIL_DEPTHS } from '../types/soilGridsPackage';
 
+/** Renders the cell relocation advisory when bundled SoilGrids stepped to a nearby valid cell. */
+export function SoilRelocationNotice({
+  evidence,
+  language,
+  className = 'rounded-lg border border-amber-400 bg-amber-50 p-3 text-amber-950',
+}: {
+  evidence: SoilModelEvidence;
+  language: Language;
+  className?: string;
+}) {
+  const requestedCell = evidence.requestedCellIndex ?? evidence.relocatedFrom?.cellIndex;
+  if (requestedCell === undefined) return null;
+  const t = (key: string) => getTranslation(language, `soilModel.${key}`);
+  const offsetMeters = evidence.offsetDistanceMeters ?? (evidence.relocatedFrom ? Math.round(evidence.relocatedFrom.distanceKm * 1000) : 250);
+  return (
+    <div role="status" className={className}>
+      <p className="font-bold">{t('locationAdvisory')}</p>
+      <p>{t('nearestValidCell')
+        .replace('{requestedCell}', String(requestedCell + 1))
+        .replace('{usedCell}', String(evidence.cellIndex + 1))
+        .replace('{meters}', String(offsetMeters))}</p>
+    </div>
+  );
+}
+
 /** Shows original model predictions even when a farmer override is active. */
 export function SoilModelDetails({
   evidence,
@@ -16,20 +41,10 @@ export function SoilModelDetails({
   const t = (key: string) => getTranslation(language, `soilModel.${key}`);
   const hasPredictions = evidence.readings.some(reading => SOIL_DEPTHS.some(depth => reading.depths[depth].mean !== null));
   const format = (value: number | null) => value === null ? getTranslation(language, 'provenance.unavailableValue') : String(Number(value.toFixed(2)));
-  const requestedCell = evidence.requestedCellIndex ?? evidence.relocatedFrom?.cellIndex;
-  const offsetMeters = evidence.offsetDistanceMeters ?? (evidence.relocatedFrom ? Math.round(evidence.relocatedFrom.distanceKm * 1000) : 250);
   return <section className="mt-4 space-y-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-950" aria-label={t('title')}>
     <p className="font-semibold">{t('title')}</p>
     <p>{t('coverage').replace('{grid}', evidence.gridName).replace('{cell}', String(evidence.cellIndex + 1))}</p>
-    {!hideRelocationNotice && requestedCell !== undefined && (
-      <div role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 text-amber-950">
-        <p className="font-bold">{t('locationAdvisory')}</p>
-        <p>{t('nearestValidCell')
-          .replace('{requestedCell}', String(requestedCell + 1))
-          .replace('{usedCell}', String(evidence.cellIndex + 1))
-          .replace('{meters}', String(offsetMeters))}</p>
-      </div>
-    )}
+    {!hideRelocationNotice && <SoilRelocationNotice evidence={evidence} language={language} />}
     {!hasPredictions && <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">{t('noPredictions')}</p>}
     <p>{t('limits')}</p>
     <p className="text-xs">{t('retrieved').replace('{date}', evidence.retrievedAt.replace('T', ' ').replace('Z', ' UTC'))} · CC BY 4.0 · ISRIC</p>

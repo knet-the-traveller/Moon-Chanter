@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +7,8 @@ import { ComparisonModal } from '../components/ComparisonModal';
 import { getTranslation, translations } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
+import { buildSampleLandSummary } from '../services/landSummary';
+import { MunicipalLandFixtureSchema } from '../types/landFixture';
 
 vi.mock('leaflet', () => ({ default: {} }));
 vi.mock('../store/useAppStore', async (importOriginal) => {
@@ -69,22 +72,45 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(html).toContain(getTranslation(language, 'conditions.drySpellRiskLabel'));
     expect(html).toContain(getTranslation(language, 'provenance.viewCaveats').replace(/&/g, '&amp;'));
     expect(html).not.toMatch(/<summary[^>]*>\s*<h[1-6]/i);
+
+    useAppStore.setState({
+      climateData: { ...climate, isSampleData: true, dateRange: '' }
+    });
+    const sampleEmptyDateHtml = renderToStaticMarkup(createElement(ClimateCard));
+    const shortSample = getTranslation(language, 'conditions.shortSampleClimate');
+    expect(sampleEmptyDateHtml).toContain(shortSample);
+    expect(sampleEmptyDateHtml).not.toContain(`${shortSample} · <`);
   });
 
-  it('replaces the 6 repeated provenance.review paragraphs in MapPicker tiles with concise 1-line subtitles while preserving all 7 provenance items in <details>', async () => {
+  it('replaces repeated MapPicker tile caveats with non-duplicated 1-line subtitles across pilot and sample points while keeping 7 provenance items in <details>', async () => {
     await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
     useAppStore.setState({ language: 'en' });
     const { MapPicker } = await import('../components/MapPicker');
-    const html = renderToStaticMarkup(createElement(MapPicker));
-    const [beforeDetails, insideDetails] = html.split('<details');
-    const dlBlock = beforeDetails.split('<dl')[1] ?? '';
-    expect(dlBlock).not.toContain(getTranslation('en', 'provenance.review'));
-    expect(dlBlock).toContain(getTranslation('en', 'provenance.reviewShort'));
-    expect(insideDetails).toBeDefined();
-    expect(html).toContain(getTranslation('en', 'mvp.landDetails'));
+    const reviewShort = getTranslation('en', 'provenance.reviewShort');
+
+    const pilotHtml = renderToStaticMarkup(createElement(MapPicker));
+    const [beforePilotDetails, insidePilotDetails] = pilotHtml.split('<details');
+    const pilotDlBlock = beforePilotDetails.split('<dl')[1] ?? '';
+    expect(pilotDlBlock).not.toContain(getTranslation('en', 'provenance.review'));
+    expect(pilotDlBlock).toContain(reviewShort);
+    expect(pilotDlBlock).not.toContain(`${reviewShort} · ${reviewShort}`);
+    expect(insidePilotDetails).toBeDefined();
+    expect(insidePilotDetails.match(/<li>/g)).toHaveLength(7);
+    expect(pilotHtml).toContain(getTranslation('en', 'mvp.landDetails'));
+
+    const fixture = MunicipalLandFixtureSchema.parse(JSON.parse(readFileSync('public/sample-data/munoz.json', 'utf8')));
+    useAppStore.setState({
+      landSummary: buildSampleLandSummary(14.5, 121.0, [fixture])
+    });
+    const sampleHtml = renderToStaticMarkup(createElement(MapPicker));
+    const [beforeSampleDetails, insideSampleDetails] = sampleHtml.split('<details');
+    const sampleDlBlock = beforeSampleDetails.split('<dl')[1] ?? '';
+    expect(sampleDlBlock).toContain(reviewShort);
+    expect(sampleDlBlock).not.toContain(`${reviewShort} · ${reviewShort}`);
+    expect(insideSampleDetails.match(/<li>/g)).toHaveLength(7);
   });
 
-  it('maps SoilCard header badge accurately across bundled, cached, live, municipal, and farmer override states', async () => {
+  it('maps SoilCard header badge accurately across bundled, cached, live, partial, municipal, unavailable, and farmer override states', async () => {
     const { SoilCard } = await import('../components/SoilCard');
     const { buildSoilProvenance, cachedProvenance } = await import('../data/provenance');
     await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
@@ -118,12 +144,54 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
       getTranslation('en', 'provenance.soilOriginLive')
     );
 
+    // Partial SoilGrids response missing pH must still classify as live/cached, never soilAutomated
+    const partialSoil = {
+      ...bundledSoil,
+      ph: null,
+      modelEvidence: undefined,
+      isEstimate: false
+    };
+    const partialLiveProv = buildSoilProvenance(partialSoil, true);
     useAppStore.setState({
-      soilData: { ...bundledSoil, modelEvidence: undefined, isEstimate: true },
-      isMunicipalBaselineActive: true
+      soilData: { ...partialSoil, provenance: partialLiveProv },
+      isMunicipalBaselineActive: false
     });
     expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
-      getTranslation('en', 'provenance.soilOriginMunicipal')
+      getTranslation('en', 'provenance.soilOriginLive')
+    );
+    useAppStore.setState({
+      soilData: { ...partialSoil, provenance: cachedProvenance(partialLiveProv) },
+      isMunicipalBaselineActive: false
+    });
+    expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
+      getTranslation('en', 'provenance.soilOriginCached')
+    );
+
+    // Cached municipal sample estimate with isMunicipalBaselineActive=false must never claim SoilGrids 250 m Cached Grid
+    const sampleSoil = { ...bundledSoil, modelEvidence: undefined, isEstimate: true };
+    const cachedSampleProv = cachedProvenance(buildSoilProvenance(sampleSoil, false));
+    useAppStore.setState({
+      soilData: { ...sampleSoil, provenance: cachedSampleProv },
+      isMunicipalBaselineActive: false
+    });
+    const sampleHtml = renderToStaticMarkup(createElement(SoilCard));
+    expect(sampleHtml).toContain(getTranslation('en', 'provenance.soilOriginMunicipal'));
+    expect(sampleHtml).not.toContain(getTranslation('en', 'provenance.soilOriginCached'));
+
+    // Unavailable soil profile without required inputs or baseline
+    useAppStore.setState({
+      soilData: {
+        source: 'ISRIC SoilGrids unavailable',
+        texture: null,
+        drainage: null,
+        organicMatter: 'unknown',
+        ph: null,
+        isEstimate: false
+      },
+      isMunicipalBaselineActive: false
+    });
+    expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
+      getTranslation('en', 'provenance.soilOriginUnavailable')
     );
 
     useAppStore.getState().setSoilOverride({ drainage: 'poor' });
@@ -132,14 +200,22 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(overriddenHtml).toContain(getTranslation('en', 'provenance.farmer'));
   });
 
-  it('places Farmer Soil Override controls above the collapsed technical caveats drawer in SoilCard DOM order', async () => {
+  it('places relocation advisory above KPIs and Farmer Soil Override controls above the collapsed caveats drawer in SoilCard DOM order', async () => {
     const { SoilCard } = await import('../components/SoilCard');
-    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const { resolveBundledSoil } = await import('../services/bundledSoilGrids');
+    const relocatedSoil = resolveBundledSoil(15.714, 120.906)!;
+    useAppStore.setState({ soilData: relocatedSoil, language: 'en', soilOverride: null });
     const html = renderToStaticMarkup(createElement(SoilCard));
+    const advisoryText = getTranslation('en', 'soilModel.locationAdvisory');
+    const advisoryIndex = html.indexOf(advisoryText);
+    const kpiIndex = html.indexOf(getTranslation('en', 'conditions.soilTexture'));
     const overrideIndex = html.indexOf(getTranslation('en', 'conditions.overridePrompt'));
     const caveatsIndex = html.indexOf(getTranslation('en', 'provenance.viewCaveats').replace(/&/g, '&amp;'));
     const modelDetailsIndex = html.indexOf(getTranslation('en', 'soilModel.title'));
-    expect(overrideIndex).toBeGreaterThan(-1);
+    expect(html.split(advisoryText)).toHaveLength(2);
+    expect(advisoryIndex).toBeGreaterThan(-1);
+    expect(kpiIndex).toBeGreaterThan(advisoryIndex);
+    expect(overrideIndex).toBeGreaterThan(kpiIndex);
     expect(caveatsIndex).toBeGreaterThan(overrideIndex);
     expect(modelDetailsIndex).toBeGreaterThan(overrideIndex);
   });

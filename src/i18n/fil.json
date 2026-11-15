@@ -191,6 +191,7 @@
     "soilOriginCached": "ISRIC SoilGrids 2.0 (250 m) · Naka-cache na Grid",
     "soilOriginLive": "ISRIC SoilGrids 2.0 (250 m) · Live na Grid",
     "soilOriginMunicipal": "Batayang Lupa ng Munisipyo (Tantiya)",
+    "soilOriginUnavailable": "Hindi Magamit ang Datos ng Lupa",
     "soilOriginOverride": "Aktibo ang Pagbabago ng Magsasaka",
     "methods": {
       "precipitation": "Karaniwang pang-araw-araw × haba ng buwan; pinagsasama para sa panahon/taon",
