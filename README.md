@@ -1,8 +1,8 @@
-# AniTala: Simple Crop & Soil Guide
+# AniTala: Guided by the stars, growing toward a better harvest
 
 > **NASA Space Apps Challenge 2026**  
 > **Challenge:** [Field Shift: Adapting Farms with NASA Data](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)  
-> **Team:** Moon Chanter
+> **Team:** Moon Chanter  
 > **Live Demo:** [https://anitala.vercel.app](https://anitala.vercel.app)  
 > **Repository:** [https://github.com/knet-the-traveller/Moon-Chanter.git](https://github.com/knet-the-traveller/Moon-Chanter.git)
 
@@ -237,4 +237,6 @@ For documentation and presentation submissions, capture and store screenshots in
 
 ## 📄 License
 
-[LICENSE TBD]
+- **Software**: Distributed under the [MIT License](LICENSE).
+- **NASA Telemetry**: NASA POWER and NASA GIBS datasets are public domain open data (U.S. Government work).
+- **Soil Data**: ISRIC SoilGrids 2.0 digital soil predictions are used under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
