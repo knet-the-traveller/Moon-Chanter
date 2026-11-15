@@ -1,5 +1,5 @@
 import type { CandidateSequence } from './candidateGenerator';
-import type { ClimateData, PlanReason, PlanRisk, SoilData } from '../types';
+import type { ClimateData, PlanReason, PlanRisk, SoilData, WaterSource } from '../types';
 import type { RotationPlan, LocalReviewDescriptor, MetricProvenance } from '../types';
 import type { PlanDataContext } from '../data/provenance';
 import { assertRequiredSoilInputs } from './soilInputs';
@@ -41,7 +41,8 @@ export function generateLocalReviewChecklist(
 export function generatePlanExplanations(
   seq: CandidateSequence,
   climate: ClimateData,
-  soil: SoilData
+  soil: SoilData,
+  waterSource: WaterSource = 'irrigation_canal'
 ): { reasons: PlanReason[]; risks: PlanRisk[] } {
   assertRequiredSoilInputs(soil);
   const { s1Crop, s2Crop, s3Crop } = seq;
@@ -291,6 +292,111 @@ export function generatePlanExplanations(
       mitigationEn: 'Coordinate labor sharing (bayanihan) or stagger planting across field plots to spread peak workloads.',
       mitigationFil: 'Magplano ng tulong-tulong (bayanihan) o magtanim nang pira-piraso upang hindi sabay-sabay ang anihan.'
     });
+  }
+
+  // [AGRO-RULE-06-WATER-ACCESS]: Water Access Explanations (Canal, Rainfed, Pump Well, Small Pond)
+  const drySeasonActiveCrops = [s2Crop, s3Crop].filter((c) => c.family !== 'fallow');
+
+  if (waterSource === 'irrigation_canal') {
+    const highWaterCrops = drySeasonActiveCrops.filter((c) => c.waterDemand === 'high');
+    if (highWaterCrops.length > 0) {
+      const cropNamesEn = highWaterCrops.map((c) => c.name.en).join(' & ');
+      const cropNamesFil = highWaterCrops.map((c) => c.name.local).join(' at ');
+      risks.push({
+        id: 'risk_canal_curtailment',
+        ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+        textEn: `High dry-season water demand for ${cropNamesEn} depends on communal/national irrigation canal delivery, which is vulnerable to rotational rationing or upstream curtailment during severe dry spells.`,
+        textFil: `Ang mataas na pangangailangan sa tubig ng ${cropNamesFil} sa tag-araw ay umaasa sa patubig ng NIA/kanal na maaaring maantala o magkaroon ng rotational rationing kapag may matinding tagtuyot.`,
+        mitigationEn: 'Coordinate with the local Irrigators Association (IA) on canal rotation schedules, or adopt Alternate Wetting and Drying (AWD) water-saving protocols.',
+        mitigationFil: 'Makipag-ugnayan sa Irrigators Association (IA) sa iskedyul ng patubig, o magpatupad ng Controlled Irrigation / AWD upang makatipid sa tubig.'
+      });
+    }
+  } else if (waterSource === 'rainfed') {
+    const deficitCrops = drySeasonActiveCrops.filter(
+      (c) => c.waterDemand === 'high' || (c.waterDemand === 'medium' && c.droughtTolerance !== 'high')
+    );
+    if (deficitCrops.length > 0) {
+      const cropNamesEn = deficitCrops.map((c) => c.name.en).join(' & ');
+      const cropNamesFil = deficitCrops.map((c) => c.name.local).join(' at ');
+      risks.push({
+        id: 'risk_rainfed_deficit',
+        ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+        textEn: `Cultivating ${cropNamesEn} under purely rainfed dry-season conditions risks severe soil moisture deficits and yield collapse without supplementary irrigation.`,
+        textFil: `Ang pagtatanim ng ${cropNamesFil} sa tag-araw nang walang patubig (rainfed) ay delikado sa matinding kakulangan sa tubig at pagkalugi dahil sa kakapusan ng ulan.`,
+        mitigationEn: 'Shift to drought-tolerant pulses (such as Pag-asa mungbean) or short-cycle cover crops, or construct a rainwater collection pond.',
+        mitigationFil: 'Lumipat sa mga pananim na matipid sa tubig tulad ng Pag-asa munggo o magtatag ng maliit na imbakan ng tubig-ulan.'
+      });
+    }
+
+    const droughtFitCrops = drySeasonActiveCrops.filter(
+      (c) => c.waterDemand === 'low' && c.droughtTolerance === 'high'
+    );
+    if (droughtFitCrops.length > 0) {
+      const cropNamesEn = droughtFitCrops.map((c) => c.name.en).join(' & ');
+      const cropNamesFil = droughtFitCrops.map((c) => c.name.local).join(' at ');
+      reasons.push({
+        id: 'reason_rainfed_drought_fit',
+        ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+        category: 'water',
+        textEn: `Planting ${cropNamesEn} leverages low water demand and high drought tolerance, securing stable yields using only residual soil moisture under rainfed conditions.`,
+        textFil: `Ang pagtatanim ng ${cropNamesFil} ay angkop sa rainfed dahil matipid sa tubig at matibay sa tagtuyot, kaya sumasapat ang natitirang halumigmig sa lupa kahit walang irigasyon.`,
+        dataEvidence: `Field water source is rainfed; selected dry-season crops feature low water demand and high drought resilience.`
+      });
+    }
+  } else if (waterSource === 'pump_well') {
+    if (drySeasonActiveCrops.length > 0) {
+      risks.push({
+        id: 'risk_pump_fuel_cost',
+        ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+        textEn: `Shallow tube well / pump irrigation secures dry-season water supply but incurs substantial pumping fuel or electricity costs that reduce net crop margins.`,
+        textFil: `Ang paggamit ng poso o pambomba ng tubig ay nagbibigay ng maaasahang patubig sa tag-araw ngunit nagdudulot ng mataas na gastos sa krudo o kuryente na nagpapababa ng kita.`,
+        mitigationEn: 'Implement Alternate Wetting and Drying (AWD) or furrow basin irrigation to minimize operating hours and pumping fuel consumption.',
+        mitigationFil: 'Magsagawa ng Controlled Irrigation / AWD o maayos na tudling upang mabawasan ang oras ng pagpapatakbo ng bomba at makatipid sa krudo.'
+      });
+
+      if (drySeasonActiveCrops.some((c) => c.waterDemand === 'high')) {
+        reasons.push({
+          id: 'reason_pump_water_buffer',
+          ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+          category: 'water',
+          textEn: `On-demand shallow tube well pumping buffers high water-demand crops against dry-season moisture stress.`,
+          textFil: `Ang patubig mula sa poso o bomba ay nagpoprotekta sa mga pananim na nangangailangan ng maraming tubig laban sa tagtuyot sa tag-araw.`,
+          dataEvidence: `Pump irrigation provides flexible groundwater extraction during low-rainfall periods.`
+        });
+      }
+    }
+  } else if (waterSource === 'small_pond') {
+    const pondStressCrops = drySeasonActiveCrops.filter(
+      (c) => c.waterDemand === 'high' || (c.waterDemand === 'medium' && c.droughtTolerance !== 'high')
+    );
+    if (pondStressCrops.length > 0) {
+      const cropNamesEn = pondStressCrops.map((c) => c.name.en).join(' & ');
+      const cropNamesFil = pondStressCrops.map((c) => c.name.local).join(' at ');
+      risks.push({
+        id: 'risk_pond_drawdown',
+        ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+        textEn: `High water demand for ${cropNamesEn} may deplete small farm reservoir or pond capacity before harvest, especially during severe heat.`,
+        textFil: `Maaaring maubos ang tubig sa maliit na imbakan (pond) bago mag-ani ng ${cropNamesFil} dahil sa mataas na konsumo at mabilis na pagsingaw sa tag-init.`,
+        mitigationEn: 'Prioritize supplemental watering only during critical flowering and grain-filling stages, and apply organic mulching to reduce evaporative loss.',
+        mitigationFil: 'Gamitin lamang ang tubig ng imbakan sa kritikal na yugto ng pamumulaklak at lagyan ng mulch ang lupa upang mabawasan ang pagsingaw.'
+      });
+    }
+
+    const pondFitCrops = drySeasonActiveCrops.filter(
+      (c) => c.waterDemand === 'low' && c.droughtTolerance === 'high'
+    );
+    if (pondFitCrops.length > 0) {
+      const cropNamesEn = pondFitCrops.map((c) => c.name.en).join(' & ');
+      const cropNamesFil = pondFitCrops.map((c) => c.name.local).join(' at ');
+      reasons.push({
+        id: 'reason_pond_water_fit',
+        ruleId: 'AGRO-RULE-06-WATER-ACCESS',
+        category: 'water',
+        textEn: `Low-water crops (${cropNamesEn}) conserve small farm pond reserves, sustaining irrigation availability across the entire dry season.`,
+        textFil: `Ang mga pananim na matipid sa tubig (${cropNamesFil}) ay nagtitipid sa imbakan ng tubig (pond) upang magtagal ang patubig sa buong tag-araw.`,
+        dataEvidence: `Small farm reservoir volume is matched with low water-demand, drought-resilient crops.`
+      });
+    }
   }
 
   return { reasons, risks };

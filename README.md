@@ -11,7 +11,7 @@
 ## 📌 Naming Note
 
 - **AniTala** (from Tagalog *Ani* [harvest] + *Tala* [guiding star]) is the public product name for the complete application, encompassing the introductory landing page and the seasonal crop rotation planner.
-- Legacy implementation labels, cache namespaces, and historical source attributions are retained for compatibility. The planner header and printable sheet still use legacy branding pending a separate UI update.
+- The planner UI (header navigation, methodology and comparison modals, saved-plan records, and the printable **Farm Advisory Sheet**) now uses **AniTala** branding (`AT-xx.xx-xxxx` advisory references). Legacy internal cache namespaces (`FieldShiftCacheDB` / `climateCache` in IndexedDB and the `fieldshift_cache_` `localStorage` prefix in `src/services/cache.ts`) and historical provenance identifiers (`FieldShift municipal soil example`, `FieldShift demonstration assumptions`) are retained for compatibility.
 - **"Field Shift: Adapting Farms with NASA Data"** is the official 2026 NASA Space Apps Challenge title.
 - *GabayAni* was an early working title and is fully deprecated; it does not appear in user-facing views.
 

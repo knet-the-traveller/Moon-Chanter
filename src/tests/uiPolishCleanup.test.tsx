@@ -25,8 +25,8 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps en.json and fil.json keys aligned across conditions, provenance, and results', () => {
-    for (const section of ['conditions', 'provenance', 'results'] as const) {
+  it('keeps en.json and fil.json keys aligned across conditions, provenance, priorities, and results', () => {
+    for (const section of ['conditions', 'provenance', 'priorities', 'results'] as const) {
       expect(Object.keys(translations.en[section]).sort()).toEqual(
         Object.keys(translations.fil[section]).sort()
       );
@@ -218,5 +218,191 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(overrideIndex).toBeGreaterThan(kpiIndex);
     expect(caveatsIndex).toBeGreaterThan(overrideIndex);
     expect(modelDetailsIndex).toBeGreaterThan(overrideIndex);
+  });
+
+  it('renders MapPicker Expand Map toggle, LandSummary KPI tiles & details, and Step 2 WaterSourceCard and FieldNotesCard', async () => {
+    // 1. MapPicker Expand Map toggle and LandSummary tiles/details
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    useAppStore.setState({ language: 'en', isMapExpanded: false });
+    const { MapPicker } = await import('../components/MapPicker');
+    const mapHtml = renderToStaticMarkup(createElement(MapPicker));
+    expect(mapHtml).toContain(getTranslation('en', 'map.expandMap'));
+
+    const [beforeDetails, insideDetails] = mapHtml.split('<details');
+    const dlBlock = beforeDetails.split('<dl')[1] ?? '';
+    expect(dlBlock).toContain(getTranslation('en', 'land.elevation'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.slope'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.flood'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.bareMonths'));
+    expect(dlBlock).toContain(getTranslation('en', 'mvp.erosionTitle'));
+    expect(dlBlock).toContain(getTranslation('en', 'land.monthlyNdvi'));
+    expect(insideDetails).toBeDefined();
+    expect(insideDetails.match(/<li>/g)).toHaveLength(7);
+
+    // Expand Map toggle state
+    useAppStore.setState({ isMapExpanded: true });
+    const expandedMapHtml = renderToStaticMarkup(createElement(MapPicker));
+    expect(expandedMapHtml).toContain(getTranslation('en', 'map.minimizeMap'));
+
+    // Localized NDVI legend strings parity
+    expect(getTranslation('en', 'map.ndviLowFallow')).toBe('Low / Fallow');
+    expect(getTranslation('fil', 'map.ndviLowFallow')).toBe('Mababa / Tiwangwang');
+    expect(getTranslation('en', 'map.ndviModerate')).toBe('Moderate');
+    expect(getTranslation('fil', 'map.ndviModerate')).toBe('Katamtaman');
+    expect(getTranslation('en', 'map.ndviHighVigor')).toBe('High Vigor');
+    expect(getTranslation('fil', 'map.ndviHighVigor')).toBe('Malagong Halaman');
+
+    // 2. Step 2 WaterSourceCard and FieldNotesCard
+    useAppStore.setState({
+      currentStep: 2,
+      language: 'en',
+      waterSource: 'irrigation_canal',
+      fieldSizeHa: 2.5,
+      plotNotes: 'Parcel near canal gate'
+    });
+    const appHtml = renderToStaticMarkup(createElement(App));
+
+    // WaterSourceCard assertions
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterSourceTitle'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterCanal'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterRainfed'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterPumpWell'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterSmallPond'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterNeedsReview'));
+    expect(appHtml).toContain(getTranslation('en', 'conditions.waterAccessHint'));
+
+    // FieldNotesCard assertions
+    expect(appHtml).toContain(getTranslation('en', 'conditions.fieldNotesTitle').replace(/&/g, '&amp;'));
+    expect(appHtml).toContain('name="fieldSizeHa"');
+    expect(appHtml).toContain('value="2.5"');
+    expect(appHtml).toContain('Parcel near canal gate');
+  });
+
+  it('renders Step 3 6 color-coded priority sliders, paginated 13-crop selector with traits and risk, and < 2 crops warning', async () => {
+    useAppStore.setState({ currentStep: 3, language: 'en', excludedCropIds: [] });
+    const { PrioritiesSection } = await import('../components/PrioritiesSection');
+    const appHtml = renderToStaticMarkup(createElement(App));
+
+    // 1. Step 3 Sliders, Back to Conditions, and Generate CTAs (zero View Recommendations)
+    expect(appHtml).toContain('Back to Conditions');
+    expect(appHtml).toContain('Generate &amp; Rank Rotation Plans');
+    expect(appHtml).not.toContain('View Recommendations');
+    expect(appHtml).toContain('Climate Shock Buffer');
+    expect(appHtml).toContain('Soil Health');
+    expect(appHtml).toContain('Water Resilience');
+    expect(appHtml).toContain('Stable Income');
+    expect(appHtml).toContain('Low Input');
+    expect(appHtml).toContain('Low Labor');
+
+    // 2. Paginated crop list default (Page 1: Showing 1–5 of 13 crops)
+    const sectionHtml = renderToStaticMarkup(createElement(PrioritiesSection));
+    expect(sectionHtml).toContain('Showing 1–5 of 13 crops');
+    expect(sectionHtml).toContain('Lowland Rice');
+    expect(sectionHtml).toContain('Steady Income');
+    expect(sectionHtml).toContain('Rich Soil');
+    expect(sectionHtml).toContain('Saves Water');
+    expect(sectionHtml).toMatch(/Low Risk|Med Risk/);
+
+    // Page 2 / Show All renders Sunn Hemp / Green Manure
+    const allCropsHtml = renderToStaticMarkup(createElement(PrioritiesSection, { initialShowAll: true }));
+    expect(allCropsHtml).toContain('Sunn Hemp / Green Manure');
+
+    // 3. Low-crop inline warning when < 2 crops remain enabled
+    const all13CropIds = [
+      'rice', 'corn', 'mungbean', 'peanut', 'cowpea',
+      'soybean', 'cover_crotalaria', 'sweet_potato', 'cassava',
+      'eggplant', 'tomato', 'ampalaya', 'onion'
+    ];
+    // Exclude 12 of the 13 crops
+    useAppStore.setState({ excludedCropIds: all13CropIds.slice(1) });
+    const warningHtml = renderToStaticMarkup(createElement(PrioritiesSection));
+    expect(warningHtml).toContain('role="alert"');
+    expect(warningHtml).toContain(getTranslation('en', 'priorities.lowCropWarning'));
+  });
+
+  it('renders Step 4 Spotlight plan with 5 fit bars and Other Good Crop Plans with pinned baseline plan above the fold', async () => {
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    useAppStore.getState().setSoilOverride({ texture: 'loam', drainage: 'well' });
+    useAppStore.setState({ currentStep: 4, language: 'en' });
+    const plans = useAppStore.getState().recommendedPlans;
+    expect(plans.length).toBe(6);
+    const baselinePlan = plans.find(p => p.isBaseline);
+    expect(baselinePlan).toBeDefined();
+
+    const appHtml = renderToStaticMarkup(createElement(App));
+
+    // 1. Spotlight plan defaults to recommendedPlans[0]
+    expect(appHtml).toContain(plans[0].name.en);
+    // 5 fit bars
+    expect(appHtml).toContain('Soil Health');
+    expect(appHtml).toContain('Water Resilience');
+    expect(appHtml).toContain('Climate Shock Buffer');
+    expect(appHtml).toContain('Economics');
+    expect(appHtml).toMatch(/Labor Feasibility|Labor/);
+
+    // 2. Other Good Crop Plans section
+    expect(appHtml).toContain(getTranslation('en', 'results.otherGoodPlans'));
+    // #2 and #3 visible
+    expect(appHtml).toContain(plans[1].name.en);
+    expect(appHtml).toContain(plans[2].name.en);
+    // Pinned baseline plan visible immediately without clicking show more
+    expect(appHtml).toContain(baselinePlan!.name.en);
+    expect(appHtml).toContain(getTranslation('en', 'results.showMorePlans'));
+  });
+
+  it('promotes an alternative plan to active spotlight and updates PrintablePlan with promoted rank, waterSource, fieldSizeHa, and plotNotes', async () => {
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const plans = useAppStore.getState().recommendedPlans;
+    expect(plans.length).toBeGreaterThan(1);
+    const planToPromote = plans[1];
+
+    useAppStore.setState({
+      currentStep: 4,
+      language: 'en',
+      waterSource: 'pump_well',
+      fieldSizeHa: 3.2,
+      plotNotes: 'Lower terrace near creek'
+    });
+
+    // Promote plan #2
+    useAppStore.getState().promotePlan(planToPromote.id);
+    expect(useAppStore.getState().activeSpotlightPlanId).toBe(planToPromote.id);
+
+    const appHtml = renderToStaticMarkup(createElement(App));
+    // Spotlight card shows promoted badge
+    const expectedPromotedBadge = getTranslation('en', 'results.promotedBadge').replace('{rank}', '2');
+    expect(appHtml).toContain(expectedPromotedBadge);
+
+    // PrintablePlan reflects promoted plan
+    const { PrintablePlan } = await import('../components/PrintablePlan');
+    const printHtml = renderToStaticMarkup(createElement(PrintablePlan));
+    expect(printHtml).toContain(planToPromote.name.en);
+    expect(printHtml).toContain('Active Plan · Promoted from #2');
+    expect(printHtml).toContain(getTranslation('en', 'conditions.waterPumpWell'));
+    expect(printHtml).toContain('3.2');
+    expect(printHtml).toContain('Lower terrace near creek');
+  });
+
+  it.each(['en', 'fil'] as const)('provides accessible close aria-label on MethodologyModal and interactive trait tooltips on RotationCard (%s)', async (language) => {
+    useAppStore.setState({ isMethodologyModalOpen: true, language });
+    const { MethodologyModal } = await import('../components/MethodologyModal');
+    const methodologyHtml = renderToStaticMarkup(createElement(MethodologyModal));
+    expect(methodologyHtml).toContain(`aria-label="${getTranslation(language, 'provenance.closeMethodology')}"`);
+
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const plan = useAppStore.getState().recommendedPlans[0];
+    const { RotationCard } = await import('../components/RotationCard');
+    const cardHtml = renderToStaticMarkup(createElement(RotationCard, { plan, rank: 1 }));
+
+    // Trait badge buttons with aria-expanded="false"
+    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const expectedNFixer = escapeRegExp(getTranslation(language, 'results.badgeNFixer'));
+    const expectedWaterPrefix = escapeRegExp(getTranslation(language, 'results.badgeWater').split('{demand}')[0]);
+    const expectedRootPrefix = escapeRegExp(getTranslation(language, 'results.badgeRoot').split('{depth}')[0]);
+    expect(cardHtml).toContain('aria-expanded="false"');
+    expect(cardHtml).toMatch(/<button[^>]*aria-expanded="false"[^>]*>GRASS<\/button>|<button[^>]*aria-expanded="false"[^>]*>grass<\/button>/i);
+    expect(cardHtml).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>${expectedNFixer}<\\/button>`));
+    expect(cardHtml).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>${expectedWaterPrefix}`));
+    expect(cardHtml).toMatch(new RegExp(`<button[^>]*aria-expanded="false"[^>]*>${expectedRootPrefix}`));
   });
 });

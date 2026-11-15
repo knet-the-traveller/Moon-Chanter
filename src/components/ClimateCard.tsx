@@ -31,10 +31,10 @@ export const ClimateCard: React.FC = () => {
 
   if (isLoadingTelemetry) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm animate-pulse">
-        <div className="h-6 bg-stone-200 rounded w-1/3 mb-4"></div>
-        <div className="h-4 bg-stone-100 rounded w-1/2 mb-6"></div>
-        <div className="h-48 bg-stone-100 rounded-xl"></div>
+      <div className="card bg-white rounded-2xl p-6 border border-at-line shadow-sm animate-pulse">
+        <div className="h-6 bg-at-ow rounded w-1/3 mb-4"></div>
+        <div className="h-4 bg-at-ow rounded w-1/2 mb-6"></div>
+        <div className="h-48 bg-at-ow rounded-xl"></div>
       </div>
     );
   }
@@ -59,24 +59,24 @@ export const ClimateCard: React.FC = () => {
   }));
 
   return (
-    <div className="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-sm">
+    <div className="card bg-white rounded-2xl p-5 sm:p-6 border border-at-line shadow-sm">
       {/* Title & Provenance */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-stone-100 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-at-line/50 gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <CloudSun className="w-5 h-5 text-amber-600" />
-            <h3 className="font-bold text-stone-900 text-base sm:text-lg">
+            <CloudSun className="w-5 h-5 text-at-amber" />
+            <h3 className="font-bold text-at-dk text-base sm:text-lg">
               {getTranslation(language, 'conditions.climateTitle')}
             </h3>
           </div>
-          <div className="text-xs text-stone-500 mt-1 flex flex-wrap items-center gap-2">
+          <div className="text-xs text-at-muted mt-1 flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1 font-medium">
-              <Database className="w-3.5 h-3.5 text-stone-400" />
+              <Database className="w-3.5 h-3.5 text-at-muted" />
               {climateData.source}
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-stone-400" />
+              <Calendar className="w-3.5 h-3.5 text-at-muted" />
               {climateData.dateRange}
             </span>
           </div>
@@ -85,143 +85,156 @@ export const ClimateCard: React.FC = () => {
         {/* Live or Sample Badge */}
         <div>
           {climateData.isSampleData ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-at-tint text-at-dk border border-at-line">
+              <AlertTriangle className="w-3.5 h-3.5 text-at-amber" />
               {getTranslation(language, 'conditions.sampleBadge')}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-at-tint text-at-dk border border-at-line">
+              <span className="w-2 h-2 rounded-full bg-at-green animate-ping"></span>
               {getTranslation(language, `provenance.${metadata.precipitation.tier ?? 'unavailable'}`)}
             </span>
           )}
         </div>
       </div>
 
-      {/* Primary KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-4">
+      {/* Primary KPI Grid (2x2 .wt matching step2.html) */}
+      <div className="wgrid grid grid-cols-2 gap-3 my-4">
         {/* Annual Rainfall */}
-        <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-100">
-          <div className="text-xs font-semibold text-blue-900 flex items-center gap-1">
-            <Droplets className="w-3.5 h-3.5 text-blue-600" />
+        <div className="wt border border-at-line rounded-xl p-3.5 sm:p-4 bg-at-ow">
+          <div className="text-xs sm:text-sm font-semibold text-at-dk flex items-center gap-1.5">
+            <Droplets className="w-4 h-4 text-at-blue" />
             <span>{getTranslation(language, 'conditions.annualPrecip')}</span>
           </div>
-          <div className="text-xl font-black text-blue-950 mt-1">
+          <div className="text-lg sm:text-2xl font-bold text-at-dk mt-1">
             {climateData.meanAnnualPrecipitation.toLocaleString()} <span className="text-xs font-normal">mm/yr</span>
           </div>
-          <div className="text-[11px] text-blue-800 mt-0.5 truncate" title={conciseSubtitle}>
+          <div className="text-[11px] sm:text-xs text-at-muted mt-0.5 truncate" title={conciseSubtitle}>
             {conciseSubtitle}
           </div>
         </div>
 
         {/* Mean Temp */}
-        <div className="p-3.5 rounded-xl bg-orange-50/60 border border-orange-100">
-          <div className="text-xs font-semibold text-orange-900 flex items-center gap-1">
-            <ThermometerSun className="w-3.5 h-3.5 text-orange-600" />
+        <div className="wt border border-at-line rounded-xl p-3.5 sm:p-4 bg-at-ow">
+          <div className="text-xs sm:text-sm font-semibold text-at-dk flex items-center gap-1.5">
+            <ThermometerSun className="w-4 h-4 text-at-amber" />
             <span>{getTranslation(language, 'conditions.annualTemp')}</span>
           </div>
-          <div className="text-xl font-black text-orange-950 mt-1">
+          <div className="text-lg sm:text-2xl font-bold text-at-dk mt-1">
             {climateData.meanAnnualTemp}°C
           </div>
-          <div className="text-[11px] text-orange-800 mt-0.5 truncate" title={conciseSubtitle}>
+          <div className="text-[11px] sm:text-xs text-at-muted mt-0.5 truncate" title={conciseSubtitle}>
             {conciseSubtitle}
           </div>
         </div>
 
         {/* Heat Stress Days */}
-        <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-100">
-          <div className="text-xs font-semibold text-amber-900 flex items-center gap-1">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+        <div className="wt border border-at-line rounded-xl p-3.5 sm:p-4 bg-at-ow">
+          <div className="text-xs sm:text-sm font-semibold text-at-dk flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 text-at-amber" />
             <span>{getTranslation(language, 'conditions.heatStressDays')}</span>
           </div>
-          <div className="text-xl font-black text-amber-950 mt-1">
+          <div className="text-lg sm:text-2xl font-bold text-at-dk mt-1">
             ~{climateData.heatStressDaysPerYear} <span className="text-xs font-normal">days/yr</span>
           </div>
-          <div className="text-[11px] text-amber-700 mt-0.5">
-            {getTranslation(language, 'conditions.heatRiskLabel')}: <span className="font-semibold uppercase">{climateData.heatRisk}</span>
+          <div className="text-[11px] sm:text-xs text-at-muted mt-0.5">
+            {getTranslation(language, 'conditions.heatRiskLabel')}: <span className="font-semibold uppercase text-at-dk">{climateData.heatRisk}</span>
           </div>
         </div>
 
         {/* Decadal Rainfall Trend */}
-        <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200">
-          <div className="text-xs font-semibold text-stone-800 flex items-center gap-1">
+        <div className="wt border border-at-line rounded-xl p-3.5 sm:p-4 bg-at-ow">
+          <div className="text-xs sm:text-sm font-semibold text-at-dk flex items-center gap-1.5">
             {climateData.tenYearRainfallTrend === 'decreasing' ? (
-              <TrendingDown className="w-3.5 h-3.5 text-rose-600" />
+              <TrendingDown className="w-4 h-4 text-rose-600" />
             ) : (
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+              <TrendingUp className="w-4 h-4 text-at-green" />
             )}
             <span>{getTranslation(language, 'conditions.rainfallTrend')}</span>
           </div>
-          <div className="text-sm font-bold text-stone-900 mt-1 capitalize">
+          <div className="text-sm sm:text-base font-bold text-at-dk mt-1 capitalize">
             {metadata.rainfallTrend.tier === 'unavailable' ? getTranslation(language,'provenance.unavailableValue') : `${climateData.tenYearRainfallTrend} (${climateData.trendDeltaPercent > 0 ? '+' : ''}${climateData.trendDeltaPercent}%)`}
           </div>
-          <div className="text-[11px] text-stone-500 mt-0.5">
-            {getTranslation(language, 'conditions.drySpellRiskLabel')}: <span className="font-semibold uppercase text-stone-700">{climateData.drySpellRisk}</span>
+          <div className="text-[11px] sm:text-xs text-at-muted mt-0.5">
+            {getTranslation(language, 'conditions.drySpellRiskLabel')}: <span className="font-semibold uppercase text-at-dk">{climateData.drySpellRisk}</span>
           </div>
         </div>
       </div>
-      {/* Seasonal Breakdown Pills */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5 p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 text-xs">
-        <div>
-          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.wetSeason').replace('{months}', planningPeriod('wet', language))}</div>
-          <div className="text-stone-600 mt-0.5 font-medium">
-            Rain: <span className="font-bold text-blue-700">{climateData.seasonalStats.wet.precip} mm</span> · Max T: {climateData.seasonalStats.wet.maxTemp}°C
+
+      {/* Seasonal Breakdown 3-Season Strip */}
+      <div className="seasons grid grid-cols-1 sm:grid-cols-3 gap-2.5 my-4 p-3 rounded-xl bg-at-tint/50 border border-at-line text-xs">
+        <div className="bg-white/80 rounded-lg p-2.5 border border-at-line/50">
+          <div className="font-bold text-at-dk">
+            {getTranslation(language, 'conditions.wetSeason').replace('{months}', planningPeriod('wet', language))}
+          </div>
+          <div className="text-at-muted mt-0.5 font-medium">
+            Rain: <span className="font-bold text-at-blue">{climateData.seasonalStats.wet.precip} mm</span> · Max T: {climateData.seasonalStats.wet.maxTemp}°C
           </div>
         </div>
-        <div>
-          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.dryCoolSeason').replace('{months}', planningPeriod('coolDry', language))}</div>
-          <div className="text-stone-600 mt-0.5 font-medium">
-            Rain: <span className="font-bold text-blue-700">{climateData.seasonalStats.dryCool.precip} mm</span> · Max T: {climateData.seasonalStats.dryCool.maxTemp}°C
+        <div className="bg-white/80 rounded-lg p-2.5 border border-at-line/50">
+          <div className="font-bold text-at-dk">
+            {getTranslation(language, 'conditions.dryCoolSeason').replace('{months}', planningPeriod('coolDry', language))}
+          </div>
+          <div className="text-at-muted mt-0.5 font-medium">
+            Rain: <span className="font-bold text-at-blue">{climateData.seasonalStats.dryCool.precip} mm</span> · Max T: {climateData.seasonalStats.dryCool.maxTemp}°C
           </div>
         </div>
-        <div>
-          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.dryHotSeason').replace('{months}', planningPeriod('hotDry', language))}</div>
-          <div className="text-stone-600 mt-0.5 font-medium">
-            Rain: <span className="font-bold text-blue-700">{climateData.seasonalStats.dryHot.precip} mm</span> · Max T: <span className="font-bold text-rose-600">{climateData.seasonalStats.dryHot.maxTemp}°C</span>
+        <div className="bg-white/80 rounded-lg p-2.5 border border-at-line/50">
+          <div className="font-bold text-at-dk">
+            {getTranslation(language, 'conditions.dryHotSeason').replace('{months}', planningPeriod('hotDry', language))}
+          </div>
+          <div className="text-at-muted mt-0.5 font-medium">
+            Rain: <span className="font-bold text-at-blue">{climateData.seasonalStats.dryHot.precip} mm</span> · Max T: <span className="font-bold text-at-amber">{climateData.seasonalStats.dryHot.maxTemp}°C</span>
           </div>
         </div>
       </div>
+
       {/* Monthly Chart (Recharts) */}
-      <div className="mt-2">
-        <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center justify-between">
+      <div className="chart border border-at-line rounded-xl p-3.5 sm:p-4 mt-2">
+        <div className="text-xs font-semibold text-at-dk mb-2 flex items-center justify-between">
           <span>{getTranslation(language, 'provenance.chart')}</span>
-          <span className="text-[10px] text-stone-400 font-normal">{climateData.dateRange}</span>
+          <span className="text-[10px] text-at-muted font-normal">{climateData.dateRange}</span>
         </div>
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#4b5563' }} />
-              <YAxis yAxisId="rain" orientation="left" tick={{ fontSize: 11, fill: '#2563eb' }} unit="mm" />
-              <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 2', 'dataMax + 2']} tick={{ fontSize: 11, fill: '#d97706' }} unit="°" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#D5E0C8" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#56664A' }} />
+              <YAxis yAxisId="rain" orientation="left" tick={{ fontSize: 11, fill: '#5C95E0' }} unit="mm" />
+              <YAxis yAxisId="temp" orientation="right" domain={['dataMin - 2', 'dataMax + 2']} tick={{ fontSize: 11, fill: '#D98A2B' }} unit="°" />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#ffffff',
-                  borderColor: '#e2e8f0',
+                  borderColor: '#D5E0C8',
                   borderRadius: '0.75rem',
                   fontSize: '12px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08)'
                 }}
               />
               <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
-              <Bar yAxisId="rain" dataKey="rainfall" name="Rainfall (mm)" fill="#3b82f6" radius={[4, 4, 0, 0]} opacity={0.85} />
-              <Line yAxisId="temp" type="monotone" dataKey="tempMax" name="Max Temp (°C)" stroke="#d97706" strokeWidth={2.5} dot={{ r: 3 }} />
+              <Bar yAxisId="rain" dataKey="rainfall" name="Rainfall (mm)" fill="#5C95E0" radius={[4, 4, 0, 0]} opacity={0.85} />
+              <Line yAxisId="temp" type="monotone" dataKey="tempMax" name="Max Temp (°C)" stroke="#D98A2B" strokeWidth={2.5} dot={{ r: 3 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <details className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-3 text-xs text-stone-800 break-words">
-        <summary className="cursor-pointer py-1 font-semibold text-emerald-950 focus-visible:outline-2 focus-visible:outline-emerald-800">{getTranslation(language, 'provenance.viewCaveats')}</summary>
-        <ul className="mt-2 space-y-2 break-words text-xs">{Object.entries(metadata).map(([key,value])=><li key={key}>{formatProvenance(language,value)}</li>)}</ul>
+      <details className="mt-4 rounded-xl border border-at-line bg-at-ow p-3 text-xs text-at-dk break-words">
+        <summary className="cursor-pointer py-1 font-semibold text-at-dk focus-visible:outline-2 focus-visible:outline-at-dk">
+          {getTranslation(language, 'provenance.viewCaveats')}
+        </summary>
+        <ul className="mt-2 space-y-2 break-words text-xs text-at-muted">
+          {Object.entries(metadata).map(([key, value]) => <li key={key}>{formatProvenance(language, value)}</li>)}
+        </ul>
       </details>
+
       {/* NASA Variables Citation Footer */}
-      <div className="mt-4 pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between text-[11px] text-stone-500 gap-2">
+      <div className="mt-4 pt-3 border-t border-at-line/50 flex flex-wrap items-center justify-between text-[11px] text-at-muted gap-2">
         <div className="flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5 text-stone-400" />
+          <Layers className="w-3.5 h-3.5 text-at-muted" />
           <span>Variables: <strong>{climateData.variableList.join(', ')}</strong></span>
         </div>
-        <div className="text-[10px] text-stone-400 italic">
+        <div className="text-[10px] text-at-muted italic">
           {getTranslation(language, 'provenance.derived')}
         </div>
       </div>

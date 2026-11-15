@@ -105,7 +105,7 @@ Choose the method that best matches your testing goal:
    * **Samsung Galaxy S20 / S8+** (360px – 412px width)
    * **Pixel 7 / 8** (412px width)
    * **iPhone 14 / 15** (390px width)
-5. **Inspect Outdoor Contrast:** Confirm all text, badge chips, telemetry graphs, and interactive buttons maintain high readability against the warm `#faf8f5` sunlight background.
+5. **Inspect Outdoor Contrast:** Confirm all text, badge chips, telemetry graphs, and interactive buttons maintain high readability against the warm `#F7F9F4` sunlight background.
 
 ---
 
@@ -253,8 +253,8 @@ Use this interactive checklist to visually verify each section and feature of th
 - [ ] Click the **"Print Field Plan"** button in the header (or press `Ctrl + P` / `Cmd + P`).
 - [ ] In the browser print preview dialog:
   - [ ] Confirm screen navigation bars, map picker, and interactive sliders are **hidden** via `@media print`.
-  - [ ] AniTala's single-page **Farm Advisory Sheet** renders cleanly. Its heading currently retains legacy branding; this documentation update does not change the printable component.
-  - [ ] Farm coordinates, advisory reference ID (`FS-xx.xx-xxxx`), date, soil profile, and 3-season crop diagram format neatly within standard A4 / Letter boundaries.
+  - [ ] AniTala's single-page **Farm Advisory Sheet** (`AniTala · Farm Advisory Sheet`) renders cleanly.
+  - [ ] Farm coordinates, advisory reference ID (`AT-xx.xx-xxxx`), date, soil profile, and 3-season crop diagram format neatly within standard A4 / Letter boundaries.
   - [ ] Farmer note-taking / extension worker signature section appears at the bottom.
 
 ---

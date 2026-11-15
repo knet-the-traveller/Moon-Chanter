@@ -14,9 +14,12 @@ export const StepProgress: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-b border-stone-200/80 relative sm:sticky sm:top-16 z-30 min-w-0 max-w-full">
+    <div className="bg-[#F7F9F4] border-b border-[#D5E0C8] relative sm:sticky sm:top-16 z-30 min-w-0 max-w-full no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between py-2.5 overflow-x-auto no-scrollbar gap-2 sm:gap-4">
+        <nav
+          className="flex items-center justify-between py-2 sm:py-2.5 overflow-x-auto no-scrollbar gap-1.5 sm:gap-3"
+          aria-label="Workflow Steps"
+        >
           {steps.map((step) => {
             const Icon = step.icon;
             const isActive = currentStep === step.num;
@@ -25,27 +28,33 @@ export const StepProgress: React.FC = () => {
             return (
               <button
                 key={step.num}
+                type="button"
                 onClick={() => setCurrentStep(step.num)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                aria-current={isActive ? 'step' : undefined}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#A7BD40] ${
                   isActive
-                    ? 'bg-[#1e3a2f] text-white shadow-sm ring-2 ring-emerald-700/30'
+                    ? 'bg-[#1D3309] text-white shadow-xs'
                     : isCompleted
-                    ? 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100/80 border border-emerald-200/60'
-                    : 'text-stone-600 hover:bg-stone-100'
+                    ? 'bg-white text-[#1D3309] border border-[#D5E0C8] hover:border-[#1D3309]'
+                    : 'text-[#56664A] hover:bg-white/80'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
                     isActive
-                      ? 'bg-amber-400 text-stone-950'
+                      ? 'bg-[#A7BD40] text-[#1D3309]'
                       : isCompleted
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-stone-200 text-stone-600'
+                      ? 'bg-[#A7BD40] text-[#1D3309]'
+                      : 'bg-[#E3EAD8] text-[#56664A]'
                   }`}
                 >
                   {isCompleted ? '✓' : step.num}
                 </div>
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-300' : 'text-stone-500'}`} />
+                <Icon
+                  className={`w-3.5 h-3.5 ${
+                    isActive ? 'text-[#C7DA91]' : isCompleted ? 'text-[#1D3309]' : 'text-[#56664A]'
+                  }`}
+                />
                 <span>{getTranslation(language, step.key)}</span>
               </button>
             );
