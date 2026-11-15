@@ -17,7 +17,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#122b1e] text-white pt-10 pb-20 lg:pt-14 lg:pb-24">
+    <section className="relative overflow-hidden bg-[#1D3309] text-white pt-10 pb-20 lg:pt-14 lg:pb-24">
       {/* Full-bleed hero background picture with responsive WebP and LCP priority */}
       <picture className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
         <source
@@ -56,7 +56,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-2xl lg:max-w-3xl flex flex-col items-start space-y-5 py-2 lg:py-6">
           {/* Pill Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[#d6ff62] text-xs font-semibold tracking-wider uppercase">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/25 text-white text-xs font-semibold tracking-wider uppercase shadow-xs">
             <svg
               className="w-3.5 h-3.5 shrink-0"
               viewBox="0 0 24 24"
@@ -84,7 +84,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <a
               href="#/app"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#bbf246] hover:bg-[#aee637] active:bg-[#9dd626] text-[#122b1e] text-sm md:text-base font-semibold transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#132e22] focus:ring-[#bbf246]"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#bbf246] hover:bg-[#aee637] active:bg-[#9dd626] text-[#1D3309] text-sm md:text-base font-semibold transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1D3309] focus:ring-[#bbf246]"
             >
               {t.hero.startPlanning}
             </a>

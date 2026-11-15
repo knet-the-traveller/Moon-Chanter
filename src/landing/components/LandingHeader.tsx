@@ -31,7 +31,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#122b1e] border-b border-white/10 text-white select-none">
+    <header className="sticky top-0 z-50 w-full bg-[#1D3309] border-b border-white/10 text-white select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo & Tagline */}
         <a
@@ -105,17 +105,17 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
         <div className="flex items-center gap-3">
           {/* Language Selector Pill */}
           <div
-            className="flex items-center bg-[#0a1a12] border border-white/20 rounded-full p-0.5 text-xs font-medium"
+            className="flex items-center bg-transparent border border-[#607646] rounded-full p-0.5 text-xs font-medium"
             role="group"
             aria-label={t.a11y.languageSelector}
           >
             <button
               type="button"
               onClick={() => onLanguageChange('en')}
-              className={`px-2.5 py-1 rounded-full transition-all ${
+              className={`px-3 py-1 rounded-full transition-all ${
                 language === 'en'
-                  ? 'bg-white text-[#122b1e] font-semibold shadow-xs'
-                  : 'text-white/70 hover:text-white'
+                  ? 'bg-[#C7DA91] text-[#1D3309] font-medium shadow-xs'
+                  : 'text-white hover:text-white/80 font-medium'
               }`}
               aria-pressed={language === 'en'}
             >
@@ -124,10 +124,10 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             <button
               type="button"
               onClick={() => onLanguageChange('tl')}
-              className={`px-2.5 py-1 rounded-full transition-all ${
+              className={`px-3 py-1 rounded-full transition-all ${
                 language === 'tl'
-                  ? 'bg-white text-[#122b1e] font-semibold shadow-xs'
-                  : 'text-white/70 hover:text-white'
+                  ? 'bg-[#C7DA91] text-[#1D3309] font-medium shadow-xs'
+                  : 'text-white hover:text-white/80 font-medium'
               }`}
               aria-pressed={language === 'tl'}
             >
@@ -138,7 +138,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
           {/* Launch App CTA Button */}
           <a
             href="#/app"
-            className="hidden sm:inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#bbf246] text-[#122b1e] text-xs md:text-sm font-semibold hover:bg-[#aee637] active:bg-[#9dd626] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#122b1e] focus:ring-[#bbf246] shadow-xs"
+            className="hidden sm:inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#bbf246] text-[#1D3309] text-xs md:text-sm font-semibold hover:bg-[#aee637] active:bg-[#9dd626] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1D3309] focus:ring-[#bbf246] shadow-xs"
           >
             {t.nav.launchApp}
           </a>
@@ -171,7 +171,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-[#0e2419] px-4 pt-3 pb-5 space-y-3">
+        <div className="md:hidden border-t border-white/10 bg-[#1D3309] px-4 pt-3 pb-5 space-y-3">
           <nav className="flex flex-col space-y-2">
             {NAV_ITEMS.map((item) => {
               const label =
@@ -213,7 +213,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             <a
               href="#/app"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full flex items-center justify-center px-4 py-2 rounded-full bg-[#bbf246] text-[#122b1e] text-sm font-semibold shadow-xs"
+              className="w-full flex items-center justify-center px-4 py-2 rounded-full bg-[#bbf246] text-[#1D3309] text-sm font-semibold shadow-xs"
             >
               {t.nav.launchApp}
             </a>

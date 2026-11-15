@@ -77,11 +77,11 @@ export const tl: LandingTranslations & { needsReview: true } = {
   },
   footer: {
     brandName: 'AniTala',
-    tagline: 'Simpleng Gabay sa Pananim at Lupa · Nilikha para sa mga Magsasakang Pilipino',
+    tagline: 'Gabay ng mga bituin, patungo sa mas masaganang ani.',
     features: 'Panrehiyong Batayan ng Lupa · Papanahong Kaalaman sa Klima · Tagaplano ng Salitang Pananim',
-    copyright: '© 2026 AniTala',
+    copyright: '© 2026 AniTala · SI-Assisted Build v1.0',
     siNotice:
-      'S.I. Transparency Notice: Visual assets, UI code scaffolding, at crop rotation ranking logic ay binuo sa tulong ng Synthetic Intelligence (S.I.) gamit ang bukas na datos ng Earth observation.',
+      'S.I. Transparency Notice: Visual assets, UI scaffolding, at crop rotation ranking logic ay binuo sa tulong ng Synthetic Intelligence (S.I.) gamit ang bukas na datos ng Earth observation.',
     siVersion: 'SI-Assisted Build · v1.0',
     dataCredit:
       'Gumagamit ng bukas na telemetriya mula sa NASA POWER API (agroklimatolohiya at meteorolohiya) at NASA GIBS (imaheng satelayt mula sa Global Imagery Browse Services). Ang proyektong ito ay nilikha para sa 2026 NASA Space Apps Challenge at hindi inindorso o kaanib ng NASA.'
