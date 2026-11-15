@@ -18,46 +18,41 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#132e22] text-white pt-10 pb-20 lg:pt-14 lg:pb-24">
-      {/* Topographic Contour Background SVG Pattern */}
+    <section className="relative overflow-hidden bg-[#122b1e] text-white pt-10 pb-20 lg:pt-14 lg:pb-24">
+      {/* Full-bleed hero background picture with responsive WebP and LCP priority */}
+      <picture className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
+        <source
+          media="(max-width: 768px)"
+          srcSet={`${import.meta.env.BASE_URL}images/landing/hero-bg-mobile.webp`}
+          type="image/webp"
+          width={900}
+          height={365}
+        />
+        <source
+          media="(min-width: 769px)"
+          srcSet={`${import.meta.env.BASE_URL}images/landing/hero-bg-desktop.webp`}
+          type="image/webp"
+          width={2400}
+          height={975}
+        />
+        <img
+          src={`${import.meta.env.BASE_URL}images/landing/hero-bg.jpg`}
+          alt=""
+          aria-hidden="true"
+          width={2400}
+          height={975}
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
+          className="w-full h-full object-cover object-[75%_20%] md:object-[80%_25%]"
+        />
+      </picture>
+
+      {/* Dark overlay gradient: strong on mobile/left for text legibility, easing toward the pale sun on right */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-15 overflow-hidden"
+        className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-b from-[#0b1f15]/95 via-[#0d2318]/90 to-[#0e271b]/95 md:bg-gradient-to-r md:from-[#0b1f15]/95 md:via-[#0d2318]/85 md:to-[#0e271b]/25"
         aria-hidden="true"
-      >
-        <svg
-          className="w-full h-full object-cover"
-          viewBox="0 0 1440 600"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M-100,200 C300,100 600,350 1000,180 C1300,50 1500,220 1600,300"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-100,250 C320,150 620,400 1020,230 C1320,100 1520,270 1600,350"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-100,300 C340,200 640,450 1040,280 C1340,150 1540,320 1600,400"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-100,350 C360,250 660,500 1060,330 C1360,200 1560,370 1600,450"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-100,400 C380,300 680,550 1080,380 C1380,250 1580,420 1600,500"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </div>
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -121,7 +116,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ language }) => {
                 slot="hero"
                 alt={t.hero.imageAlt}
                 priority={true}
-                className="rounded-3xl shadow-2xl border-2 border-white/15"
+                className="rounded-3xl shadow-2xl border-2 border-white/25 ring-1 ring-black/20"
               />
             </div>
           </div>

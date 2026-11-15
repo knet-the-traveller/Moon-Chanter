@@ -70,6 +70,25 @@ describe('AniTala Landing Page Suite', () => {
       }
     });
 
+    it('renders full-bleed hero background with responsive WebP picture sources and high fetch priority', () => {
+      const html = renderToStaticMarkup(
+        createElement(AniTalaLanding, {
+          language: 'en',
+          onLanguageChange: () => {}
+        })
+      );
+
+      // Verify <picture> element exists with mobile and desktop webp sources
+      expect(html).toContain('images/landing/hero-bg-mobile.webp');
+      expect(html).toContain('images/landing/hero-bg-desktop.webp');
+      expect(html).toContain('images/landing/hero-bg.jpg');
+
+      // Verify decorative accessibility attributes
+      expect(html).toMatch(/<img[^>]*src="[^"]*hero-bg\.jpg"[^>]*alt=""[^>]*aria-hidden="true"/);
+      // Verify high priority loading (fetchpriority / loading eager)
+      expect(html).toMatch(/loading="eager"/);
+    });
+
     it('contains ZERO occurrences of "GabayAni" in rendered English markup', () => {
       const html = renderToStaticMarkup(
         createElement(AniTalaLanding, {
