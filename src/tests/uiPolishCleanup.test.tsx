@@ -25,8 +25,8 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps en.json and fil.json keys aligned across conditions, provenance, and results', () => {
-    for (const section of ['conditions', 'provenance', 'results'] as const) {
+  it('keeps en.json and fil.json keys aligned across conditions, provenance, priorities, and results', () => {
+    for (const section of ['conditions', 'provenance', 'priorities', 'results'] as const) {
       expect(Object.keys(translations.en[section]).sort()).toEqual(
         Object.keys(translations.fil[section]).sort()
       );
@@ -276,5 +276,47 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(appHtml).toContain('name="fieldSizeHa"');
     expect(appHtml).toContain('value="2.5"');
     expect(appHtml).toContain('Parcel near canal gate');
+  });
+
+  it('renders Step 3 6 color-coded priority sliders, paginated 13-crop selector with traits and risk, and < 2 crops warning', async () => {
+    useAppStore.setState({ currentStep: 3, language: 'en', excludedCropIds: [] });
+    const { PrioritiesSection } = await import('../components/PrioritiesSection');
+    const appHtml = renderToStaticMarkup(createElement(App));
+
+    // 1. Step 3 Sliders, Back to Conditions, and Generate CTAs (zero View Recommendations)
+    expect(appHtml).toContain('Back to Conditions');
+    expect(appHtml).toContain('Generate &amp; Rank Rotation Plans');
+    expect(appHtml).not.toContain('View Recommendations');
+    expect(appHtml).toContain('Climate Shock Buffer');
+    expect(appHtml).toContain('Soil Health');
+    expect(appHtml).toContain('Water Resilience');
+    expect(appHtml).toContain('Stable Income');
+    expect(appHtml).toContain('Low Input');
+    expect(appHtml).toContain('Low Labor');
+
+    // 2. Paginated crop list default (Page 1: Showing 1–5 of 13 crops)
+    const sectionHtml = renderToStaticMarkup(createElement(PrioritiesSection));
+    expect(sectionHtml).toContain('Showing 1–5 of 13 crops');
+    expect(sectionHtml).toContain('Lowland Rice');
+    expect(sectionHtml).toContain('Steady Income');
+    expect(sectionHtml).toContain('Rich Soil');
+    expect(sectionHtml).toContain('Saves Water');
+    expect(sectionHtml).toMatch(/Low Risk|Med Risk/);
+
+    // Page 2 / Show All renders Sunn Hemp / Green Manure
+    const allCropsHtml = renderToStaticMarkup(createElement(PrioritiesSection, { initialShowAll: true }));
+    expect(allCropsHtml).toContain('Sunn Hemp / Green Manure');
+
+    // 3. Low-crop inline warning when < 2 crops remain enabled
+    const all13CropIds = [
+      'rice', 'corn', 'mungbean', 'peanut', 'cowpea',
+      'soybean', 'cover_crotalaria', 'sweet_potato', 'cassava',
+      'eggplant', 'tomato', 'ampalaya', 'onion'
+    ];
+    // Exclude 12 of the 13 crops
+    useAppStore.setState({ excludedCropIds: all13CropIds.slice(1) });
+    const warningHtml = renderToStaticMarkup(createElement(PrioritiesSection));
+    expect(warningHtml).toContain('role="alert"');
+    expect(warningHtml).toContain(getTranslation('en', 'priorities.lowCropWarning'));
   });
 });

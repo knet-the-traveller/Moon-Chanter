@@ -103,7 +103,7 @@ export const App: React.FC = () => {
                     onClick={() => setCurrentStep(3)}
                     className="px-4 py-2 rounded-xl text-xs font-bold bg-at-dk hover:bg-at-dk/90 text-white flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                   >
-                    <span>Configure Priorities</span>
+                    <span>{getTranslation(language, 'nav.priorities')}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-at-lime" />
                   </button>
                 </div>
@@ -131,7 +131,7 @@ export const App: React.FC = () => {
                       onClick={() => setCurrentStep(3)}
                       className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-bold bg-at-dk hover:bg-at-dk/90 text-at-lime flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer"
                     >
-                      <span>Configure Priorities</span>
+                      <span>{getTranslation(language, 'nav.priorities')}</span>
                       <ArrowRight className="w-4 h-4 text-at-lime" />
                     </button>
                   </div>
@@ -145,11 +145,11 @@ export const App: React.FC = () => {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-[#1D3309] tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-at-dk tracking-tight">
                     {getTranslation(language, 'priorities.title')}
                   </h2>
-                  <p className="text-xs sm:text-sm text-[#56664A] mt-0.5">
-                    Customize the objective weights according to your economic goals and resources.
+                  <p className="text-xs sm:text-sm text-at-muted mt-0.5">
+                    {getTranslation(language, 'priorities.subtitle')}
                   </p>
                 </div>
 
@@ -157,7 +157,7 @@ export const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(2)}
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-[#D5E0C8] hover:border-[#1D3309] text-[#1D3309] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-at-line hover:border-at-dk text-at-dk flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back to Conditions</span>

@@ -67,6 +67,28 @@ body {
   cursor: pointer;
 }
 
+/* AniTala shared trait & risk pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1.2;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.p-income { background: #EFF5D3; border-color: #A7BD40; color: #1D3309; }
+.p-storm { background: #DCF3EE; border-color: #2E8B75; color: #0F3D33; }
+.p-soil { background: #E5ECD9; border-color: #6A804F; color: #1D3309; }
+.p-water { background: #E1EDFC; border-color: #5C95E0; color: #102A4C; }
+.p-cost { background: #FCECD6; border-color: #D98A2B; color: #4A2A06; }
+.p-easy { background: #ECEAFC; border-color: #7C6EE6; color: #2E2670; }
+.p-med { background: #FEF0C7; border-color: #D97706; color: #78350F; }
+.p-low { background: #DCF4E3; border-color: #2A7B46; color: #14532D; }
+
 /* Custom leaflet map controls & fix */
 .leaflet-container {
   width: 100%;
