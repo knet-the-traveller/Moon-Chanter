@@ -8,7 +8,7 @@
 
 ## 1. Core Philosophy: Transparent, Explainable Decision Support
 
-Modern smallholder farming requires high trust. A farmer will not risk their season's livelihood on a black-box machine learning output. Therefore, FieldShift's recommendation engine is engineered as a **pure TypeScript, rule-based decision support system** where every score, recommendation, and risk warning is 100% auditable and traces back to agronomic literature and NASA telemetry.
+Modern smallholder farming requires high trust. A farmer will not risk their season's livelihood on a black-box machine learning output. Therefore, FieldShift's recommendation engine is engineered as a **pure TypeScript, rule-based decision support system** where rules and supplied inputs can be inspected. Team comparison weights are provisional and uncalibrated; literature motivates qualitative principles, not the exact point values or field outcomes.
 
 ---
 
@@ -33,7 +33,7 @@ Before ranking runs (`src/engine/soilInputs.ts`), FieldShift requires complete f
 - **Transparent Derived Properties (`src/services/soilDerivation.ts`):** When SoilGrids supplies native `soc` (dg/kg) and clay/sand/silt texture without laboratory organic-matter or percolation measurements, FieldShift derives preliminary values tagged `tier: 'synthetic'`, `isSynthetic: true`, `needsReview: true`:
   - **Organic Matter (`deriveOrganicMatterFromSoc`):** Van Bemmelen approximation $\text{OM\%} = (\text{soc} / 100) \times 1.724$ ($\text{Low} < 1.0\%$, $\text{Medium} = 1.0\text{–}2.5\%$, $\text{High} > 2.5\%$).
   - **Preliminary Drainage (`derivePreliminaryDrainage`):** Classified from topsoil texture / clay / sand fractions and refined dynamically when real SRTM `slopePct` arrives (`poor` $\to$ `moderate` when `slopePct > 8%`; `moderate` $\to$ `well` when `slopePct > 15%`).
-- **One-Click DA-BSWM Municipal Baseline & Farmer Override (`src/services/soilGrids.ts`, `src/store/useAppStore.ts`):** Farmers and technicians can switch anytime between SoilGrids telemetry and the labeled DA-BSWM municipal soil reference (`getMunicipalAgriculturalBaseline`), or enter 1-tap parcel overrides (`setSoilOverride`), with complete undo (`restoreSoilTelemetry` / `resetSoilOverride`).
+- **FieldShift Municipal Example & Farmer Override (`src/services/soilGrids.ts`, `src/store/useAppStore.ts`):** Farmers and technicians can switch anytime between SoilGrids telemetry and the labeled FieldShift municipal soil example (`getMunicipalAgriculturalBaseline`), or enter 1-tap parcel overrides (`setSoilOverride`), with complete undo (`restoreSoilTelemetry` / `resetSoilOverride`).
 
 ### Stage 1: Strategy 1 Baseline Pinning, Candidate Permutation & Hard Constraints
 
@@ -54,9 +54,9 @@ Alongside pinned Strategy 1, FieldShift includes canonical adaptive templates (s
 
 #### Hard Agronomic Constraints:
 1. **Planting Window Match:** Crop must possess the designated season tag (`crop.plantingWindows.includes(season)`).
-2. **Soil & Drainage Compatibility:** Crop soil texture and drainage tolerance must accommodate the field profile.
+2. **Soil & Drainage Compatibility:** Candidate pools currently admit a crop if either its catalog texture OR drainage preference matches (wet rice is a special case); canonical strategies remain comparison options. Eligibility is not proof of field suitability. The explicit soil-fit scoring rule below assesses pH and drainage conflicts for every returned strategy.
 3. **Monoculture Ban (Non-Baseline Candidates):** Identical crops cannot occupy back-to-back seasons ($c_t \ne c_{t-1}$).
-4. **Strict Solanaceae Ban:** Consecutive planting of Solanaceae (Tomato $\to$ Eggplant) is strictly excluded to prevent bacterial wilt (*Ralstonia solanacearum*) and root-knot nematode escalation.
+4. **Strict Solanaceae Ban:** Consecutive planting of Solanaceae (Tomato $\to$ Eggplant) is strictly excluded as a host-break precaution for bacterial wilt (*Ralstonia solanacearum*) and root-knot nematode escalation.
 5. **Grass Monoculture Guardrail:** Grass $\to$ Grass $\to$ Grass without a legume or broadleaf break is disallowed for diversification candidates.
 6. **Farmer Exclusions:** Excludes any crop toggled off by the user.
 
@@ -73,7 +73,7 @@ Each candidate rotation sequence is evaluated across 5 agronomic and economic pi
 - **Plow-Pan & Model-Support Boundaries (`[AGRO-RULE-05-MODEL-SUPPORT]`):** $+8$ pts when heavy clay or verified non-model compacted soil (`bulkDensityGcm3 > 1.4`) includes deep/medium roots; $-8$ pts on continuous double-rice compaction. Imported SoilGrids topsoil density (`0–15 cm`) and pixel pH alone do not auto-diagnose a subsoil plow pan or sloping upland without parcel/terrain evidence.
 - **Organic Matter & Biomass (`[AGRO-RULE-05-BIOMASS-MULCH]`):** $+10$ pts when field OM is `low` and rotation includes legumes or high-residue crops; $+8$ pts per high-residue biomass crop.
 - **Botanical Family Diversity & Pest Breaks (`[AGRO-RULE-03-PESTBREAK]`):** $+15$ pts for 3 distinct botanical families, $+8$ pts for 2, $-12$ pts for single family; plus host-carryover penalties: Corn $\to$ Corn ($-22$ pts, Fall Armyworm), Solanaceae $\to$ Solanaceae ($-28$ pts, Bacterial Wilt), Onion $\to$ Onion ($-24$ pts, Purple Blotch), and Rice $\to$ Rice ($-10$ pts).
-- **Upland Canopy Cover & Acid Soil (`[AGRO-RULE-04-EROSION-ACID]`):** On verified sloping uplands ($>15\%$ slope), bare fallow incurs $-24$ pts (RUSLE soil exposure) while legume/cover cropping adds $+14$ pts; bare fallow on acid/high P-fixation soils incurs $-8$ pts.
+- **Upland Canopy Cover & Acid Soil (`[AGRO-RULE-04-EROSION-ACID]`):** On supplied terrain with ($>15\%$ slope), bare fallow incurs $-24$ pts (qualitative soil-exposure comparison; no RUSLE rate) while legume/cover cropping adds $+14$ pts; bare fallow on acid/high P-fixation soils incurs $-8$ pts.
 
 ### B. Water Resilience ($S_{\text{water}}$)
 - **Base Score:** 40 pts.
@@ -83,18 +83,18 @@ Each candidate rotation sequence is evaluated across 5 agronomic and economic pi
 
 ### C. Climate Shock Buffer ($S_{\text{climate}}$)
 - **Base Score:** 45 pts.
-- **Dry-Season Rice Heat Sterility (`[AGRO-RULE-02-HEAT35]`):** When dry-season rice overlaps Hot Dry $T_{\max} > 35.0^\circ\text{C}$ (April 10 – May 30), applies $-\text{round}(28 + 10 \cdot (T_{\max} - 35.0))$ pts for spikelet sterility risk. Otherwise, if Hot Dry $T_{\max} \ge 34.0^\circ\text{C}$, awards $+22$ pts for high heat tolerance ($+10$ medium, $-20$ low).
+- **Dry-Season Rice Heat Sterility (`[AGRO-RULE-02-HEAT35]`):** When a sequence includes dry-season rice and historical Hot Dry $T_{\max} > 35.0^\circ\text{C}$ (actual flowering overlap is unknown), applies $-\text{round}(28 + 10 \cdot (T_{\max} - 35.0))$ comparison points. This is a team screening penalty, not observed sterility or a yield response. Otherwise, if Hot Dry $T_{\max} \ge 34.0^\circ\text{C}$, awards $+22$ pts for high heat tolerance ($+10$ medium, $-20$ low).
 - **Pest Resilience (`[AGRO-RULE-03-PESTBREAK]`):** $+6$ pts for 3-family break; $-10$ pts for host conflict.
 - **Monsoon & Dry-Spell Risk:** $+20$ pts for high wet flood tolerance under high excess-water risk; $+8$ pts per high-drought-tolerance crop under high dry-spell risk.
 
 ### D. Economic Viability ($S_{\text{econ}}$)
 - **Base Score:** 45 pts.
 - **Market Tier, Input Burden & Fallow:** $+14$ pts per high-market crop; $+8$ pts per low-input / $-8$ pts per high-input crop; $-12$ pts for lost harvest on bare fallow.
-- **Agronomic Cost & Yield Adjustments:** $+8$ pts legume N savings ($+4$ pts Mungbean, `[AGRO-RULE-01-NFIX]`); $-\text{round}(14 + 8 \cdot (T_{\max} - 35.0))$ revenue loss on $>35^\circ\text{C}$ dry-season rice (`[AGRO-RULE-02-HEAT35]`); $-10$ pts pest cost penalty (`[AGRO-RULE-03-PESTBREAK]`); $+10$ pts staple food security (Rice or Corn).
+- **Team economic comparison adjustments (not yield or price forecasts):** $+8$ pts legume N savings ($+4$ pts Mungbean, `[AGRO-RULE-01-NFIX]`); $-\text{round}(14 + 8 \cdot (T_{\max} - 35.0))$ comparison penalty on $>35^\circ\text{C}$ dry-season rice (`[AGRO-RULE-02-HEAT35]`); $-10$ pts pest cost penalty (`[AGRO-RULE-03-PESTBREAK]`); $+10$ pts staple food security (Rice or Corn).
 
 ### E. Labor Feasibility ($S_{\text{labor}}$)
 - **Base Score:** 50 pts.
-- **Workload Smoothing:** $-12$ pts per high-labor crop; $+14$ pts per low-labor crop. Prevents simultaneous labor bottlenecks.
+- **Workload Smoothing:** $-12$ pts per high-labor crop; $+14$ pts per low-labor crop. Compares catalog labor classes; it does not model actual scheduling or guarantee avoidance of labor bottlenecks.
 
 ---
 
@@ -161,3 +161,30 @@ Fixtures explicitly use SI units for R (`MJ mm ha-1 h-1 yr-1`) and K (`t ha h ha
 - Product resolutions, observation periods, and comparable annual NDVI observations, which remain unavailable in the synthetic fixtures.
 
 Every derived land summary propagates the fixture's sample/synthetic status and review notes. No severity bands are assigned to the erosion estimate.
+
+
+## Scoring consistency milestone: [AGRO-RULE-06-SOIL-FIT]
+
+`src/engine/soilSuitability.ts` reads the existing crop-catalog pH bounds and drainage preferences without changing crop profiles. These catalog ranges remain regional assumptions needing local cultivar/soil review; a match is not a verified planting recommendation.
+
+- For each planted season, pH distance is `max(minPh − suppliedPh, suppliedPh − maxPh, 0)`. Team penalty: `min(20, 10 × distance)`. The rounded mean across planted seasons is deducted from the capped soil pillar.
+- Each planted season whose supplied drainage class is absent from its catalog preferences incurs 12 team points. The rounded mean across planted seasons is deducted from the capped water pillar.
+- Fallow is excluded from these means. Missing/invalid pH ranges are unassessed rather than filled. Range endpoints are included. Bonuses are capped before deductions so high bonuses cannot conceal a conflict. Pillars retain their existing 10–100 bounds; integer overall-score rounding and floors can mask small edits.
+- **The 10/20/12 constants are uncalibrated team comparison weights**, with typed `needsReview: true` and a review note. They are not empirical yield-loss percentages. The UI exposes the exact deductions and keeps outputs provisional while these weights await local scientific review. Nitrogen, labor, prices and yield are not changed by this suitability rule.
+- pH does not establish slope or upland terrain, including for municipal examples. The terrain branch now requires supplied `slopePct > 15`. Genuine pilot terrain values remain unchanged.
+
+Independent primary-source checks support qualitative pH/drainage considerations, not these weights: [University of Minnesota Extension: onion soil/drainage guidance](https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/growing-onions), [University of Georgia: onion production and disease guidance](https://extension.uga.edu/publications/detail.html?number=B1198&title=onion-production-guide). Their regional recommendations do not validate every Philippine catalog range. Local agronomic calibration remains required.
+
+### Scientific explanation boundaries
+
+Historical seasonal maxima cannot establish a farmer's flowering-time exposure, panicle temperature, duration or cultivar response. [Satake & Yoshida, 1978: controlled rice flowering-temperature experiments](https://www.jstage.jst.go.jp/article/jcs1927/47/1/47_1_6/_article/-char/en) demonstrate dependence on timing, duration and variety. The app therefore removes the fixed April 10–May 30 flowering claim, 7–10%/°C yield-loss wording and guarantees of sterility prevention. Existing heat score formulas remain explicitly provisional comparison heuristics, not validated yield models.
+
+Legume fixation quantities, fertilizer savings, water savings, successful pest control, actual ground cover and removal of subsoil compaction are not estimated from these inputs. Printed crop descriptions no longer repeat unverified catalog quantities as field outcomes. The new onion advisory calls for local Purple Blotch scouting without claiming an outbreak.
+
+### Scenario presentation
+
+`rankPlansForScenario` ranks the returned adaptive shortlist by the selected scenario score, with stable baseline-order ties. Benchmark baseline plans stay last. It never mutates canonical plans or their IDs. This reranks the existing shortlist; it does not claim to search every possible rotation anew for each shock.
+
+Cards, comparison and print use the same ranking and selected-scenario headline score. Pillar values, climate summaries, soil inputs and explanations remain **baseline context**, explicitly labeled as such. Scenario arithmetic remains unchanged and does not refetch telemetry. Provisional status applies independently of the underlying relative-robustness class.
+
+For reproducible offline checks and the current real pilot observations, see [the scoring milestone walkthrough](QA_SCORING_MILESTONE.md).

@@ -1,3 +1,6 @@
+import { rankPlansForScenario } from '../engine/planRanking';
+import { ScenarioContext } from './ScenarioContext';
+import { useDialogFocus } from './useDialogFocus';
 import { resolvePlanningSoil } from '../services/planningSoil';
 import { PlanDataEvidence, LocalReviewChecklist } from './RotationCard';
 import React from 'react';
@@ -10,22 +13,24 @@ export const ComparisonModal: React.FC = () => {
     isComparisonModalOpen,
     setComparisonModalOpen,
     comparedPlanIds,
-    recommendedPlans,
+    recommendedPlans, activeScenario,
     language, climateData, soilData, soilOverride, landSummary
   } = useAppStore();
 
+  const dialog = useDialogFocus(isComparisonModalOpen, setComparisonModalOpen);
   if (!isComparisonModalOpen) return null;
 
   const context = { climate: climateData, soil: soilData ? resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions) : null, land: landSummary };
-  const selectedPlans = recommendedPlans.filter((p) => comparedPlanIds.includes(p.id));
+  const rankedPlans = rankPlansForScenario(recommendedPlans, activeScenario);
+  const selectedPlans = rankedPlans.filter((p) => comparedPlanIds.includes(p.id));
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-5xl w-full p-5 sm:p-7 shadow-2xl border border-stone-200 max-h-[90vh] flex flex-col">
+      <div ref={dialog} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="comparison-title" className="bg-white rounded-3xl max-w-5xl w-full p-5 sm:p-7 shadow-2xl border border-stone-200 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-stone-100">
           <div>
-            <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+            <h3 id="comparison-title" className="text-lg sm:text-xl font-bold text-stone-900">
               Side-by-Side Rotation Comparison
             </h3>
             <p className="text-xs text-stone-500">
@@ -41,6 +46,7 @@ export const ComparisonModal: React.FC = () => {
           </button>
         </div>
 
+        <ScenarioContext language={language} scenario={activeScenario} />
         {/* Comparison Matrix */}
         <div className="overflow-x-auto py-4 flex-1">
           {selectedPlans.length === 0 ? (
@@ -49,7 +55,7 @@ export const ComparisonModal: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {selectedPlans.map((plan, idx) => (
+              {selectedPlans.map((plan) => (
                 <div
                   key={plan.id}
                   className="rounded-2xl border border-stone-200 p-4 bg-stone-50/60 flex flex-col justify-between"
@@ -59,7 +65,7 @@ export const ComparisonModal: React.FC = () => {
                     <div className="flex items-center justify-between pb-3 border-b border-stone-200">
                       <div>
                         <div className="text-[11px] font-bold text-stone-500 uppercase flex items-center gap-1.5">
-                          <span>Plan #{idx + 1}</span>
+                          <span>{getTranslation(language, 'results.planNumber').replace('{rank}', String(rankedPlans.indexOf(plan) + 1))}</span>
                           {plan.isBaseline && (
                             <span className="px-1.5 py-0.5 rounded bg-stone-200 text-stone-700 text-[10px]">
                               {getTranslation(language, 'results.baselineBadge')}
@@ -72,7 +78,7 @@ export const ComparisonModal: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-xl font-black text-stone-900 font-mono">
-                          {plan.scores.overall}
+                          {plan.scenarioScores[activeScenario]}
                         </div>
                         <div className="text-[10px] text-stone-400">Score</div>
                       </div>
@@ -97,7 +103,7 @@ export const ComparisonModal: React.FC = () => {
 
                     {/* Scores Comparison */}
                     <div className="py-3 space-y-1.5 text-xs border-b border-stone-200">
-                      <div className="font-bold text-stone-700 text-[11px] uppercase mb-1">{getTranslation(language, 'results.pillarBreakdown')}</div>
+                      <div className="font-bold text-stone-700 text-[11px] uppercase mb-1">{getTranslation(language, 'results.baselinePillars')}</div>
                       <div className="flex justify-between">
                         <span className="text-stone-600 flex items-center gap-1">
                           <Sprout className="w-3 h-3 text-emerald-600" /> {getTranslation(language, 'results.pillarSoil')}:

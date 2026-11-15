@@ -119,7 +119,12 @@
     "pillarWater": "Tibay sa Tubig",
     "pillarClimate": "Proteksyon sa Pagbabago ng Panahon",
     "pillarEconomics": "Kita at Ekonomiya",
-    "pillarLabor": "Gawain at Paggawa"
+    "pillarLabor": "Gawain at Paggawa",
+    "rankingContext": "Napiling sitwasyon: {scenario}. Niraranggo ang mga alternatibong plano ayon sa score nito; nananatili sa hulihan ang batayang paghahambing. Ang mga kategorya at paliwanag ay para sa batayang datos. Hindi pa kalibrado ang mga timbang ng pangkat; hindi ito pagtataya ng ani o porsiyento ng katiyakan.",
+    "baselinePillars": "Detalye ng bawat kategorya · Batayang datos",
+    "planNumber": "Plano #{rank}",
+    "cropReferenceNote": "Mula sa talaan ang mga katangian ng pananim. Tiyakin sa lugar ang barayti, tagal, patubig at pamamahala; walang tinatayang ani o dami ng sustansya sa bukid.",
+    "printTopPlan": "Nangungunang paghahambing · Plano sa 3 panahon (Ranggo #1)"
   },
   "print": {
     "title": "FieldShift Gabay sa Salitang Pananim",
@@ -323,5 +328,28 @@
       "steep": "Matarik na terrain (>15%); unahin ang lokal na pagsusuri ng erosion at takip ng lupa"
     },
     "erosionMethod": "Qualitative screen ng team mula sa slope lamang: ≤3%, >3–15%, >15%. Walang kinalkulang RUSLE tonnes/ha/year; kailangan ng hiwalay na ebidensya para sa ulan, lupa, takip at pamamahala."
+  },
+  "methodology": {
+    "title": "Paano ginagawa ang paghahambing",
+    "subtitle": "2026 NASA Space Apps Challenge · Pangkat Moon Chanter",
+    "sourcesTitle": "Mga pinagmulan at limitasyon",
+    "sources": "Nagbibigay ang NASA POWER ng panrehiyong tala ng panahon. Ipinapakita ng GIBS ang NOAA-20/VIIRS true color at MODIS vegetation imagery; nakasaad sa mapa ang petsa at puwang sa larawan. Modelo ng lupa ang SoilGrids at makasaysayang lupain ang SRTM. Nasa detalye ng pinagmulan ang resolusyon, panahon ng obserbasyon, reference point at hinangong klase. Hindi ito pagsukat sa mismong bukid.",
+    "rulesTitle": "Malinaw na mga tuntunin sa paghahambing",
+    "families": "Hindi kasama sa mga alternatibong plano ang magkasunod na Solanaceae, pamilya ng sibuyas o parehong pananim. Posible ang ibang magkapamilyang pananim. Sadyang kasama ang tuloy-tuloy na pananim sa nakapirming batayang paghahambing. Maaaring mabawasan ang ilang peste sa salitang pananim; hindi nito pinatutunayang walang sakit.",
+    "nitrogen": "May dagdag na puntos ang katangian ng legume at tira ng pananim. Nakadepende sa bukid at pamamahala ang aktuwal na nitroheno, tipid sa abono, ugat at takip sa lupa; hindi nasukat ang mga ito rito. Hindi patunay ng pag-alis ng matigas na ilalim ng lupa ang pagkakaiba ng ugat.",
+    "soil": "[AGRO-RULE-06-SOIL-FIT] Inihahambing ang ibinigay na pH sa kasalukuyang saklaw ng bawat pananim sa talaan at ang drainage sa nakatalang kagustuhan. Binabawasan ng hindi pagtugma ang puntos sa lupa o tubig. Kailangang suriin ang hangganan at timbang ng pangkat; hindi ito ugnayan ng datos at dami ng ani.",
+    "heat": "[AGRO-RULE-02-HEAT35] Paunang pagsusuri lamang ang makasaysayang pinakamataas na init sa tag-araw sa >35°C. Hindi alam ang aktuwal na pamumulaklak, init ng uhay, tagal at tugon ng barayti. Hindi tinataya ang pagkabaog o porsiyento ng pagkawala ng ani.",
+    "scenariosTitle": "Paghahambing ng klima at ranggo",
+    "disclaimer": "Talakayin sa lokal na tekniko ang datos, palagay at pagpipiliang pananim. Paghahambing lamang ang mga score; hindi ito utos sa pagtatanim, porsiyento ng katiyakan, presyo o pagtataya ng ani.",
+    "close": "Isara ang paliwanag",
+    "understood": "Nauunawaan ko"
+  },
+  "science": {
+    "soilFit": "Hindi tugma sa talaan: pH {ph} para sa {phCrops}; drainage {drainage} para sa {drainageCrops}. Bawas sa paghahambing ng pangkat: lupa {soilPoints}, tubig {waterPoints} puntos. Hindi pa kalibrado ang mga timbang; hindi ito nasukat na pagkawala ng ani.",
+    "soilFitAction": "Tiyakin sa bukid ang pH at drainage at talakayin ang angkop na pananim sa tekniko. Maaaring umabot sa pinakamababang score kaya hindi lahat ng pagbabago ay magbabago ng puntos.",
+    "onion": "Kailangang siyasatin ang sibuyas para sa Purple Blotch (Alternaria porri) at iba pang sakit kahit may salitang pananim. Hindi nito pinatutunayang may pagsiklab ng sakit sa lugar.",
+    "onionAction": "Talakayin sa tekniko ang binhi, pagkabasa ng dahon, drainage at lokal na payo tungkol sa sakit.",
+    "none": "wala",
+    "phUnassessed": "Walang magagamit na saklaw ng pH sa talaan para sa {crops}; hindi nasuri ang pagtugma ng pH sa mga panahong iyon."
   }
 }

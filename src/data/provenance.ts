@@ -1,3 +1,4 @@
+import { SOIL_FIT_RULE } from '../engine/soilSuitability';
 import { z } from 'zod';
 import { getTranslation } from '../i18n';
 import type { ClimateData, SoilData, LandSummary, Language, MetricProvenance, ClimateMetric, SoilMetric } from '../types';
@@ -143,7 +144,7 @@ export function formatLocalReview(language: Language, descriptor: LocalReviewDes
 
 export interface PlanDataContext { climate: ClimateData | null; soil: SoilData | null; land: LandSummary | null }
 export function hasProvisionalEvidence(context: PlanDataContext): boolean {
-  if (!context.climate || !hasRequiredSoilInputs(context.soil) || !context.land) return true;
+  if (SOIL_FIT_RULE.needsReview || !context.climate || !hasRequiredSoilInputs(context.soil) || !context.land) return true;
   return context.climate.isSampleData || context.soil.isEstimate || context.land.isSample
     || context.land.needsReview || !!context.soil.needsReview
     || contextProvenance(context).some(({ metadata }) => metadata.isSample || metadata.isSynthetic

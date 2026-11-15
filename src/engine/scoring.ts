@@ -1,6 +1,7 @@
 import type { CandidateSequence } from './candidateGenerator';
 import type { ClimateData, FarmerPriorities, PlanScoreBreakdown, SoilData } from '../types';
 import { assertRequiredSoilInputs } from './soilInputs';
+import { assessSoilSuitability } from './soilSuitability';
 
 export function calculateSequenceScores(
   seq: CandidateSequence,
@@ -12,11 +13,11 @@ export function calculateSequenceScores(
   const { s1Crop, s2Crop, s3Crop } = seq;
   const crops = [s1Crop, s2Crop, s3Crop];
   const activeCrops = crops.filter((c) => c.family !== 'fallow');
+  const suitability = assessSoilSuitability(crops, soil);
   const hasFallow = activeCrops.length < crops.length;
   // [AGRO-RULE-05-MODEL-SUPPORT] Imported pH does not establish terrain.
   const isSlopingUpland =
-    (soil.slopePct !== undefined && soil.slopePct > 15) ||
-    (!soil.modelEvidence && soil.slopePct === undefined && soil.ph < 5.5 && soil.drainage !== 'poor');
+    soil.slopePct !== undefined && soil.slopePct > 15;
   const isAcidicOrPFixed = soil.ph < 5.5 || soil.phosphorusFixationRisk === 'high';
   const hasDrySeasonRice = s2Crop.id === 'rice' || s3Crop.id === 'rice';
   const hasHeatSterility = hasDrySeasonRice && climate.seasonalStats.dryHot.maxTemp > 35.0;
@@ -97,7 +98,8 @@ export function calculateSequenceScores(
     soilScore -= 8;
   }
 
-  soilScore = Math.min(100, Math.max(10, soilScore));
+  // [AGRO-RULE-06-SOIL-FIT] Apply after capping bonuses so saturation cannot hide a mismatch.
+  soilScore = Math.max(10, Math.min(100, soilScore) - suitability.phPenalty);
 
   // 2. WATER RESILIENCE SCORE (0 - 100)
   let waterScore = 40;
@@ -133,7 +135,7 @@ export function calculateSequenceScores(
     else if (s3Crop.waterDemand === 'high') waterScore -= 15;
   }
 
-  waterScore = Math.min(100, Math.max(10, waterScore));
+  waterScore = Math.max(10, Math.min(100, waterScore) - suitability.drainagePenalty);
 
   // 3. CLIMATE RISK SCORE (0 - 100)
   let climateScore = 45;
@@ -186,7 +188,7 @@ export function calculateSequenceScores(
   if (legumeCount > 0) econScore += 8;
   if (activeCrops.some((c) => c.id === 'mungbean')) econScore += 4;
 
-  // [AGRO-RULE-02-HEAT35] Spikelet sterility revenue loss penalty (7-10% yield loss per 1°C > 35°C)
+  // [AGRO-RULE-02-HEAT35] Team heat-screen comparison penalty, not a revenue/yield model.
   if (hasHeatSterility) {
     const excessC = climate.seasonalStats.dryHot.maxTemp - 35.0;
     econScore -= Math.round(14 + excessC * 8);

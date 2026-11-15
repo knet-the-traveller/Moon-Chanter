@@ -7,6 +7,8 @@ import { generateRotationRecommendations } from '../engine/index';
 import { evaluateScenarios } from '../engine/scenarios';
 import { calculateSequenceScores } from '../engine/scoring';
 import { generatePlanExplanations } from '../engine/explainer';
+import { assessSoilSuitability } from '../engine/soilSuitability';
+import { rankPlansForScenario } from '../engine/planRanking';
 
 const crops = cropsData as Crop[];
 
@@ -294,15 +296,15 @@ describe('Strategy 1 Baseline Pinning & Canonical Philippine Rotations', () => {
 describe('Agronomic Rule Guardrails [AGRO-RULE-01..04]', () => {
   const byId = (id: string) => crops.find((c) => c.id === id)!;
 
-  it('[AGRO-RULE-01-NFIX] credits Pag-asa mungbean N-fixation (+35 to 80 kg N/ha) and water savings (300-350 mm)', () => {
+  it('[AGRO-RULE-01-NFIX] describes potential nitrogen benefits without inventing a field amount', () => {
     const seq = { s1Crop: byId('rice'), s2Crop: byId('mungbean'), s3Crop: byId('corn') };
     const explainer = generatePlanExplanations(seq, mockClimate, mockSoil);
     const nfix = explainer.reasons.find((r) => r.ruleId === 'AGRO-RULE-01-NFIX');
 
     expect(nfix).toBeDefined();
-    expect(nfix!.textEn).toMatch(/35-80\s*kg\s*N\/ha|35–80\s*kg\s*N\/ha/);
-    expect(nfix!.textEn).toMatch(/300-350\s*mm|300–350\s*mm/);
-    expect(nfix!.dataEvidence).toMatch(/Rhizobium|Pag-asa/i);
+    expect(nfix!.textEn).toContain('no field nitrogen amount');
+    expect(nfix!.textEn).not.toMatch(/kg N|300–350/);
+    expect(nfix!.textFil).toContain('walang tinatayang dami');
   });
 
   it('[AGRO-RULE-02-HEAT35] penalizes dry-season rice when NASA POWER dryHot Tmax > 35°C (spikelet sterility cliff)', () => {
@@ -328,7 +330,8 @@ describe('Agronomic Rule Guardrails [AGRO-RULE-01..04]', () => {
     const heatRisk = explainer.risks.find((r) => r.ruleId === 'AGRO-RULE-02-HEAT35');
     expect(heatRisk).toBeDefined();
     expect(heatRisk!.textEn).toMatch(/35°C|35\.6°C/);
-    expect(heatRisk!.textEn).toMatch(/7%-10%|7%–10%/);
+    expect(heatRisk!.textEn).toContain('does not establish field sterility or yield loss');
+    expect(heatRisk!.textEn).not.toMatch(/7%|April 10|May 30/);
   });
 
   it('[AGRO-RULE-03-PESTBREAK] penalizes consecutive Corn->Corn, Solanaceae->Solanaceae, and Onion->Onion and credits multi-family breaks', () => {
@@ -479,13 +482,13 @@ describe('AGRO-RULE-05-MODEL-SUPPORT: imported soil predictions', () => {
 });
 
 describe('Ticket 10 rotation-score compatibility',()=>{
-  it('retains pre-refactor scenario scores for all 90 valid municipal candidates',async()=>{
+  it('freezes reviewed soil-fit comparison scores and preserves aliases for all 90 legacy candidates',async()=>{
     const legacy=(await import('./fixtures/scenarioLegacy.json')).default;
     const {createHash}=await import('node:crypto');
     const expected={
-      munoz:'79948cadf4600e7aa3bcc1981c0e1e32a23adab706e3d4fd374f0a6cb0c191b2',
-      ilagan:'38a92609d61fc8d788d9ddfa4a071c0752610c7f37cf14b02c365398b8113da9',
-      pototan:'4d9dcf7e3b8b3dae55a0162c73acb068d886710c1097f5ad78c260712e22f04b'
+      munoz:'73b2d701b0ba4d44681e7617d48c02f8cdfef3ba0e0e07b301b45510c1028695',
+      ilagan:'c0bb910bf33433da73c1be20f4b991cb6d2a90b358647092bb5b2986a76c3539',
+      pototan:'e41e4830712ec429a457c76793825ffab1b79ee7174dc487339c81386b4111b7'
     };
     for(const [slug,hash] of Object.entries(expected)){
       const fixture=legacy[slug as keyof typeof legacy] as {soil:SoilData;climate:ClimateData};
@@ -502,4 +505,100 @@ describe('Ticket 10 rotation-score compatibility',()=>{
       expect(createHash('sha256').update(JSON.stringify(values)).digest('hex')).toBe(hash);
     }
   });
+});
+
+describe('Scoring consistency milestone [AGRO-RULE-06-SOIL-FIT]', () => {
+  const crop = (id: string) => crops.find(value => value.id === id)!;
+  const sequence = { s1Crop: crop('rice'), s2Crop: crop('mungbean'), s3Crop: crop('corn') };
+  const planted = [sequence.s1Crop, sequence.s2Crop, sequence.s3Crop];
+  const matchedSoil: SoilData = { ...mockSoil, ph: 6.4, drainage: 'moderate' };
+
+  it('lowers the same sequence soil score when measured input leaves its catalog pH ranges, including capped-bonus plans', () => {
+    const neutral = calculateSequenceScores(sequence, mockClimate, matchedSoil, defaultPriorities);
+    const acidic = calculateSequenceScores(sequence, mockClimate, { ...matchedSoil, ph: 5.1 }, defaultPriorities);
+    const alkaline = calculateSequenceScores(sequence, mockClimate, { ...matchedSoil, ph: 9 }, defaultPriorities);
+    expect(acidic.soilHealth).toBeLessThan(neutral.soilHealth);
+    expect(acidic.overall).toBeLessThanOrEqual(neutral.overall); // Whole-point normalization may tie.
+    expect(alkaline.soilHealth).toBeLessThan(acidic.soilHealth);
+    expect(acidic.waterResilience).toBe(neutral.waterResilience);
+    expect(acidic.economics).toBe(neutral.economics); // No invented yield/price response.
+  });
+
+  it('penalizes drainage mismatch without changing nitrogen, price or labor attributes', () => {
+    const matched = calculateSequenceScores(sequence, mockClimate, matchedSoil, defaultPriorities);
+    const poor = calculateSequenceScores(sequence, mockClimate, { ...matchedSoil, drainage: 'poor' }, defaultPriorities);
+    expect(poor.waterResilience).toBeLessThan(matched.waterResilience);
+    expect(poor.overall).toBeLessThan(matched.overall);
+    expect(poor.soilHealth).toBe(matched.soilHealth);
+    expect(poor.labor).toBe(matched.labor);
+  });
+
+  it('accepts range endpoints and leaves missing crop pH ranges explicitly unassessed', () => {
+    const mungbean = crop('mungbean');
+    for (const ph of [mungbean.soilPref.minPh!, mungbean.soilPref.maxPh!]) {
+      expect(assessSoilSuitability([mungbean], { ...matchedSoil, ph }).phConflicts).toEqual([]);
+    }
+    const unknown = { ...mungbean, soilPref: { ...mungbean.soilPref, minPh: undefined, maxPh: undefined } };
+    const assessment = assessSoilSuitability([unknown], { ...matchedSoil, ph: 3 });
+    expect(assessment.phPenalty).toBe(0);
+    expect(assessment.phUnassessed).toEqual([unknown]);
+    for (const range of [{ minPh: Number.NaN, maxPh: 7 }, { minPh: 8, maxPh: 7 }, { minPh: 0, maxPh: 7 }, { minPh: 5, maxPh: 15 }]) {
+      const malformed = { ...mungbean, soilPref: { ...mungbean.soilPref, ...range } };
+      expect(assessSoilSuitability([malformed], matchedSoil).phUnassessed).toEqual([malformed]);
+    }
+    expect(assessSoilSuitability([crop('fallow')], matchedSoil).drainagePenalty).toBe(0);
+  });
+
+  it('explains the same deductions without mutating the crop catalog or supplied soil', () => {
+    const soil = { ...matchedSoil, ph: 5.1, drainage: 'poor' as const };
+    const before = JSON.stringify({ soil, crops });
+    const fit = assessSoilSuitability(planted, soil);
+    const risk = generatePlanExplanations(sequence, mockClimate, soil).risks.find(item => item.ruleId === 'AGRO-RULE-06-SOIL-FIT');
+    expect(risk?.textEn).toContain(`soil ${fit.phPenalty}, water ${fit.drainagePenalty}`);
+    expect(risk?.textEn).toContain('uncalibrated');
+    expect(JSON.stringify({ soil, crops })).toBe(before);
+  });
+
+  it('keeps scenario rankings immutable and deterministic, with benchmark baseline pinned last', () => {
+    const plans = generateRotationRecommendations({ allCrops: crops, climate: mockClimate, soil: matchedSoil, priorities: defaultPriorities });
+    const a = { ...plans[0], scenarioScores: { ...plans[0].scenarioScores, hotter: 60 } };
+    const b = { ...plans[1], scenarioScores: { ...plans[1].scenarioScores, hotter: 90 } };
+    const baseline = { ...plans.find(plan => plan.isBaseline)!, scenarioScores: { ...plans[0].scenarioScores, hotter: 100 } };
+    const input = [a, b, baseline];
+    const before = JSON.stringify(input);
+    expect(rankPlansForScenario(input, 'hotter').map(plan => plan.id)).toEqual([b.id, a.id, baseline.id]);
+    expect(JSON.stringify(input)).toBe(before);
+    const tied = { ...b, scenarioScores: { ...b.scenarioScores, hotter: 60 } };
+    expect(rankPlansForScenario([a, tied, baseline], 'hotter')[0]).toBe(a);
+    for (const scenario of ['baseline', 'hotter', 'drier', 'compound', 'hotterAndDrier', 'hotter_drier', 'wetter'] as const) {
+      const ordered = rankPlansForScenario(plans, scenario);
+      expect(ordered.at(-1)?.isBaseline).toBe(true);
+      const adaptive = ordered.filter(plan => !plan.isBaseline);
+      for (let i = 1; i < adaptive.length; i++) expect(adaptive[i - 1].scenarioScores[scenario]).toBeGreaterThanOrEqual(adaptive[i].scenarioScores[scenario]);
+    }
+  });
+
+  it('keeps the steep-terrain demonstration explicitly synthetic rather than changing Malaybalay observations', () => {
+    const synthetic = { ...matchedSoil, slopePct: 18, source: 'Synthetic QA terrain scenario', isEstimate: true };
+    const plans = generateRotationRecommendations({ allCrops: crops, climate: mockClimate, soil: synthetic, priorities: defaultPriorities, recentCropId: 'corn' });
+    expect(plans.some(plan => plan.name.en.startsWith('Upland Soil Armor'))).toBe(true);
+    const baseline = plans.find(plan => plan.isBaseline)!;
+    expect(baseline.name.en).toContain('Upland Corn');
+    expect(baseline.risks.some(risk => /Fall Armyworm/.test(risk.textEn))).toBe(true);
+  });
+});
+
+it('does not infer upland terrain or an erosion bonus from non-model acidity without slope evidence', () => {
+  const soil = { ...mockSoil, ph: 4.7, drainage: 'well' as const };
+  const candidates = generateCandidateRotations({ allCrops: crops, soil });
+  expect(candidates.find(sequence => sequence.isBaseline)?.s1Crop.id).toBe('rice');
+  expect(candidates.some(sequence => sequence.planName?.en.startsWith('Upland Soil Armor'))).toBe(false);
+  const sequence = candidates[0];
+  expect(generatePlanExplanations(sequence, mockClimate, soil).reasons.some(reason => reason.id === 'reason_erosion_armor')).toBe(false);
+});
+
+it('does not attribute a supplied illustrative climate profile to NASA observations in explanation evidence', () => {
+  const sequence = generateCandidateRotations({ allCrops: crops, soil: mockSoil })[0];
+  const explanation = generatePlanExplanations(sequence, { ...mockClimate, isSampleData: true, source: 'Illustrative climate example' }, mockSoil);
+  expect(explanation.reasons.map(reason => reason.dataEvidence).join(' ')).not.toContain('NASA POWER');
 });

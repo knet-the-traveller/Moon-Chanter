@@ -119,7 +119,12 @@
     "pillarWater": "Water Resilience",
     "pillarClimate": "Climate Shock Buffer",
     "pillarEconomics": "Economics",
-    "pillarLabor": "Labor"
+    "pillarLabor": "Labor",
+    "rankingContext": "Selected scenario: {scenario}. Adaptive plans are ranked by this scenario score; the existing baseline benchmark stays last. Pillars and explanations describe baseline inputs. Scores use uncalibrated team comparison weights, not yield forecasts or confidence percentages.",
+    "baselinePillars": "Pillar breakdown · Baseline inputs",
+    "planNumber": "Plan #{rank}",
+    "cropReferenceNote": "Crop traits come from the reference catalog. Confirm cultivar, maturity, water needs and management locally; no field yield or nutrient amount is estimated.",
+    "printTopPlan": "Top comparison · 3-season rotation (Rank #1)"
   },
   "print": {
     "title": "FieldShift Crop Rotation Advisory Plan",
@@ -323,5 +328,28 @@
       "steep": "Steep terrain (>15%); prioritize local erosion and cover assessment"
     },
     "erosionMethod": "Qualitative team screen from slope only: ≤3%, >3–15%, >15%. No RUSLE tonnes/ha/year is calculated; rainfall, soil, cover and management require separate evidence."
+  },
+  "methodology": {
+    "title": "How the comparisons work",
+    "subtitle": "2026 NASA Space Apps Challenge · Team Moon Chanter",
+    "sourcesTitle": "Sources and their limits",
+    "sources": "NASA POWER supplies regional historical weather. GIBS displays NOAA-20/VIIRS true color and MODIS vegetation imagery; image dates and gaps are disclosed on the map. SoilGrids supplies soil-model predictions; SRTM supplies historical terrain. Resolutions, observation periods, sample points and derived classes appear in the data-source details. None establishes a field measurement.",
+    "rulesTitle": "Deterministic comparison rules",
+    "families": "Adaptive sequences exclude consecutive Solanaceae and onion-family crops and identical adjacent crops. Other same-family sequences can occur. The pinned existing baseline intentionally retains monoculture as a benchmark. A host break may reduce some pest pressures; it does not establish disease absence.",
+    "nitrogen": "Legume and residue traits contribute comparison bonuses. Actual nitrogen fixation, fertilizer savings, rooting and soil-cover benefits depend on field conditions and management; they are not measured here. Root diversity does not prove that a plow pan has been removed.",
+    "soil": "[AGRO-RULE-06-SOIL-FIT] The supplied pH is compared with each planted crop’s existing catalog range. Drainage is compared with its catalog preferences. Mismatches reduce soil or water comparison points. Thresholds and team weights need local scientific review; they are not yield-response curves.",
+    "heat": "[AGRO-RULE-02-HEAT35] The historical hot-dry peak supports a preliminary rice heat screen at >35°C. Actual flowering dates, panicle temperatures, exposure duration and cultivar response are unknown. The app does not estimate sterility or percentage yield loss.",
+    "scenariosTitle": "Climate sensitivity and ranking",
+    "disclaimer": "Discuss the inputs, assumptions and crop options with a local agricultural technician. Scores compare the supplied inputs; they are not planting instructions, confidence percentages, prices or yield forecasts.",
+    "close": "Close methodology",
+    "understood": "Understood"
+  },
+  "science": {
+    "soilFit": "Catalog suitability mismatch: pH {ph} outside the stored range for {phCrops}; drainage {drainage} outside stored preferences for {drainageCrops}. Team comparison deductions: soil {soilPoints}, water {waterPoints} points. These weights are uncalibrated, not measured yield losses.",
+    "soilFitAction": "Confirm pH and drainage locally and discuss the crop preferences with a technician. Scores can reach their floor and may not change for every edit.",
+    "onion": "Onion requires local scouting for Purple Blotch (Alternaria porri) and other diseases even when the rotation includes a host break. No local outbreak is established here.",
+    "onionAction": "Review planting material, leaf wetness, drainage and local disease advice with an agricultural technician.",
+    "none": "none",
+    "phUnassessed": "No usable catalog pH range is available for {crops}; pH fit was not assessed for those seasons."
   }
 }

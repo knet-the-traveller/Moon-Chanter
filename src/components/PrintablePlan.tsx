@@ -1,3 +1,5 @@
+import { rankPlansForScenario } from '../engine/planRanking';
+import { ScenarioContext } from './ScenarioContext';
 import { resolvePlanningSoil, hasDemoSoil } from '../services/planningSoil';
 import { PlanDataEvidence, LocalReviewChecklist } from './RotationCard';
 import React from 'react';
@@ -13,13 +15,13 @@ export const PrintablePlan: React.FC = () => {
     climateData,
     soilData,
     soilOverride,
-    recommendedPlans,
+    recommendedPlans, activeScenario,
     advisoryIssuedAt,
     landSummary,
     language
   } = useAppStore();
 
-  const topPlan = recommendedPlans[0];
+  const topPlan = rankPlansForScenario(recommendedPlans, activeScenario)[0];
   const resolvedSoil = soilData ? resolvePlanningSoil(soilData, soilOverride, useDemoAssumptions) : null;
   const effectiveSoil = resolvedSoil ?? soilOverride ?? {};
   const context = { climate: climateData, soil: resolvedSoil, land: landSummary };
@@ -56,6 +58,7 @@ export const PrintablePlan: React.FC = () => {
       </div>
 
       {hasDemoSoil(resolvedSoil) && <p className="mb-4 rounded-lg border border-stone-500 p-3 text-sm font-bold text-stone-950 print:break-inside-avoid">{getTranslation(language,'mvp.printNotice')}</p>}
+      <ScenarioContext language={language} scenario={activeScenario} />
       {/* Farm Location & Baseline Context */}
       <div className="grid grid-cols-2 gap-4 mb-6 p-4 rounded-xl bg-stone-50 border border-stone-200 text-xs">
         <div>
@@ -88,10 +91,10 @@ export const PrintablePlan: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-black text-emerald-950 uppercase tracking-wide">
-            Recommended 3-Season Rotation Plan (Rank #1)
+            {topPlan.isBaseline ? getTranslation(language, 'results.baselineBadge') : getTranslation(language, 'results.printTopPlan')}
           </h2>
           <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded">
-            Fit Score: {topPlan.scores.overall}/100 ({hasProvisionalEvidence(context)
+            Fit Score: {topPlan.scenarioScores[activeScenario]}/100 ({hasProvisionalEvidence(context)
               ? getTranslation(language, 'dataQuality.provisional') : topPlan.robustness.toUpperCase()})
           </span>
         </div>
@@ -123,7 +126,7 @@ export const PrintablePlan: React.FC = () => {
                   {s.crop.family} {s.crop.nitrogenFixing && '(+N Fixer)'}
                 </td>
                 <td className="border border-stone-300 p-2 text-stone-700">
-                  {s.role}. {s.crop.notes}
+                  {getTranslation(language, 'results.cropReferenceNote')}
                 </td>
               </tr>
             ))}

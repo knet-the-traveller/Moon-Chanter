@@ -10,7 +10,8 @@
     "fetch-sample": "tsx scripts/fetch-sample-power.ts",
     "climate-demo": "tsx scripts/climate-demo.ts",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "demo:regression": "node --import tsx scripts/demo-regression.ts"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

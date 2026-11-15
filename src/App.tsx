@@ -1,3 +1,5 @@
+import { rankPlansForScenario } from './engine/planRanking';
+import { ScenarioContext } from './components/ScenarioContext';
 import { DemoModeNotice } from './components/DemoModeNotice';
 import { resolvePlanningSoil } from './services/planningSoil';
 import React, { useEffect } from 'react';
@@ -28,7 +30,7 @@ export const App: React.FC = () => {
     currentStep,
     setCurrentStep,
     selectedLocation,
-    recommendedPlans,
+    recommendedPlans, activeScenario,
     comparedPlanIds,
     setComparisonModalOpen,
     language, soilData, soilOverride, climateData, isLoadingTelemetry, advisoryIssuedAt,
@@ -166,6 +168,7 @@ export const App: React.FC = () => {
 
               {/* Stress Scenarios Selector Bar */}
               <ScenarioBar />
+              <ScenarioContext language={language} scenario={activeScenario} />
 
               {/* Comparison Pill / Banner */}
               {comparedPlanIds.length > 0 && (
@@ -212,7 +215,7 @@ export const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {recommendedPlans.map((plan, idx) => (
+                  {rankPlansForScenario(recommendedPlans, activeScenario).map((plan, idx) => (
                     <RotationCard key={plan.id} plan={plan} rank={idx + 1} />
                   ))}
                 </div>

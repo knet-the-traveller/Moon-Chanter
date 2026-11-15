@@ -17,7 +17,9 @@ describe('2026 NASA Space Apps Challenge Branding Audit', () => {
   it('MethodologyModal and PrintablePlan reference 2026 Space Apps Challenge', () => {
     const modal = fs.readFileSync(path.resolve(__dirname, '../components/MethodologyModal.tsx'), 'utf-8');
     const printable = fs.readFileSync(path.resolve(__dirname, '../components/PrintablePlan.tsx'), 'utf-8');
-    expect(modal).toContain('2026 NASA Space Apps Challenge');
+    expect(modal).toContain("t('subtitle')");
+    const dictionary = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../i18n/en.json'), 'utf-8'));
+    expect(dictionary.methodology.subtitle).toContain('2026 NASA Space Apps Challenge');
     expect(modal).not.toContain('NASA Space Apps Challenge 2024');
     expect(printable).toContain('2026 NASA Space Apps Challenge');
     expect(printable).not.toContain('NASA Space Apps Challenge 2024');

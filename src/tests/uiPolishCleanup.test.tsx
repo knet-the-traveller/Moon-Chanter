@@ -52,7 +52,7 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
       comparedPlanIds: [plans[0].id]
     });
     const html = renderToStaticMarkup(createElement(ComparisonModal));
-    expect(html).toContain(getTranslation(language, 'results.pillarBreakdown'));
+    expect(html).toContain(getTranslation(language, 'results.baselinePillars'));
     expect(html).toContain(getTranslation(language, 'results.pillarSoil'));
     expect(html).toContain(getTranslation(language, 'results.pillarWater'));
     expect(html).toContain(getTranslation(language, 'results.pillarClimate'));

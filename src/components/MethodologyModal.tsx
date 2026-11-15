@@ -1,128 +1,31 @@
-import React from 'react';
 import { getTranslation } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
-import { X, BookOpen, Database, ShieldCheck, Cpu } from 'lucide-react';
+import { X, BookOpen } from 'lucide-react';
+import { useDialogFocus } from './useDialogFocus';
 
-export const MethodologyModal: React.FC = () => {
+export const MethodologyModal = () => {
   const { isMethodologyModalOpen, setMethodologyModalOpen, language } = useAppStore();
-
+  const dialog = useDialogFocus(isMethodologyModalOpen, setMethodologyModalOpen);
   if (!isMethodologyModalOpen) return null;
-
+  const t = (key: string) => getTranslation(language, `methodology.${key}`);
   return (
     <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-8 shadow-2xl border border-stone-200 max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-900">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg sm:text-xl font-bold text-stone-900">
-                Methodology & Data Provenance
-              </h3>
-              <p className="text-xs text-stone-500">
-                2026 NASA Space Apps Challenge · Team Moon Chanter
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setMethodologyModalOpen(false)}
-            className="p-2 rounded-full hover:bg-stone-100 text-stone-500 hover:text-stone-900 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto py-5 space-y-6 text-xs sm:text-sm text-stone-700 leading-relaxed pr-2">
-          {/* Section 1: Earth Observation Datasets */}
+      <div ref={dialog} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="methodology-title" className="bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-8 shadow-2xl border border-stone-200 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between gap-3 pb-4 border-b border-stone-100">
           <div>
-            <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm uppercase tracking-wide text-emerald-800 mb-2">
-              <Database className="w-4 h-4 text-emerald-700" />
-              1. NASA Earth Observation Data Sources
-            </h4>
-            <div className="space-y-3 bg-stone-50 p-4 rounded-2xl border border-stone-200/80">
-              <div>
-                <strong className="text-stone-900">NASA POWER API (Prediction of Worldwide Energy Resources):</strong>
-                <p className="mt-0.5 text-xs text-stone-600">
-                  Provides daily and multi-year agro-climatology data at 0.5° × 0.5° resolution. Parameters used include:
-                  <code className="text-[11px] bg-stone-200 px-1 py-0.5 rounded mx-1">T2M</code> (mean temp),
-                  <code className="text-[11px] bg-stone-200 px-1 py-0.5 rounded mx-1">T2M_MAX</code> (daily max temp),
-                  <code className="text-[11px] bg-stone-200 px-1 py-0.5 rounded mx-1">PRECTOTCORR</code> (corrected precipitation),
-                  <code className="text-[11px] bg-stone-200 px-1 py-0.5 rounded mx-1">ALLSKY_SFC_SW_DWN</code> (solar insolation), and
-                  <code className="text-[11px] bg-stone-200 px-1 py-0.5 rounded mx-1">RH2M</code> (relative humidity).
-                </p>
-              </div>
-
-              <div>
-                <strong className="text-stone-900">NASA GIBS (Global Imagery Browse Services):</strong>
-                <p className="mt-0.5 text-xs text-stone-600">
-                  Provides full-resolution, real-time satellite imagery via WMTS tile layers:
-                  MODIS Terra Corrected Reflectance (True Color) and MODIS 8-day Normalized Difference Vegetation Index (NDVI) for assessing field canopy vigor.
-                </p>
-              </div>
-
-              <div>
-                <strong className="text-stone-900">ISRIC SoilGrids 2.0 (Supplementary Global Data):</strong>
-                <p className="mt-0.5 text-xs text-stone-600">
-                  Automated machine-learning derived global soil properties at 250m spatial resolution. Used to pre-populate topsoil clay, sand, silt fractions, soil organic carbon (SOC), and pH at 0–15 cm root zone depth.
-                </p>
-              </div>
-            </div>
+            <h3 id="methodology-title" className="text-lg font-bold text-stone-900 flex gap-2 items-center"><BookOpen className="w-5 h-5 text-emerald-800" />{t('title')}</h3>
+            <p className="text-xs text-stone-700">{t('subtitle')}</p>
           </div>
-
-          {/* Section 2: Recommendation Engine */}
-          <div>
-            <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm uppercase tracking-wide text-emerald-800 mb-2">
-              <Cpu className="w-4 h-4 text-emerald-700" />
-              2. Pure TypeScript Agronomic Engine
-            </h4>
-            <p className="text-xs text-stone-600 mb-2">
-              FieldShift intentionally operates without black-box ML so that every recommendation is 100% explainable, transparent, and auditable by agronomists.
-            </p>
-            <ul className="list-disc pl-5 space-y-1.5 text-xs text-stone-600">
-              <li>
-                <strong>Botanical Family Alternation:</strong> Strictly bars consecutive crops of the same family (especially Solanaceae $\to$ Solanaceae) to break bacterial wilt (<em>Ralstonia solanacearum</em>) and soil-borne nematode cycles.
-              </li>
-              <li>
-                <strong>Biological Nitrogen Fixation:</strong> Rewards rotations featuring tropical legumes (Mungbean, Peanut, Cowpea, Soybean, Sunn hemp) which fix 35–100 kg N/ha, replenishing soil fertility.
-              </li>
-              <li>
-                <strong>Root Stratification:</strong> Alternates shallow fibrous roots (Rice) with deep taproots (Cassava, Peanut, Pigeonpea) to penetrate subsoil compaction without heavy till equipment.
-              </li>
-              <li>
-                <strong>Water Budget Envelope:</strong> Compares crop water demand against NASA POWER historic rainfall curves for Wet, Cool Dry, and Hot Dry seasons.
-              </li>
-            </ul>
-          </div>
-
-          {/* Section 3: Scenario Stress Testing */}
-          <div>
-            <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm uppercase tracking-wide text-emerald-800 mb-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-700" />
-              3. Climate Stress Testing
-            </h4>
-            <p className="text-xs text-stone-600">
-              {getTranslation(language, 'dataQuality.scenarioInterpretation')}
-            </p>
-          </div>
-
-          {/* Section 4: Ethical Disclaimer */}
-          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-            <strong>Disclaimer for Extension Workers & Farmers:</strong> FieldShift is a strategic decision-support tool, not an absolute yield guarantee. Satellite data represents regional pixel averages (0.5° grid). Farmers should always validate recommendations with their local Municipal Agriculture Office (MAO / PhilRice / DA-ATI) and perform local soil jar tests before planting.
-          </div>
+          <button aria-label={t('close')} onClick={() => setMethodologyModalOpen(false)} className="p-2 text-stone-800"><X className="w-5 h-5" /></button>
         </div>
-
-        {/* Footer */}
-        <div className="pt-4 border-t border-stone-100 flex justify-end">
-          <button
-            onClick={() => setMethodologyModalOpen(false)}
-            className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-[#1e3a2f] text-amber-300 hover:bg-emerald-900 transition-colors"
-          >
-            Understood
-          </button>
+        <div className="overflow-y-auto py-5 space-y-4 text-sm text-stone-800 leading-relaxed">
+          <h4 className="font-bold">{t('sourcesTitle')}</h4><p>{t('sources')}</p>
+          <h4 className="font-bold">{t('rulesTitle')}</h4>
+          <ul className="list-disc pl-5 space-y-3">{['families','nitrogen','soil','heat'].map(key => <li key={key}>{t(key)}</li>)}</ul>
+          <h4 className="font-bold">{t('scenariosTitle')}</h4><p>{getTranslation(language,'dataQuality.scenarioInterpretation')}</p>
+          <p className="p-3 bg-amber-50 text-amber-950 rounded-lg">{t('disclaimer')}</p>
         </div>
+        <div className="pt-4 border-t border-stone-100 flex justify-end"><button onClick={() => setMethodologyModalOpen(false)} className="px-5 py-2 rounded-xl bg-emerald-900 text-white font-semibold">{t('understood')}</button></div>
       </div>
     </div>
   );
