@@ -4,14 +4,18 @@ import type { ClimateData, LandSummary, SoilData } from '../types';
 import { MunicipalLandFixtureSchema } from '../types/landFixture';
 import { PILOT_LOCATIONS } from '../data/pilotLocations';
 import { fetchNasaPowerClimate } from '../services/nasaPower';
-import { fetchSoilGridsData } from '../services/soilGrids';
+import { fetchSoilGridsData, getMunicipalAgriculturalBaseline } from '../services/soilGrids';
 import { buildSampleLandSummary, fetchLandSummary } from '../services/landSummary';
 import { useAppStore } from '../store/useAppStore';
 
-vi.mock('../services/nasaPower', () => ({ fetchNasaPowerClimate: vi.fn() }));
+vi.mock('../services/nasaPower', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../services/nasaPower')>(),
+  fetchNasaPowerClimate: vi.fn()
+}));
 vi.mock('../services/soilGrids', async (importOriginal) => ({
   ...await importOriginal<typeof import('../services/soilGrids')>(),
-  fetchSoilGridsData: vi.fn()
+  fetchSoilGridsData: vi.fn(),
+  getMunicipalAgriculturalBaseline: vi.fn()
 }));
 vi.mock('../services/landSummary', async (importOriginal) => ({
   ...await importOriginal<typeof import('../services/landSummary')>(), fetchLandSummary: vi.fn()
@@ -31,11 +35,13 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetAllMocks();
   useAppStore.setState(initialState, true);
+  const actualSoilGrids = await vi.importActual<typeof import('../services/soilGrids')>('../services/soilGrids');
   vi.mocked(fetchNasaPowerClimate).mockResolvedValue(municipal.climate);
   vi.mocked(fetchSoilGridsData).mockResolvedValue(municipal.soil);
+  vi.mocked(getMunicipalAgriculturalBaseline).mockImplementation(actualSoilGrids.getMunicipalAgriculturalBaseline);
   vi.mocked(fetchLandSummary).mockImplementation(async (lat, lon) => buildSampleLandSummary(lat, lon, fixtures));
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
@@ -191,6 +197,70 @@ describe('active-location pipeline', () => {
     await useAppStore.getState().fetchTelemetry(b.lat, b.lon);
     expect(useAppStore.getState().selectedLocation.lon).toBe(b.lon);
     expect(useAppStore.getState().landSummary?.sampleHub.id).toBe(b.id);
+  });
+
+  it('switches cleanly to municipal agricultural baseline and restores SoilGrids telemetry without racing', async () => {
+    vi.mocked(fetchSoilGridsData).mockResolvedValueOnce({
+      ...municipal.soil,
+      texture: 'clay',
+      rawClayPercent: 40,
+      ph: null,
+      drainage: 'poor',
+      organicMatter: 'unknown',
+      provenance: {
+        ...municipal.soil.provenance,
+        drainage: {
+          source: 'ISRIC SoilGrids 2.0',
+          variable: 'texture → drainage',
+          unit: 'class',
+          spatialResolution: '250 m',
+          dateRange: null,
+          isSample: false,
+          isSynthetic: true,
+          tier: 'synthetic',
+          needsReview: true,
+          note: 'Synthetic test drainage'
+        }
+      }
+    });
+    const landGate = deferred<LandSummary>();
+    vi.mocked(fetchLandSummary).mockImplementationOnce(() => landGate.promise);
+
+    const req = useAppStore.getState().selectPilotPreset(a);
+    await vi.waitFor(() => expect(useAppStore.getState().isLoadingTelemetry).toBe(false));
+    expect(useAppStore.getState().recommendedPlans).toEqual([]);
+    expect(useAppStore.getState().telemetrySoilData?.ph).toBeNull();
+
+    await useAppStore.getState().applyMunicipalBaseline();
+    expect(useAppStore.getState().isMunicipalBaselineActive).toBe(true);
+    expect(useAppStore.getState().soilData?.ph).toBe(municipal.soil.ph);
+    expect(useAppStore.getState().recommendedPlans.length).toBeGreaterThan(0);
+
+    // Late real SRTM terrain update refines telemetrySoilData without clobbering active municipal baseline
+    landGate.resolve({
+      ...buildSampleLandSummary(a.lat, a.lon, fixtures),
+      isSample: false,
+      slopePct: 12
+    });
+    await req;
+    expect(useAppStore.getState().soilData?.ph).toBe(municipal.soil.ph);
+    expect(useAppStore.getState().telemetrySoilData?.drainage).toBe('moderate');
+
+    useAppStore.getState().restoreSoilTelemetry();
+    expect(useAppStore.getState().isMunicipalBaselineActive).toBe(false);
+    expect(useAppStore.getState().soilData?.ph).toBeNull();
+    expect(useAppStore.getState().recommendedPlans).toEqual([]);
+
+    // Stale async baseline resolution must not overwrite a newly selected field
+    const delayedBaseline = deferred<SoilData>();
+    vi.mocked(getMunicipalAgriculturalBaseline).mockImplementationOnce(() => delayedBaseline.promise);
+    const pendingBaseline = useAppStore.getState().applyMunicipalBaseline();
+    await useAppStore.getState().selectPilotPreset(b);
+    delayedBaseline.resolve({ ...municipal.soil, ph: 4.1 });
+    await pendingBaseline;
+    expect(useAppStore.getState().selectedLocation.id).toBe(b.id);
+    expect(useAppStore.getState().isMunicipalBaselineActive).toBe(false);
+    expect(useAppStore.getState().soilData?.ph).toBe(municipal.soil.ph);
   });
 });
 

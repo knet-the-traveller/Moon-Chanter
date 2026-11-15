@@ -3,6 +3,7 @@ import { getTranslation } from '../i18n';
 import type { ClimateData, SoilData, LandSummary, Language, MetricProvenance, ClimateMetric, SoilMetric } from '../types';
 import type { LocalReviewDescriptor } from '../types';
 import { hasRequiredSoilInputs } from '../engine/soilInputs';
+import { buildDerivedDrainageProvenance, buildDerivedOrganicMatterProvenance } from '../services/soilDerivation';
 
 export const MetricProvenanceSchema = z.object({
   source: z.string(), variable: z.string(), spatialResolution: z.string().nullable(), dateRange: z.string().nullable(),
@@ -87,6 +88,24 @@ export function buildSoilProvenance(data: SoilData, live: boolean, sampleLocatio
     if (data[key] === undefined || data[key] === null || (key === 'organicMatter' && data.organicMatter === 'unknown')) {
       return [key, { ...unknownProvenance(live ? 'ISRIC SoilGrids v2.0' : 'FieldShift municipal soil reference', vars[key]),
         isSample: !live, sampleLocation }];
+    }
+    if (live && key === 'organicMatter') {
+      return [key, buildDerivedOrganicMatterProvenance(data.rawSocDgPerKg, {
+        spatialResolution: '250 m',
+        depth: '0–5 cm and 5–15 cm; unweighted mean',
+        sampleLocation,
+        note: data.reviewNote
+      })];
+    }
+    if (live && key === 'drainage') {
+      return [key, buildDerivedDrainageProvenance({
+        drainage: data.drainage,
+        hasSlope: data.slopePct !== undefined,
+        spatialResolution: '250 m',
+        depth: '0–5 cm and 5–15 cm; unweighted mean',
+        sampleLocation,
+        note: data.reviewNote
+      })];
     }
     const synthetic = key === 'slopePct' || (key === 'bulkDensityGcm3' && (!live || !measuredBulkDensity));
     return [key, { source: synthetic ? 'FieldShift illustrative soil estimate' : live ? 'ISRIC SoilGrids v2.0' : 'FieldShift municipal soil reference', variable: vars[key], unit: units[key] ?? 'class',

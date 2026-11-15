@@ -8,20 +8,18 @@ export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEv
   const t = (key: string) => getTranslation(language, `soilModel.${key}`);
   const hasPredictions = evidence.readings.some(reading => SOIL_DEPTHS.some(depth => reading.depths[depth].mean !== null));
   const format = (value: number | null) => value === null ? getTranslation(language, 'provenance.unavailableValue') : String(Number(value.toFixed(2)));
+  const requestedCell = evidence.requestedCellIndex ?? evidence.relocatedFrom?.cellIndex;
+  const offsetMeters = evidence.offsetDistanceMeters ?? (evidence.relocatedFrom ? Math.round(evidence.relocatedFrom.distanceKm * 1000) : 250);
   return <section className="mt-4 space-y-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-950" aria-label={t('title')}>
     <p className="font-semibold">{t('title')}</p>
     <p>{t('coverage').replace('{grid}', evidence.gridName).replace('{cell}', String(evidence.cellIndex + 1))}</p>
-    {evidence.relocatedFrom && (
-      <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-950 font-medium space-y-0.5">
-        <p className="font-bold text-amber-900">
-          {language === 'fil' ? 'Pansin sa Lokasyon ng Lupa' : 'Soil Location Advisory'}
-        </p>
-        <p>
-          {language === 'fil'
-            ? `Pumatak ang orihinal na coordinate sa unmeasured/urban cell (${evidence.relocatedFrom.cellIndex + 1}). Kinuha ang modelo mula sa pinakamalapit na nasukat na cropland cell (${evidence.relocatedFrom.distanceKm} km ang layo).`
-            : `Default coordinate fell on an unmeasured cell (${evidence.relocatedFrom.cellIndex + 1}). Model readings resolved from nearest valid agricultural cell (${evidence.relocatedFrom.distanceKm} km away).`}
-        </p>
-      </div>
+    {requestedCell !== undefined && (
+      <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">
+        {t('nearestValidCell')
+          .replace('{requestedCell}', String(requestedCell + 1))
+          .replace('{usedCell}', String(evidence.cellIndex + 1))
+          .replace('{meters}', String(offsetMeters))}
+      </p>
     )}
     {!hasPredictions && <p role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 font-semibold text-amber-950">{t('noPredictions')}</p>}
     <p>{t('limits')}</p>
