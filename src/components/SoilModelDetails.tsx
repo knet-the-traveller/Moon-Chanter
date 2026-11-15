@@ -4,7 +4,15 @@ import type { SoilModelEvidence } from '../types/soilGridsPackage';
 import { SOIL_DEPTHS } from '../types/soilGridsPackage';
 
 /** Shows original model predictions even when a farmer override is active. */
-export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEvidence; language: Language }) {
+export function SoilModelDetails({
+  evidence,
+  language,
+  hideRelocationNotice = false,
+}: {
+  evidence: SoilModelEvidence;
+  language: Language;
+  hideRelocationNotice?: boolean;
+}) {
   const t = (key: string) => getTranslation(language, `soilModel.${key}`);
   const hasPredictions = evidence.readings.some(reading => SOIL_DEPTHS.some(depth => reading.depths[depth].mean !== null));
   const format = (value: number | null) => value === null ? getTranslation(language, 'provenance.unavailableValue') : String(Number(value.toFixed(2)));
@@ -13,7 +21,7 @@ export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEv
   return <section className="mt-4 space-y-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-950" aria-label={t('title')}>
     <p className="font-semibold">{t('title')}</p>
     <p>{t('coverage').replace('{grid}', evidence.gridName).replace('{cell}', String(evidence.cellIndex + 1))}</p>
-    {requestedCell !== undefined && (
+    {!hideRelocationNotice && requestedCell !== undefined && (
       <div role="status" className="rounded-lg border border-amber-400 bg-amber-50 p-3 text-amber-950">
         <p className="font-bold">{t('locationAdvisory')}</p>
         <p>{t('nearestValidCell')

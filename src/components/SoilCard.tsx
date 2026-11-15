@@ -6,8 +6,26 @@ import { hasRequiredSoilInputs } from '../engine/soilInputs';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
-import type { SoilTexture, OrganicMatterLevel, Language } from '../types';
+import type { SoilData, SoilTexture, OrganicMatterLevel, Language } from '../types';
 import { Layers, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
+
+export function resolveSoilOriginBadgeKey(
+  soilData: SoilData,
+  isMunicipalBaselineActive: boolean,
+  isOverridden: boolean,
+): string {
+  if (isOverridden) return 'provenance.soilOriginOverride';
+  if (isMunicipalBaselineActive) return 'provenance.soilOriginMunicipal';
+  const phMeta = soilData.provenance?.ph;
+  const tier = phMeta?.tier;
+  if (phMeta?.cached || tier === 'cached-live' || (tier as string) === 'cached') {
+    return 'provenance.soilOriginCached';
+  }
+  if (tier === 'live') return 'provenance.soilOriginLive';
+  if (tier === 'bundled-model' || soilData.modelEvidence) return 'provenance.soilOriginBundled';
+  if (tier === 'sample' || soilData.isEstimate) return 'provenance.soilOriginMunicipal';
+  return 'provenance.soilAutomated';
+}
 
 const SoilPhInput: React.FC<{ ph: number | null; language: Language; onApply: (ph: number) => void }> = ({ ph, language, onApply }) => {
   const id = React.useId();
@@ -111,7 +129,7 @@ export const SoilCard: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-              {getTranslation(language, 'provenance.farmer')}
+              {getTranslation(language, 'provenance.soilOriginOverride')} · {getTranslation(language, 'provenance.farmer')}
             </span>
             <button
               onClick={resetSoilOverride}
@@ -123,7 +141,7 @@ export const SoilCard: React.FC = () => {
           </div>
         ) : (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-300">
-            {getTranslation(language, 'provenance.soilAutomated')}
+            {getTranslation(language, resolveSoilOriginBadgeKey(soilData, isMunicipalBaselineActive, false))}
           </span>
         )}
       </div>
@@ -163,7 +181,25 @@ export const SoilCard: React.FC = () => {
         </div>
       )}
 
-      {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} />}
+      {soilData.modelEvidence && (soilData.modelEvidence.requestedCellIndex ?? soilData.modelEvidence.relocatedFrom?.cellIndex) !== undefined && (
+        <div role="status" className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
+          <p className="font-bold">{getTranslation(language, 'soilModel.locationAdvisory')}</p>
+          <p>
+            {getTranslation(language, 'soilModel.nearestValidCell')
+              .replace('{requestedCell}', String((soilData.modelEvidence.requestedCellIndex ?? soilData.modelEvidence.relocatedFrom!.cellIndex) + 1))
+              .replace('{usedCell}', String(soilData.modelEvidence.cellIndex + 1))
+              .replace(
+                '{meters}',
+                String(
+                  soilData.modelEvidence.offsetDistanceMeters ??
+                    (soilData.modelEvidence.relocatedFrom
+                      ? Math.round(soilData.modelEvidence.relocatedFrom.distanceKm * 1000)
+                      : 250)
+                )
+              )}
+          </p>
+        </div>
+      )}
 
       {/* Soil KPI Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
@@ -224,12 +260,6 @@ export const SoilCard: React.FC = () => {
         </div>
       </div>
 
-      <details className="mt-3 text-sm text-stone-800">
-      <summary className="cursor-pointer font-semibold">{getTranslation(language,'mvp.sourceDetails')}</summary>
-      <ul className="mt-2 text-xs text-stone-700 space-y-2 break-words" aria-label={getTranslation(language, 'provenance.title')}>
-        {Object.entries(metadata).map(([key, value]) => <li key={key}>{formatProvenance(language, value)}</li>)}
-      </ul>
-      </details>
       {/* Farmer Override Bar */}
       <div className="mt-4 pt-3 border-t border-stone-100">
         <div className="text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
@@ -292,6 +322,18 @@ export const SoilCard: React.FC = () => {
         <SoilPhInput key={`${selectedLocation.lat}:${selectedLocation.lon}:${effectiveSoil.ph}`}
           ph={effectiveSoil.ph} language={language} onApply={ph => setSoilOverride({ ph })} />
       </div>
+
+      <details className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-800">
+        <summary className="cursor-pointer font-semibold text-stone-800 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-emerald-800">
+          {getTranslation(language, 'provenance.viewCaveats')}
+        </summary>
+        <div className="mt-2 space-y-3">
+          <ul className="text-xs text-stone-700 space-y-2 break-words" aria-label={getTranslation(language, 'provenance.title')}>
+            {Object.entries(metadata).map(([key, value]) => <li key={key}>{formatProvenance(language, value)}</li>)}
+          </ul>
+          {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} hideRelocationNotice />}
+        </div>
+      </details>
     </div>
   );
 };

@@ -83,4 +83,55 @@ describe('UI/UX Polish & Navigation Cleanup (P2)', () => {
     expect(insideDetails).toBeDefined();
     expect(html).toContain(getTranslation('en', 'mvp.landDetails'));
   });
+
+  it('maps SoilCard header badge accurately across bundled, cached, live, municipal, and farmer override states', async () => {
+    const { SoilCard, resolveSoilOriginBadgeKey } = await import('../components/SoilCard');
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const bundledSoil = useAppStore.getState().soilData!;
+    expect(resolveSoilOriginBadgeKey(bundledSoil, false, false)).toBe('provenance.soilOriginBundled');
+    expect(renderToStaticMarkup(createElement(SoilCard))).toContain(
+      getTranslation('en', 'provenance.soilOriginBundled')
+    );
+
+    const cachedSoil = {
+      ...bundledSoil,
+      modelEvidence: undefined,
+      provenance: {
+        ...bundledSoil.provenance!,
+        ph: { ...bundledSoil.provenance!.ph, tier: 'cached-live' as const, cached: true }
+      }
+    };
+    expect(resolveSoilOriginBadgeKey(cachedSoil, false, false)).toBe('provenance.soilOriginCached');
+
+    const liveSoil = {
+      ...bundledSoil,
+      modelEvidence: undefined,
+      provenance: {
+        ...bundledSoil.provenance!,
+        ph: { ...bundledSoil.provenance!.ph, tier: 'live' as const, cached: false }
+      }
+    };
+    expect(resolveSoilOriginBadgeKey(liveSoil, false, false)).toBe('provenance.soilOriginLive');
+
+    expect(resolveSoilOriginBadgeKey({ ...bundledSoil, isEstimate: true }, true, false)).toBe(
+      'provenance.soilOriginMunicipal'
+    );
+
+    useAppStore.getState().setSoilOverride({ drainage: 'poor' });
+    const overriddenHtml = renderToStaticMarkup(createElement(SoilCard));
+    expect(overriddenHtml).toContain(getTranslation('en', 'provenance.soilOriginOverride'));
+    expect(overriddenHtml).toContain(getTranslation('en', 'provenance.farmer'));
+  });
+
+  it('places Farmer Soil Override controls above the collapsed technical caveats drawer in SoilCard DOM order', async () => {
+    const { SoilCard } = await import('../components/SoilCard');
+    await useAppStore.getState().selectPilotPreset(PILOT_LOCATIONS[0]);
+    const html = renderToStaticMarkup(createElement(SoilCard));
+    const overrideIndex = html.indexOf(getTranslation('en', 'conditions.overridePrompt'));
+    const caveatsIndex = html.indexOf(getTranslation('en', 'provenance.viewCaveats').replace(/&/g, '&amp;'));
+    const modelDetailsIndex = html.indexOf(getTranslation('en', 'soilModel.title'));
+    expect(overrideIndex).toBeGreaterThan(-1);
+    expect(caveatsIndex).toBeGreaterThan(overrideIndex);
+    expect(modelDetailsIndex).toBeGreaterThan(overrideIndex);
+  });
 });
