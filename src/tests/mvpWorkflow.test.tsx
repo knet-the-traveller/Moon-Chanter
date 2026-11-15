@@ -1,4 +1,5 @@
-import {createElement} from 'react';
+import {createElement,isValidElement} from 'react';
+import type {ReactNode,ReactElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {useAppStore} from '../store/useAppStore';
@@ -12,6 +13,7 @@ import {MapPicker} from '../components/MapPicker';
 import {SoilCard} from '../components/SoilCard';
 import {resolveBundledNdvi} from '../services/bundledNdvi';
 import {resolveBundledPower} from '../services/bundledPower';
+import type {SoilData} from '../types';
 vi.mock('leaflet',()=>({default:{}}));
 vi.mock('../store/useAppStore',async original=>{
  const module=await original<typeof import('../store/useAppStore')>();
@@ -19,6 +21,56 @@ vi.mock('../store/useAppStore',async original=>{
 });
 beforeEach(async()=>{useAppStore.setState(useAppStore.getInitialState(),true);await CacheService.clear();vi.stubGlobal('fetch',vi.fn().mockRejectedValue(new Error('offline')));});
 afterEach(()=>{vi.unstubAllGlobals();});
+
+// Exercise the actual rendered handlers with the mocked store hook, without
+// introducing a browser/DOM dependency into the node test environment.
+type ControlProps={children?:ReactNode;onClick?:()=>void};
+function nodeText(node:ReactNode):string{
+ if(typeof node==='string'||typeof node==='number')return String(node);
+ if(Array.isArray(node))return node.map(nodeText).join('');
+ return isValidElement<ControlProps>(node)?nodeText(node.props.children):'';
+}
+function findButton(node:ReactNode,label:string):ReactElement<ControlProps>|undefined{
+ if(Array.isArray(node))return node.map(child=>findButton(child,label)).find(Boolean);
+ if(!isValidElement<ControlProps>(node))return undefined;
+ if(node.type==='button'&&nodeText(node.props.children).trim()===label)return node;
+ return findButton(node.props.children,label);
+}
+async function clickSoilButton(label:string){
+ const button=findButton(await SoilCard({}),label);
+ expect(button?.props.onClick,`Missing soil control: ${label}`).toBeTypeOf('function');
+ button!.props.onClick!();
+}
+
+it.each(['texture-first','drainage-first'] as const)('keeps independent soil controls with no model evidence: %s',async order=>{
+ const base:SoilData={source:'Live/reference profile',texture:'loam',drainage:null,ph:6.4,organicMatter:'medium',isEstimate:false};
+ useAppStore.setState({soilData:base});
+ if(order==='drainage-first')await clickSoilButton('Poor');
+ await clickSoilButton('Sandy');
+ expect(useAppStore.getState().soilOverride?.drainage).toBe(order==='drainage-first'?'poor':undefined);
+ if(order==='texture-first')await clickSoilButton('Poor');
+ const state=useAppStore.getState();
+ const effective=resolvePlanningSoil(base,state.soilOverride,true);
+ expect(effective).toMatchObject({texture:'sandy',drainage:'poor'});
+ expect(effective.provenance?.drainage?.tier).toBe('farmer');
+ expect(base).toMatchObject({texture:'loam',drainage:null});
+});
+
+it('does not derive phosphorus risk from demo pH on unrelated edits, but honors explicit field pH',()=>{
+ const base:SoilData={source:'Missing source readings',texture:null,drainage:null,ph:null,organicMatter:'unknown',isEstimate:false};
+ for(const override of [null,{texture:'loam' as const},{drainage:'poor' as const},{organicMatter:'high' as const}]){
+  const effective=resolvePlanningSoil(base,override,true);
+  expect(effective.ph).toBe(6.3);
+  expect(effective.provenance?.ph?.isSynthetic).toBe(true);
+  expect(effective.phosphorusFixationRisk).toBeUndefined();
+  expect(effective.provenance?.phosphorusFixationRisk?.tier??'unavailable').toBe('unavailable');
+ }
+ const explicit=resolvePlanningSoil(base,{ph:5.2},true);
+ expect(explicit.phosphorusFixationRisk).toBe('high');
+ expect(explicit.provenance?.phosphorusFixationRisk).toMatchObject({tier:'farmer',isSynthetic:false,variable:'pH → phosphorusFixationRisk'});
+ expect(resolvePlanningSoil(base,{ph:null},true).phosphorusFixationRisk).toBeUndefined();
+ expect(resolvePlanningSoil({...base,phosphorusFixationRisk:'high'},{texture:'loam'},true).phosphorusFixationRisk).toBe('high');
+});
 it.each(PILOT_LOCATIONS)('generates demo plans offline at $id without disguising assumptions as observations',async pilot=>{
  await useAppStore.getState().selectPilotPreset(pilot);
  const state=useAppStore.getState();

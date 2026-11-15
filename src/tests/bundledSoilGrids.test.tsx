@@ -34,6 +34,22 @@ function validCell(grid = data.grids[0]) {
 afterEach(() => { useAppStore.setState(useAppStore.getInitialState(), true); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('native SoilGrids pilot package', () => {
+  it.each(['en', 'fil'] as const)('uses one neutral translated relocation advisory in %s', language => {
+    const { lat, lon } = validCell();
+    const soil = resolveBundledSoil(lat, lon)!;
+    soil.modelEvidence!.relocatedFrom = {
+      originalLat: lat, originalLon: lon, distanceKm: 0.25, cellIndex: 40, reason: 'nodata_cell'
+    };
+    useAppStore.setState({ soilData: soil, language });
+    const html = renderToStaticMarkup(createElement(SoilCard));
+    const title = getTranslation(language, 'soilModel.locationAdvisory');
+    const message = getTranslation(language, 'soilModel.relocatedReference').replace('{cell}', '41').replace('{distance}', '0.25');
+    expect(html.split(title)).toHaveLength(2);
+    expect(html).toContain(message);
+    expect(html).not.toMatch(/agricultural cell|urban|NoData urban deadlock/i);
+    expect(html).not.toContain('{cell}');
+    expect(html).not.toContain('{distance}');
+  });
   it('validates all four existing preset coordinates and explicit licensing/provenance', () => {
     expect(data.license).toBe('CC-BY-4.0');
     expect(data.observationPeriod).toBeNull();

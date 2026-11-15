@@ -239,6 +239,8 @@
     "noPrintablePlan": "No advisory is available to print yet."
   },
   "soilModel": {
+    "locationAdvisory": "Soil location advisory",
+    "relocatedReference": "The selected location has missing model data (cell {cell}). Soil predictions use a nearby model reference cell ({distance} km away), not measurements at your selected point. Land cover and the cause of missing data have not been verified.",
     "title": "SoilGrids model extract · 250 m cells",
     "coverage": "Packaged area: {grid}; selected cell {cell}. Coverage is a 2.25 × 2.25 km grid around the pilot point, not the entire municipality. Missing pixels stay unavailable.",
     "limits": "These are historical soil-model predictions, not live measurements. Confirm drainage and organic matter separately. Topsoil bulk density does not establish subsoil compaction.",

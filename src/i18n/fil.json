@@ -239,6 +239,8 @@
     "noPrintablePlan": "Wala pang payong maaaring i-print."
   },
   "soilModel": {
+    "locationAdvisory": "Paunawa sa lokasyon ng datos ng lupa",
+    "relocatedReference": "May kulang na datos ng modelo sa napiling lokasyon (cell {cell}). Ang pagtataya ng lupa ay mula sa kalapit na sangguniang cell ng modelo ({distance} km ang layo), hindi sa pagsukat sa napiling punto. Hindi pa natitiyak ang uri ng takip ng lupa at dahilan ng nawawalang datos.",
     "title": "Datos ng modelong SoilGrids · mga cell na 250 m",
     "coverage": "Lugar na may nakahandang datos: {grid}; napiling cell {cell}. Ang saklaw ay grid na 2.25 × 2.25 km sa paligid ng pilot point, hindi ang buong munisipalidad. Mananatiling hindi available ang mga pixel na walang datos.",
     "limits": "Mga pagtataya ito ng modelo ng lupa mula sa nakaraang datos, hindi live na pagsukat. Tiyakin nang hiwalay ang drainage at organikong materyal. Hindi pinatutunayan ng bulk density ng ibabaw na lupa ang pagsiksik ng ilalim na lupa.",

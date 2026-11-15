@@ -14,12 +14,12 @@ export function SoilModelDetails({ evidence, language }: { evidence: SoilModelEv
     {evidence.relocatedFrom && (
       <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-950 font-medium space-y-0.5">
         <p className="font-bold text-amber-900">
-          {language === 'fil' ? 'Pansin sa Lokasyon ng Lupa' : 'Soil Location Advisory'}
+          {t('locationAdvisory')}
         </p>
         <p>
-          {language === 'fil'
-            ? `Pumatak ang orihinal na coordinate sa unmeasured cell (${evidence.relocatedFrom.cellIndex + 1}). Kinuha ang modelo mula sa pinakamalapit na cell na may model prediction (${evidence.relocatedFrom.distanceKm} km ang layo).`
-            : `Default coordinate fell on an unmeasured cell (${evidence.relocatedFrom.cellIndex + 1}). Model readings resolved from nearby model reference cell (${evidence.relocatedFrom.distanceKm} km away).`}
+          {t('relocatedReference')
+            .replace('{cell}', String(evidence.relocatedFrom.cellIndex + 1))
+            .replace('{distance}', String(evidence.relocatedFrom.distanceKm))}
         </p>
       </div>
     )}

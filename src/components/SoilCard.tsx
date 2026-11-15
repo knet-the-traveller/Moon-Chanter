@@ -6,7 +6,7 @@ import { hasRequiredSoilInputs } from '../engine/soilInputs';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
-import type { SoilTexture, DrainageClass, OrganicMatterLevel, Language } from '../types';
+import type { SoilTexture, OrganicMatterLevel, Language } from '../types';
 import { Layers, RotateCcw, Check, Sparkles, AlertCircle } from 'lucide-react';
 
 const SoilPhInput: React.FC<{ ph: number | null; language: Language; onApply: (ph: number) => void }> = ({ ph, language, onApply }) => {
@@ -73,12 +73,12 @@ export const SoilCard: React.FC = () => {
   const effectiveOrganicMatter = effectiveSoil.organicMatter;
   const isOverridden = !!soilOverride && Object.keys(soilOverride).length > 0;
 
-  const texturePresets: { id: SoilTexture; nameEn: string; nameFil: string; defaultDrainage: DrainageClass }[] = [
-    { id: 'clay', nameEn: 'Heavy Clay', nameFil: 'Lagkitan / Pulot', defaultDrainage: 'poor' },
-    { id: 'clay_loam', nameEn: 'Clay Loam', nameFil: 'Mabanlik na Lupa', defaultDrainage: 'moderate' },
-    { id: 'loam', nameEn: 'Medium Loam', nameFil: 'Matabang Lupang Itim', defaultDrainage: 'well' },
-    { id: 'sandy_loam', nameEn: 'Sandy Loam', nameFil: 'Mabuhangin na Lupa', defaultDrainage: 'well' },
-    { id: 'sandy', nameEn: 'Sandy', nameFil: 'Buhangin', defaultDrainage: 'well' }
+  const texturePresets: { id: SoilTexture; nameEn: string; nameFil: string }[] = [
+    { id: 'clay', nameEn: 'Heavy Clay', nameFil: 'Lagkitan / Pulot' },
+    { id: 'clay_loam', nameEn: 'Clay Loam', nameFil: 'Mabanlik na Lupa' },
+    { id: 'loam', nameEn: 'Medium Loam', nameFil: 'Matabang Lupang Itim' },
+    { id: 'sandy_loam', nameEn: 'Sandy Loam', nameFil: 'Mabuhangin na Lupa' },
+    { id: 'sandy', nameEn: 'Sandy', nameFil: 'Buhangin' }
   ];
 
   const omLevels: { id: OrganicMatterLevel; labelEn: string; labelFil: string }[] = [
@@ -130,16 +130,6 @@ export const SoilCard: React.FC = () => {
 
       {hasDemoSoil(effectiveSoil) && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">{getTranslation(language,'mvp.soilNotice')}</p>}
 
-      {soilData.modelEvidence?.relocatedFrom && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 font-medium">
-          <span className="font-bold">Advisory:</span>
-          <span>
-            {language === 'fil'
-              ? `Inilipat nang ${soilData.modelEvidence.relocatedFrom.distanceKm} km patungo sa pinakamalapit na agricultural cell upang maiwasan ang NoData urban deadlock.`
-              : `Resolved from nearest valid agricultural cell (${soilData.modelEvidence.relocatedFrom.distanceKm} km away) due to urban NoData cell.`}
-          </span>
-        </div>
-      )}
       {soilData.modelEvidence && <SoilModelDetails evidence={soilData.modelEvidence} language={language} />}
 
       {/* Soil KPI Grid */}
@@ -221,12 +211,7 @@ export const SoilCard: React.FC = () => {
               <button
                 key={preset.id}
                 type="button" aria-pressed={isSelected}
-                onClick={() =>
-                  setSoilOverride({
-                    texture: preset.id,
-                    ...(soilData.modelEvidence ? {} : { drainage: preset.defaultDrainage })
-                  })
-                }
+                onClick={() => setSoilOverride({ texture: preset.id })}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/30 font-semibold'
