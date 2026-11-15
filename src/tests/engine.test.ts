@@ -203,6 +203,24 @@ describe('Scenario Testing & Robustness Engine', () => {
 });
 
 describe('Strategy 1 Baseline Pinning & Canonical Philippine Rotations', () => {
+  it('emits exactly the three shared planning periods without changing baseline pinning', () => {
+    const plans = generateRotationRecommendations({allCrops: crops, climate: mockClimate, soil: mockSoil, priorities: defaultPriorities});
+    expect(plans.some(plan => plan.isBaseline)).toBe(true);
+    for (const plan of plans) {
+      expect(plan.seasons.map(season => [season.seasonKey, season.periodMonths])).toEqual([
+        ['wet', 'Jun – Oct'], ['dry_cool', 'Nov – Feb'], ['dry_hot', 'Mar – May']
+      ]);
+    }
+  });
+
+  it('keeps the strict >35 C rice threshold at the planning heat boundary', () => {
+    const byId = (id: string) => crops.find(crop => crop.id === id)!;
+    const sequence = {s1Crop: byId('rice'), s2Crop: byId('rice'), s3Crop: byId('fallow')};
+    const atBoundary = {...mockClimate, seasonalStats: {...mockClimate.seasonalStats, dryHot: {...mockClimate.seasonalStats.dryHot, maxTemp: 35}}};
+    const aboveBoundary = {...atBoundary, seasonalStats: {...atBoundary.seasonalStats, dryHot: {...atBoundary.seasonalStats.dryHot, maxTemp: 35.1}}};
+    expect(calculateSequenceScores(sequence, aboveBoundary, mockSoil, defaultPriorities).climateRisk)
+      .toBeLessThan(calculateSequenceScores(sequence, atBoundary, mockSoil, defaultPriorities).climateRisk);
+  });
   it('pins lowland baseline (Continuous Double Rice-Fallow) and canonical adaptive rice rotations', () => {
     const candidates = generateCandidateRotations({
       allCrops: crops,

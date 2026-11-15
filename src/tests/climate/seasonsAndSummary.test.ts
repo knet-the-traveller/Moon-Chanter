@@ -36,7 +36,7 @@ describe('Seasonal Boundary & Summarization Logic', () => {
       '2021-01-01',
       '2021-05-31'
     ]);
-    // November 2020 through January 2021 must be grouped into '2020-2021-coolDry'
+    // November 2020 through February 2021 must be grouped into '2020-2021-coolDry'
     expect(buckets['2020-2021-coolDry']?.dates).toEqual([
       '2020-11-30',
       '2020-12-01',
@@ -171,7 +171,7 @@ describe('Seasonal Boundary & Summarization Logic', () => {
     expect(summary.dryWindows).toBeDefined();
     expect(summary.dryWindows?.coolDry.name).toBe('coolDry');
     expect(summary.dryWindows?.hotDry.name).toBe('hotDry');
-    expect(summary.windowsVerified).toBe(true);
+    expect(summary.windowsVerified).toBe(false); // This calendar revision needs renewed local review.
 
     expect(summary.seasons[0].heatDaysAbove35C).toBeLessThanOrEqual(summary.seasons[0].heatDaysAbove34C!);
     expect(summary.seasons[1].heatDaysAbove35C).toBeLessThanOrEqual(summary.seasons[1].heatDaysAbove34C!);

@@ -5,6 +5,8 @@ import { PILOT_CONFIG } from '../config/pilot';
 import { CacheService, TELEMETRY_CACHE_TTL_MS } from './cache';
 import { buildObservedClimate } from './observedClimate';
 import type { ClimateData } from '../types';
+import { PLANNING_CALENDAR_VERSION } from '../config/planningCalendar';
+import { aggregatePlanningClimatology } from './planningClimatology';
 
 export interface DailySeries {
   dataLocation?: { name: string; lat?: number; lon?: number };
@@ -38,10 +40,13 @@ const PowerPayloadSchema = z.object({
   geometry: z.object({ coordinates: z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]).rest(z.number()) }).optional(),
   header: z.object({ api: z.object({ version: z.string().optional() }).optional() }).optional()
 });
-export const climateCacheKey = (lat: number, lon: number) => `nasa_power_observed_v3_${lat}_${lon}`;
+// Old derived profiles used different month groupings. Keep raw observations,
+// but never reuse those old seasonal aggregates under the new calendar.
+export const climateCacheKey = (lat: number, lon: number) => `nasa_power_observed_v4_${lat}_${lon}`;
 const RawCacheSchema = z.object({ payload: z.unknown(), retrievedAt: z.iso.datetime({offset:true}) });
 const SeasonalSchema = z.object({ precip: z.number().nonnegative(), avgTemp: z.number(), maxTemp: z.number() });
 const ClimateCacheSchema = z.object({
+  calendarVersion: z.literal(PLANNING_CALENDAR_VERSION),
   source: z.string(), variableList: z.array(z.string()), dateRange: z.string(), isSampleData: z.boolean(),
   meanAnnualPrecipitation: z.number().nonnegative(), meanAnnualTemp: z.number(),
   seasonalStats: z.object({ wet: SeasonalSchema, dryCool: SeasonalSchema, dryHot: SeasonalSchema }),
@@ -327,6 +332,8 @@ export async function fetchNasaPowerClimate(lat: number, lon: number): Promise<C
   } catch (err) {
     console.warn('[nasaPower] fetchNasaPowerClimate fallback triggered:', err);
     const fallback = getFallbackClimateLegacy();
+    fallback.calendarVersion = PLANNING_CALENDAR_VERSION;
+    fallback.seasonalStats = aggregatePlanningClimatology(fallback.monthly);
     fallback.provenance = buildClimateProvenance(fallback, 'sample', { name: PILOT_CONFIG.location.name,
       lat: PILOT_CONFIG.location.lat, lon: PILOT_CONFIG.location.lon });
     return fallback;

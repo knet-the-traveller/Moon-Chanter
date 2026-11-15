@@ -58,9 +58,9 @@
     "annualTemp": "Karaniwang Temperatura",
     "heatStressDays": "Mga araw na umabot sa ≥35°C",
     "rainfallTrend": "Trend ng ulan (% bawat dekada)",
-    "wetSeason": "Tag-ulan (Hunyo–Nobyembre)",
-    "dryCoolSeason": "Malamig na Tag-araw (Disyembre–Pebrero)",
-    "dryHotSeason": "Mainit na Tag-araw (Marso–Mayo)",
+    "wetSeason": "Tag-ulan ({months})",
+    "dryCoolSeason": "Malamig na Tag-araw ({months})",
+    "dryHotSeason": "Mainit na Tag-araw ({months})",
     "soilTexture": "Tekstura ng Lupa",
     "drainage": "Daloy ng Tubig sa Lupa",
     "ph": "Asido o Alat ng Lupa (pH)",
@@ -207,7 +207,7 @@
       "humidity": "Mean ng pang-araw-araw na humidity sa bawat buwan, na may hindi bababa sa 80% datos; walang pamalit na numerong halaga.",
       "heatStressDays": "Mean ng taunang bilang ng araw na may Tmax ≥35°C sa kumpletong taon. Kailangang suriin ang threshold para sa lokal na pananim.",
       "rainfallTrend": "OLS mula sa tinanggap na kumpletong taunang ulan at aktuwal na taon, bilang % bawat dekada. Paglalarawan lamang; hindi forecast o patunay ng statistical significance.",
-      "risk": "Paunang pagsusuri ng ulan, tagal ng walang ulan, at init sa kumpletong Hun–Nob at Dis–May na panahon. Kailangang ikalibre ang mga threshold sa lokal na kondisyon. Hindi sapat ang ulan upang matukoy ang panganib ng baha sa bukid."
+      "risk": "Paunang pagsusuri ng ulan, tagal ng walang ulan, at init sa kumpletong tag-ulan at tuyong panahon gamit ang iisang planning calendar na ipinakita sa itaas. Kailangang tiyakin sa lokal na kondisyon ang kalendaryo at mga threshold. Hindi sapat ang ulan upang matukoy ang panganib ng baha sa bukid."
     }
   },
   "localReview": {

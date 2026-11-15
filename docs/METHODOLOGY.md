@@ -42,6 +42,8 @@ A 3-season rotation sequence $(S_1 \to S_2 \to S_3)$ corresponds to the Philippi
 - **Season 2 ($S_2$):** Cool Dry Season / Amihan (November – February)
 - **Season 3 ($S_3$):** Hot Dry Season / Catch Window (March – May)
 
+The single implementation source is `src/config/planningCalendar.ts`: wet June–October, cool dry November–February, hot dry March–May. Daily climate grouping, observed POWER aggregates, displayed labels and rotation periods use this convention. `ClimateSummary` retains its compatible wet/dry aggregate fields and exposes the ordered three-window `planningSeasons` view. Cool dry crosses the year boundary and includes leap day when present. This team planning convention requires local calendar validation; it is not a claim that all pilot regions share verified climate seasons. Legacy preset verification flags do not verify this calendar revision. Derived climate caches use a new namespace and calendar-version validation; raw observations and bundled fixtures are preserved. Monthly-only emergency references are reaggregated by these windows, using a mean of monthly temperatures rather than claiming daily precision.
+
 To make diversification trade-offs concrete (`src/engine/candidateGenerator.ts`), the engine pins **Strategy 1** (the common farmer continuous monocrop + bare-fallow baseline, marked `isBaseline: true` and exempted from agronomic host-conflict hard bans purely for side-by-side comparison):
 - **Lowlands:** *Existing Baseline: Continuous Double Rice $\to$ Bare Fallow* (`rice → rice → fallow`)
 - **Sloping Uplands (`slopePct > 15%` or non-model acid upland `ph < 5.5 && drainage !== 'poor'`):** *Existing Baseline: Continuous Upland Corn $\to$ Bare Fallow* (`corn → corn → fallow`)

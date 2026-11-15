@@ -2,6 +2,7 @@ import { climateProvenance, formatProvenance } from '../data/provenance';
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { getTranslation } from '../i18n';
+import { planningPeriod } from '../config/planningCalendar';
 import {
   CloudSun,
   Droplets,
@@ -149,19 +150,19 @@ export const ClimateCard: React.FC = () => {
       {/* Seasonal Breakdown Pills */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5 p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 text-xs">
         <div>
-          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.wetSeason')}</div>
+          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.wetSeason').replace('{months}', planningPeriod('wet', language))}</div>
           <div className="text-stone-600 mt-0.5 font-medium">
             Rain: <span className="font-bold text-blue-700">{climateData.seasonalStats.wet.precip} mm</span> · Max T: {climateData.seasonalStats.wet.maxTemp}°C
           </div>
         </div>
         <div>
-          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.dryCoolSeason')}</div>
+          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.dryCoolSeason').replace('{months}', planningPeriod('coolDry', language))}</div>
           <div className="text-stone-600 mt-0.5 font-medium">
             Rain: <span className="font-bold text-blue-700">{climateData.seasonalStats.dryCool.precip} mm</span> · Max T: {climateData.seasonalStats.dryCool.maxTemp}°C
           </div>
         </div>
         <div>
-          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.dryHotSeason')}</div>
+          <div className="font-bold text-stone-900">{getTranslation(language, 'conditions.dryHotSeason').replace('{months}', planningPeriod('hotDry', language))}</div>
           <div className="text-stone-600 mt-0.5 font-medium">
             Rain: <span className="font-bold text-blue-700">{climateData.seasonalStats.dryHot.precip} mm</span> · Max T: <span className="font-bold text-rose-600">{climateData.seasonalStats.dryHot.maxTemp}°C</span>
           </div>

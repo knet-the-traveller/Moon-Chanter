@@ -2,6 +2,7 @@ import { fetchDailySeries } from '../src/services/nasaPower.js';
 import { calculateClimateSummary, explainRisks } from '../src/engine/climate/climateSummary.js';
 import { summarizeAllScenarios, type ClimateScenarioId } from '../src/engine/scenarios.js';
 import { PILOT_CONFIG } from '../src/config/pilot.js';
+import { planningPeriod } from '../src/config/planningCalendar.js';
 
 async function runClimateDemo() {
   console.log('='.repeat(80));
@@ -44,9 +45,9 @@ async function runClimateDemo() {
   if (baseline.dryWindows) {
     console.log('\nDry Season Sub-Windows:');
     const { coolDry, hotDry } = baseline.dryWindows;
-    console.log(`  • [COOL-DRY WINDOW (Nov–Jan, residual moisture)]`);
+    console.log(`  • [COOL-DRY WINDOW (${planningPeriod('coolDry')}, residual moisture)]`);
     console.log(`    Mean Temp:        ${coolDry.meanTempC} °C | Rainfall: ${coolDry.rainfallMm} mm | Heat >= 34°C: ${coolDry.heatDaysAbove34C} d | Heat >= 35°C: ${coolDry.heatDaysAbove35C} d`);
-    console.log(`  • [HOT-DRY WINDOW (Feb–May, terminal heat/drought)]`);
+    console.log(`  • [HOT-DRY WINDOW (${planningPeriod('hotDry')}, terminal heat/drought)]`);
     console.log(`    Mean Temp:        ${hotDry.meanTempC} °C | Rainfall: ${hotDry.rainfallMm} mm | Heat >= 34°C: ${hotDry.heatDaysAbove34C} d | Heat >= 35°C: ${hotDry.heatDaysAbove35C} d`);
   }
 

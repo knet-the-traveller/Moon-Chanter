@@ -21,6 +21,8 @@ export interface SeasonalMetrics {
 }
 
 export interface ClimateSummary {
+  /** Versioned planning calendar; absent on legacy consumer-created profiles. */
+  calendarVersion?: string;
   location: { lat: number; lon: number };
   period: { start: string; end: string };          // ISO dates (YYYY-MM-DD)
   seasons: Array<SeasonalMetrics & { name: "wet" | "dry" }>; // Strictly "wet" | "dry"
@@ -28,6 +30,12 @@ export interface ClimateSummary {
     coolDry: SeasonalMetrics & { name: "coolDry"; months: number[] };
     hotDry: SeasonalMetrics & { name: "hotDry"; months: number[] };
   };
+  /** Three ordered planning windows; wet/dry aggregates above stay compatible. */
+  planningSeasons?: [
+    SeasonalMetrics & {name: 'wet'; months: number[]},
+    SeasonalMetrics & {name: 'coolDry'; months: number[]},
+    SeasonalMetrics & {name: 'hotDry'; months: number[]}
+  ];
   windowsVerified?: boolean;
   trend10y: { tempC: number; rainfallPct: number }; // slope per decade
   risks: {

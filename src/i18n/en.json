@@ -58,9 +58,9 @@
     "annualTemp": "Mean Temperature",
     "heatStressDays": "Heat screening days (≥35°C)",
     "rainfallTrend": "Rainfall trend (% per decade)",
-    "wetSeason": "Wet Season (Jun–Nov)",
-    "dryCoolSeason": "Cool Dry (Dec–Feb)",
-    "dryHotSeason": "Hot Dry (Mar–May)",
+    "wetSeason": "Wet Season ({months})",
+    "dryCoolSeason": "Cool Dry ({months})",
+    "dryHotSeason": "Hot Dry ({months})",
     "soilTexture": "Soil Texture",
     "drainage": "Drainage Class",
     "ph": "Soil Reaction (pH)",
@@ -207,7 +207,7 @@
       "humidity": "Calendar-month daily mean with at least 80% observed coverage; no numeric substitutes.",
       "heatStressDays": "Mean annual count of days with Tmax ≥35°C in complete years. This screening threshold requires local crop review.",
       "rainfallTrend": "OLS on accepted complete annual totals and their actual years, expressed as % per decade. Descriptive only; no forecast or statistical significance claim.",
-      "risk": "Preliminary rainfall, dry-spell and heat screens for complete Jun–Nov and Dec–May seasons. Thresholds require local calibration. Rainfall does not establish field flood hazard."
+      "risk": "Preliminary rainfall, dry-spell and heat screens for complete wet/dry cycles using the shared planning calendar shown above. The team calendar and thresholds require local validation. Rainfall does not establish field flood hazard."
     }
   },
   "localReview": {

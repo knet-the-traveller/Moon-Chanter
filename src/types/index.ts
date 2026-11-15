@@ -63,6 +63,7 @@ export interface MonthlyClimatePoint {
 }
 
 export interface ClimateData {
+  calendarVersion?: string;
   provenance?: Partial<Record<ClimateMetric, MetricProvenance>>;
   source: string;
   variableList: string[];

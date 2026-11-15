@@ -1,6 +1,7 @@
 import type { DailySeries } from './nasaPower';
 import type { ClimateData, ClimateMetric, MetricProvenance, MonthlyClimatePoint } from '../types';
 import { PILOT_CONFIG } from '../config/pilot';
+import { PLANNING_CALENDAR_VERSION, PLANNING_CALENDAR_REVIEW, PLANNING_MONTHS, planningPeriod } from '../config/planningCalendar';
 import { calculateClimateSummary, calculateLinearRegressionSlope } from '../engine/climate/climateSummary';
 
 const mean = (values: number[]) => values.reduce((a,b)=>a+b,0)/values.length;
@@ -46,16 +47,16 @@ export function buildObservedClimate(series: DailySeries): ClimateData|null {
  const annualRain=years.map(year=>byYear.get(year)!.reduce((sum,i)=>sum+series.prectotcorr[i]!,0));
  const avgRain=mean(annualRain);
  const trend=avgRain>0?round(calculateLinearRegressionSlope(years,annualRain)*10/avgRain*100):0;
- const season=(months:number[])=>{
+ const season=(months:readonly number[])=>{
   const points=monthly.filter(m=>months.includes(m.monthNum));
   const ids=indices.filter(i=>months.includes(Number(series.dates[i].slice(5,7))));
   return {precip:round(points.reduce((sum,m)=>sum+m.rainfall,0)),avgTemp:round(mean(ids.map(i=>series.t2m[i]!))),maxTemp:Math.max(...points.map(m=>m.tempMax))};
  };
  const level=(value:'low'|'med'|'high')=>value==='med'?'moderate':value;
- const data:ClimateData={source:series.source,variableList:['T2M','T2M_MAX','T2M_MIN','PRECTOTCORR','RH2M','ALLSKY_SFC_SW_DWN'],
+ const data:ClimateData={calendarVersion:PLANNING_CALENDAR_VERSION,source:series.source,variableList:['T2M','T2M_MAX','T2M_MIN','PRECTOTCORR','RH2M','ALLSKY_SFC_SW_DWN'],
   dateRange:`${selected.dates[0]} to ${selected.dates.at(-1)}`,isSampleData:series.isSample,
   meanAnnualPrecipitation:round(avgRain),meanAnnualTemp:round(mean(selected.t2m.filter(finite))),monthly,
-  seasonalStats:{wet:season([6,7,8,9,10,11]),dryCool:season([12,1,2]),dryHot:season([3,4,5])},
+  seasonalStats:{wet:season(PLANNING_MONTHS.wet),dryCool:season(PLANNING_MONTHS.coolDry),dryHot:season(PLANNING_MONTHS.hotDry)},
   heatStressDaysPerYear:round(mean(years.map(year=>byYear.get(year)!.filter(i=>series.t2mMax[i]!>=PILOT_CONFIG.thresholds.heatStressTempThresholdC).length))),
   drySpellRisk:level(summary.risks.drought),excessWaterRisk:level(summary.risks.flood),heatRisk:level(summary.risks.heat),
   tenYearRainfallTrend:trend>0?'increasing':trend<0?'decreasing':'stable',trendDeltaPercent:trend};
@@ -68,13 +69,13 @@ export function buildObservedClimate(series: DailySeries): ClimateData|null {
   humidity:['RH2M','%','Calendar-month daily mean; minimum 80% observed coverage.'],
   heatStressDays:['T2M_MAX ≥ 35 °C','days/year','Mean annual count in complete calendar years; 35 °C screening threshold requires local crop review.'],
   rainfallTrend:['PRECTOTCORR → OLS annual totals','%/decade','OLS against actual accepted calendar years, slope × 10 ÷ mean annual rainfall × 100. Direction uses the rounded slope; no statistical significance claim.'],
-  risk:['daily rainfall / Tmax → preliminary screens','class','Existing PILOT_CONFIG thresholds applied to complete Jun–Nov and Dec–May seasons. Rainfall screening does not establish parcel flood hazard.' ]};
+  risk:['daily rainfall / Tmax → preliminary screens','class',`Existing PILOT_CONFIG thresholds applied to complete wet/dry cycles; planning windows: ${planningPeriod('wet')}, ${planningPeriod('coolDry')}, ${planningPeriod('hotDry')}. Rainfall screening does not establish parcel flood hazard.` ]};
  data.provenance=Object.fromEntries(Object.entries(definitions).map(([key,[variable,unit,method]])=>[key,{
   source:series.source,variable,unit,spatialResolution:key==='solarRadiation'?'1° × 1° (CERES SYN1deg, 2014–2023)':'0.5° latitude × 0.625° longitude',
   dateRange:data.dateRange,isSample:series.isSample,isSynthetic:false,needsReview:true,tier:series.tier==='cache'?'cached-live':series.tier,
   methodKey:`provenance.observedMethods.${key}`,
   method:`${method} Accepted complete years: ${years.join(', ')}; ${byYear.size-years.length} years excluded.`,
-  note:'Regional gridded estimates, not field measurements. Heat/rainfall risk thresholds are uncalibrated advisory screens needing local scientific review.',
+  note:`Regional gridded estimates, not field measurements. Heat/rainfall risk thresholds are uncalibrated advisory screens needing local scientific review. ${PLANNING_CALENDAR_REVIEW.note}`,
   citation:'https://power.larc.nasa.gov/docs/services/',retrievedAt:series.retrievedAt??null,productVersion:series.apiVersion??null,
   sampleLocation:series.dataLocation,
  } satisfies MetricProvenance]));
